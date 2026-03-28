@@ -435,7 +435,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
       top: 0;                  /* anchored to viewport top; translateY positions it */
       left: 0;
       right: 0;
-      z-index: 190;
+      z-index: 210;            /* above masthead (z-index: 200) */
       background: #9b1535;
       align-items: center;
       gap: 0;
@@ -449,8 +449,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
       box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
     .sticky-subnav.is-visible {
-      /* Visible: push down by masthead height (52px) so it sits flush below it */
-      transform: translateY(52px);
+      transform: translateY(0);
       opacity: 1;
       pointer-events: auto;
     }
@@ -584,16 +583,14 @@ const lastUpdated = lastRun?.completedAt ?? null;
     const inlineNav = document.querySelector('.anchor-nav');
 
     if (stickyNav) {
+      const masthead = document.querySelector('.mast');
       let ticking = false;
       function updateStickyNav() {
         let shouldShow;
-        if (inlineNav) {
-          // Desktop: show once the inline nav (anchor-nav) has scrolled fully off-screen
-          const r = inlineNav.getBoundingClientRect();
-          // getBoundingClientRect returns zeros when display:none — fall back to scrollY
-          shouldShow = r.height > 0 ? r.bottom < 0 : window.scrollY > 80;
+        // Show once the masthead has fully scrolled out of view
+        if (masthead) {
+          shouldShow = masthead.getBoundingClientRect().bottom <= 0;
         } else {
-          // Fallback: show after scrolling 80px
           shouldShow = window.scrollY > 80;
         }
         stickyNav.classList.toggle('is-visible', shouldShow);
