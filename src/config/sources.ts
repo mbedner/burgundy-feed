@@ -19,6 +19,15 @@ export const SOURCES: SourceConfig[] = [
     quality:          8,
     type:             'beat',
     commandersFocus:  true,
+    enabled:          false, // RSS feed only contains archived content, nothing recent
+  },
+  {
+    id:               'commanders-nation',
+    name:             'Commanders Nation',
+    rssUrl:           'https://www.commandersnation.com/feed/',
+    quality:          7,
+    type:             'blog',
+    commandersFocus:  true,
     enabled:          true,
   },
   {
