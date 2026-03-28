@@ -1,6 +1,7 @@
 ---
 import type { StoredData } from '../lib/types';
 import type { LiveStats, EspnTransaction } from '../lib/espn';
+import { fetchTransactions } from '../lib/espn';
 import { readAll } from '../lib/kv';
 import { SITE, TRANSACTION_SEASON } from '../config/site';
 import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS, LAST_SEASON } from '../config/schedule';
@@ -235,6 +236,11 @@ try {
     if (txRaw)    espnTransactions = JSON.parse(txRaw) as EspnTransaction[];
     console.log('[cw] articles loaded from KV:', allData.articles.length);
     console.log('[cw] transactions loaded from KV:', espnTransactions.length);
+    // KV cache miss — worker may not have run yet; fetch directly as fallback
+    if (espnTransactions.length === 0) {
+      espnTransactions = await fetchTransactions();
+      console.log('[cw] transactions fetched directly from ESPN:', espnTransactions.length);
+    }
   }
 } catch (e) {
   console.error('[cw] KV read error:', e);
