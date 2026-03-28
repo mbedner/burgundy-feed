@@ -2,7 +2,7 @@
 import { runIngest } from '../src/lib/ingest';
 import { detectBreakingItems } from '../src/lib/breaking';
 import { writeArticles, writeBreaking, writeLastRun } from '../src/lib/kv';
-import { fetchLiveStats } from '../src/lib/espn';
+import { fetchLiveStats, fetchTransactions } from '../src/lib/espn';
 import { SITE } from '../src/config/site';
 
 export interface Env {
@@ -45,10 +45,11 @@ async function doIngest(env: Env) {
   const mode = (env.REWRITE_MODE ?? SITE.rewriteMode) as typeof SITE.rewriteMode;
   console.log(`[ingest] starting run at ${new Date().toISOString()}`);
 
-  // Run articles ingest + live stats fetch concurrently
-  const [{ articles, run }, liveStats] = await Promise.all([
+  // Run articles ingest + live stats + transactions concurrently
+  const [{ articles, run }, liveStats, transactions] = await Promise.all([
     runIngest(mode),
     fetchLiveStats(),
+    fetchTransactions(),
   ]);
 
   const breaking = detectBreakingItems(articles);
@@ -69,6 +70,16 @@ async function doIngest(env: Env) {
     console.log(`[ingest] stats fetched from ESPN — season ${liveStats.season}, record ${liveStats.record}`);
   } else {
     console.warn('[ingest] ESPN stats fetch failed — page will use fallback config');
+  }
+
+  // Cache transactions in KV — expires after 6 hours
+  if (transactions.length > 0) {
+    writes.push(
+      env.ARTICLES_KV.put('transactions:latest', JSON.stringify(transactions), {
+        expirationTtl: 60 * 60 * 6,
+      }),
+    );
+    console.log(`[ingest] ${transactions.length} transactions fetched from ESPN`);
   }
 
   await Promise.all(writes);

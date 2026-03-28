@@ -51,6 +51,40 @@ function safeStr(v: unknown, fallback = 'N/A'): string {
   return v ? String(v) : fallback;
 }
 
+// ── Transactions ──────────────────────────────────────────────────────────────
+
+export interface EspnTransaction {
+  date:        string;   // ISO string
+  description: string;   // raw ESPN text, e.g. "Signed DB Ahkello Witherspoon to a contract."
+  type:        'signing' | 'release' | 'trade' | 'hire' | 'other';
+}
+
+function classifyTransaction(desc: string): EspnTransaction['type'] {
+  const d = desc.toLowerCase().trimStart();
+  if (d.startsWith('signed') || d.startsWith('re-signed')) return 'signing';
+  if (d.startsWith('released') || d.startsWith('waived'))   return 'release';
+  if (d.startsWith('traded'))                                return 'trade';
+  if (d.startsWith('hired') || d.startsWith('named') || d.startsWith('promoted')) return 'hire';
+  return 'other';
+}
+
+export async function fetchTransactions(limit = 50): Promise<EspnTransaction[]> {
+  try {
+    const data = await fetchJson(
+      `${BASE}/transactions?limit=${limit}&team=${TEAM_ID}`,
+    ) as any;
+    const raw: { date: string; description: string }[] = data?.transactions ?? [];
+    return raw.map(t => ({
+      date:        t.date,
+      description: t.description,
+      type:        classifyTransaction(t.description),
+    }));
+  } catch (err) {
+    console.warn('[espn] transactions fetch failed:', err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
 export async function fetchLiveStats(): Promise<LiveStats | null> {
   try {
     // Determine current NFL season year (season starts in September)

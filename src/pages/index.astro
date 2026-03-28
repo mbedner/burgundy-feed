@@ -1,6 +1,6 @@
 ---
 import type { StoredData } from '../lib/types';
-import type { LiveStats } from '../lib/espn';
+import type { LiveStats, EspnTransaction } from '../lib/espn';
 import { readAll } from '../lib/kv';
 import { SITE, TRANSACTION_SEASON } from '../config/site';
 import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS, LAST_SEASON } from '../config/schedule';
@@ -217,6 +217,7 @@ const mockBreaking: BreakingItem[] = [
 // ── LIVE DATA ────────────────────────────────────────────────────────────────
 let data: StoredData = { articles: [], breaking: [], lastRun: null };
 let liveStats: LiveStats | null = null;
+let espnTransactions: EspnTransaction[] = [];
 try {
   const runtime = (Astro.locals as any).runtime;
   const kv: KVNamespace | undefined =
@@ -224,10 +225,16 @@ try {
     (Astro.locals as any).ARTICLES_KV;
   console.log('[cw] runtime present:', !!runtime, '| kv bound:', !!kv);
   if (kv) {
-    const [allData, statsRaw] = await Promise.all([readAll(kv), kv.get('stats:snapshot')]);
+    const [allData, statsRaw, txRaw] = await Promise.all([
+      readAll(kv),
+      kv.get('stats:snapshot'),
+      kv.get('transactions:latest'),
+    ]);
     data = allData;
     if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
+    if (txRaw)    espnTransactions = JSON.parse(txRaw) as EspnTransaction[];
     console.log('[cw] articles loaded from KV:', allData.articles.length);
+    console.log('[cw] transactions loaded from KV:', espnTransactions.length);
   }
 } catch (e) {
   console.error('[cw] KV read error:', e);
@@ -246,28 +253,25 @@ const leads       = articles.slice(0, SITE.leadCount);
 const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
 
 // ── Transaction Tracker ───────────────────────────────────────────────────────
-const TX_TAGS = new Set(['signing', 'trade', 'release']);
-const txArticles = articles
-  .filter(a => a.tags.some(t => TX_TAGS.has(t)))
-  .slice(0, TRANSACTION_SEASON.maxItems);
-
 function showTransactionTracker(): boolean {
   if (TRANSACTION_SEASON.override !== null) return TRANSACTION_SEASON.override;
-  // Check date window
-  const now  = new Date();
+  // Show during the configured date window
+  const now = new Date();
   const inWindow =
     now >= new Date(TRANSACTION_SEASON.start) &&
     now <= new Date(TRANSACTION_SEASON.end);
   if (inWindow) return true;
-  // Outside window: show if there's been a flurry of activity (mid-season trades)
-  const windowMs  = TRANSACTION_SEASON.activityWindowDays * 24 * 60 * 60 * 1000;
-  const recentCount = txArticles.filter(
-    a => Date.now() - new Date(a.publishedAt).getTime() < windowMs
+  // Outside window: show if there's been recent activity (mid-season trades)
+  const windowMs = TRANSACTION_SEASON.activityWindowDays * 24 * 60 * 60 * 1000;
+  const SHOW_TYPES = new Set(['signing', 'release', 'trade']);
+  const recentCount = espnTransactions.filter(
+    t => SHOW_TYPES.has(t.type) &&
+         Date.now() - new Date(t.date).getTime() < windowMs
   ).length;
   return recentCount >= TRANSACTION_SEASON.activityThreshold;
 }
 
-const showTxTracker = showTransactionTracker() && txArticles.length > 0;
+const showTxTracker = showTransactionTracker() && espnTransactions.length > 0;
 
 // Only show breaking ticker for items detected within the last 2 hours.
 const BREAKING_TTL_MS = 2 * 60 * 60 * 1000;
@@ -586,7 +590,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
           lastSeason={LAST_SEASON}
           stats={stats}
           players={FEATURED_PLAYERS}
-          txArticles={txArticles}
+          txItems={espnTransactions}
           txLabel={TRANSACTION_SEASON.label}
           showTx={showTxTracker}
         />
