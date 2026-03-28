@@ -154,7 +154,7 @@ export async function fetchRssFeed(
       signal: controller.signal,
       headers: {
         'User-Agent':
-          'BurgundyFeed/1.0 (+https://burgundyfeed.com; news aggregator)',
+          'BurgundyFeed/1.0 (+https://burgundyfeed.com; Washington Commanders news aggregator)',
         Accept: 'application/rss+xml, application/atom+xml, text/xml, */*',
       },
     });

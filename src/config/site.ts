@@ -4,7 +4,7 @@
 export const SITE = {
   name:       'BURGUNDY FEED',
   tagline:    'Every story. No fluff. All burgundy.',
-  url:        'https://burgundyfeed.pages.dev', // update after deploy
+  url:        'https://burgundyfeed.com',
 
   // Tone for display headline rewrites: 'straight' | 'witty' | 'savage'
   // Override via REWRITE_MODE env var in wrangler.toml
