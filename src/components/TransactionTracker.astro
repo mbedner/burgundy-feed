@@ -38,7 +38,6 @@ const BADGE: Record<string, string> = {
   <div class="module">
     <div class="tx-hd">
       <div class="tx-hd-left">
-        <span class="tx-dot"></span>
         <span class="tx-title">Transactions</span>
       </div>
       <span class="tx-label">{label}</span>
@@ -70,18 +69,6 @@ const BADGE: Record<string, string> = {
     display: flex;
     align-items: center;
     gap: 6px;
-  }
-  .tx-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--live-dot);
-    flex-shrink: 0;
-    animation: tx-blink 2.5s ease-in-out infinite;
-  }
-  @keyframes tx-blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.25; }
   }
   .tx-title {
     font-size: 10px;
