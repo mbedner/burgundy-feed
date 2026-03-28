@@ -251,7 +251,7 @@ const freshBreaking = breaking.filter(
   b => Date.now() - new Date(b.detectedAt).getTime() < BREAKING_TTL_MS
 );
 const hasBreaking = freshBreaking.length > 0;
-const lastUpdated = lastRun;
+const lastUpdated = lastRun?.completedAt ?? null;
 ---
 
 <!DOCTYPE html>
@@ -269,12 +269,29 @@ const lastUpdated = lastRun;
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
   <!-- Theme init: runs before paint to prevent flash -->
+  <!-- Default is time-based (sunrise/sunset approx for DC area, 38.9°N).    -->
+  <!-- Manual toggle in the header overrides for the session via sessionStorage. -->
   <script is:inline>
     (function() {
-      const saved = localStorage.getItem('cw-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = saved ?? (prefersDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
+      // Session override from manual toggle takes priority
+      const override = sessionStorage.getItem('cw-theme-override');
+      if (override) {
+        document.documentElement.setAttribute('data-theme', override);
+        return;
+      }
+      // Approximate sunrise/sunset for Washington DC (38.9°N)
+      // sunrise ≈ 6.25 - 2.1·sin((dayOfYear-79)·2π/365)  [hours, local time]
+      // sunset  ≈ 18.25 + 2.1·sin((dayOfYear-79)·2π/365)
+      var now = new Date();
+      var dayOfYear = Math.floor(
+        (now - new Date(now.getFullYear(), 0, 0)) / 86400000
+      );
+      var angle = (dayOfYear - 79) * 2 * Math.PI / 365;
+      var sunriseHour = 6.25 - 2.1 * Math.sin(angle);
+      var sunsetHour  = 18.25 + 2.1 * Math.sin(angle);
+      var hour = now.getHours() + now.getMinutes() / 60;
+      var isDay = hour >= sunriseHour && hour < sunsetHour;
+      document.documentElement.setAttribute('data-theme', isDay ? 'light' : 'dark');
     })();
   </script>
 

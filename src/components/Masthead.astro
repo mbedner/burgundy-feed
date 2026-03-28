@@ -1,13 +1,6 @@
 ---
 interface Props { lastUpdated: string | null; }
 const { lastUpdated } = Astro.props;
-
-function formatUpdated(iso: string | null): string {
-  if (!iso) return 'not yet synced';
-  const d = new Date(iso);
-  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short' });
-}
-const updated = formatUpdated(lastUpdated);
 ---
 
 <header class="mast">
@@ -22,7 +15,9 @@ const updated = formatUpdated(lastUpdated);
     <div class="mast-right">
       <div class="mast-sync">
         <span class="sync-dot"></span>
-        <span class="sync-label">Updated {updated}</span>
+        <span class="sync-label" id="syncLabel" data-iso={lastUpdated ?? ''}>
+          {lastUpdated ? 'Updated —' : 'Not yet synced'}
+        </span>
       </div>
 
       <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" title="Toggle theme">
@@ -34,31 +29,32 @@ const updated = formatUpdated(lastUpdated);
 </header>
 
 <script>
-  const btn   = document.getElementById('themeToggle')!;
-  const html  = document.documentElement;
-
-  function getTheme() {
-    return html.getAttribute('data-theme') ?? 'light';
+  // ── Format the "Updated" timestamp in the browser's local timezone ──────────
+  const label = document.getElementById('syncLabel');
+  if (label) {
+    const iso = label.getAttribute('data-iso');
+    if (iso) {
+      const d = new Date(iso);
+      if (!isNaN(d.getTime())) {
+        const formatted = d.toLocaleTimeString('en-US', {
+          hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short',
+        });
+        label.textContent = `Updated ${formatted}`;
+      }
+    }
   }
 
-  function setTheme(theme: string) {
-    html.setAttribute('data-theme', theme);
-    localStorage.setItem('cw-theme', theme);
-  }
-
-  // Sync button icon to current theme
-  function syncIcon() {
-    const theme = getTheme();
-    btn.setAttribute('data-theme', theme);
-  }
+  // ── Theme toggle (session-only override; page load uses time-based default) ─
+  const btn  = document.getElementById('themeToggle')!;
+  const html = document.documentElement;
 
   btn.addEventListener('click', () => {
-    const next = getTheme() === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    syncIcon();
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    // Store override so the current session (or tab) stays on chosen theme.
+    // We use sessionStorage so it resets on new tab/visit and time-based kicks in again.
+    sessionStorage.setItem('cw-theme-override', next);
   });
-
-  syncIcon();
 </script>
 
 <style>
@@ -173,7 +169,7 @@ const updated = formatUpdated(lastUpdated);
     color: var(--text);
   }
 
-  /* Show sun icon in dark mode, moon in light mode */
+  /* Show sun icon in dark mode (to switch to light), moon in light mode */
   :root[data-theme="dark"]  .icon-sun  { display: block; }
   :root[data-theme="dark"]  .icon-moon { display: none; }
   :root[data-theme="light"] .icon-sun  { display: none; }

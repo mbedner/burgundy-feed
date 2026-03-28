@@ -66,12 +66,11 @@ function ordinal(n: number): string {
     </div>
   )}
 
-  <div class="stats-footer">
-    {'source' in stats && stats.source === 'espn'
-      ? <span class="live-badge">● Live via ESPN</span>
-      : <span>Fallback — live data after first ingest</span>
-    }
-  </div>
+  {'source' in stats && stats.source === 'espn' && (
+    <div class="stats-footer">
+      <span class="live-badge">● Live via ESPN</span>
+    </div>
+  )}
 </div>
 
 <style>
