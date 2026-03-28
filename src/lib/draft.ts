@@ -191,13 +191,21 @@ export function getMockDraft(state: DraftState = 'active'): DraftInfo {
   ];
 
   const recentPicks: DraftPick[] = state === 'pre' ? [] : [
-    { overall:6,  round:1, pick:6,  teamId:'1',  teamName:'Bears',      teamAbbr:'CHI', playerName:'Tetairoa McMillan', position:'WR', college:'Arizona',    isWashington:false, traded:false, tradeNote:'', completed:true },
-    { overall:5,  round:1, pick:5,  teamId:'3',  teamName:'Patriots',   teamAbbr:'NE',  playerName:'Will Johnson',      position:'CB', college:'Michigan',   isWashington:false, traded:false, tradeNote:'', completed:true },
-    { overall:4,  round:1, pick:4,  teamId:'4',  teamName:'Giants',     teamAbbr:'NYG', playerName:'Mason Graham',      position:'DT', college:'Michigan',   isWashington:false, traded:false, tradeNote:'', completed:true },
-    { overall:3,  round:1, pick:3,  teamId:'5',  teamName:'Patriots',   teamAbbr:'NE',  playerName:'Armand Membou',     position:'OT', college:'Missouri',   isWashington:false, traded:false, tradeNote:'', completed:true },
-    { overall:2,  round:1, pick:2,  teamId:'6',  teamName:'Browns',     teamAbbr:'CLE', playerName:'Abdul Carter',      position:'EDGE', college:'Penn State',isWashington:false, traded:false, tradeNote:'', completed:true },
-    { overall:1,  round:1, pick:1,  teamId:'7',  teamName:'Titans',     teamAbbr:'TEN', playerName:'Cam Ward',          position:'QB', college:'Miami',      isWashington:false, traded:false, tradeNote:'', completed:true },
-    ...(state !== 'pre' ? [wasPicks[0]] : []),
+    { overall:15, round:1, pick:15, teamId:'10', teamName:'Falcons',    teamAbbr:'ATL', playerName:'Derrick Harmon',    position:'DT',   college:'Oregon',     isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:14, round:1, pick:14, teamId:'11', teamName:'Saints',     teamAbbr:'NO',  playerName:'Walter Nolen',      position:'DT',   college:'Ole Miss',   isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:13, round:1, pick:13, teamId:'12', teamName:'Jets',       teamAbbr:'NYJ', playerName:'Kelvin Banks Jr.',  position:'OT',   college:'Texas',      isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:12, round:1, pick:12, teamId:'13', teamName:'Cowboys',    teamAbbr:'DAL', playerName:'Tyler Warren',      position:'TE',   college:'Penn State', isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:11, round:1, pick:11, teamId:'14', teamName:'Seahawks',   teamAbbr:'SEA', playerName:'James Pearce Jr.',  position:'EDGE', college:'Tennessee',  isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:10, round:1, pick:10, teamId:'15', teamName:'Cardinals',  teamAbbr:'ARI', playerName:'Ashton Jeanty',     position:'RB',   college:'Boise State',isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:9,  round:1, pick:9,  teamId:'16', teamName:'Saints',     teamAbbr:'NO',  playerName:'Jalon Walker',      position:'LB',   college:'Georgia',    isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:8,  round:1, pick:8,  teamId:'17', teamName:'Raiders',    teamAbbr:'LV',  playerName:'Malaki Starks',     position:'S',    college:'Georgia',    isWashington:false, traded:false, tradeNote:'', completed:true },
+    wasPicks[0],
+    { overall:6,  round:1, pick:6,  teamId:'1',  teamName:'Bears',      teamAbbr:'CHI', playerName:'Tetairoa McMillan', position:'WR',   college:'Arizona',    isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:5,  round:1, pick:5,  teamId:'3',  teamName:'Patriots',   teamAbbr:'NE',  playerName:'Will Johnson',      position:'CB',   college:'Michigan',   isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:4,  round:1, pick:4,  teamId:'4',  teamName:'Giants',     teamAbbr:'NYG', playerName:'Mason Graham',      position:'DT',   college:'Michigan',   isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:3,  round:1, pick:3,  teamId:'5',  teamName:'Patriots',   teamAbbr:'NE',  playerName:'Armand Membou',     position:'OT',   college:'Missouri',   isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:2,  round:1, pick:2,  teamId:'6',  teamName:'Browns',     teamAbbr:'CLE', playerName:'Abdul Carter',      position:'EDGE', college:'Penn State', isWashington:false, traded:false, tradeNote:'', completed:true },
+    { overall:1,  round:1, pick:1,  teamId:'7',  teamName:'Titans',     teamAbbr:'TEN', playerName:'Cam Ward',          position:'QB',   college:'Miami',      isWashington:false, traded:false, tradeNote:'', completed:true },
   ].filter(p => p.completed).reverse();
 
   const onTheClock: DraftOnTheClock | null = state === 'active' ? {
