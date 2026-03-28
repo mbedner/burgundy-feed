@@ -11,6 +11,9 @@ const COMMANDERS_PROPER = [
   'adam peters', 'terry mclaurin', 'daron payne', 'brian robinson',
   'fedexfield', 'rfk stadium', 'hogs haven', 'commanders wire',
   'kliff kingsbury', 'josh harris', 'bobby mclaughlin',
+  'noah brown', 'dyami brown', 'zach ertz', 'leo chenal',
+  'jeremy mcnichols', 'bobby wagner', 'brandon aubrey',
+  'jamin davis', 'jeremy chinn', 'austin ekeler',
 ];
 
 // Breaking-news signal keywords

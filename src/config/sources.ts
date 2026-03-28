@@ -37,7 +37,7 @@ export const SOURCES: SourceConfig[] = [
     quality:          6,
     type:             'blog',
     commandersFocus:  true,
-    enabled:          true,
+    enabled:          false, // covers all DC sports, rarely Commanders-specific
   },
   {
     id:               'bleacher-report',
@@ -57,7 +57,7 @@ export const SOURCES: SourceConfig[] = [
     quality:          9,
     type:             'local',
     commandersFocus:  false,
-    enabled:          true,
+    enabled:          false, // blocks all bot requests, always times out
   },
   {
     id:               'nbcs-washington',
