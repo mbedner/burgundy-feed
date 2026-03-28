@@ -5,54 +5,23 @@ interface Props {
   lastSeason: typeof LAST_SEASON;
 }
 const { schedule, lastSeason } = Astro.props;
-
-const now = new Date();
-const upcoming = schedule
-  .filter(g => g.opponent !== 'BYE' && new Date(g.date + 'T12:00:00') >= now)
-  .slice(0, 7);
-const nextGame = upcoming[0] ?? null;
-const rest = upcoming.slice(1);
-
-function fmt(d: string): string {
-  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
-}
-function fmtShort(d: string): string {
-  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 ---
 
 <div class="module">
-  <div class="module-hd">2026 Schedule</div>
+  <div class="module-hd">
+    2026 Opponents
+    <span class="sched-pending">Schedule releases May 2026</span>
+  </div>
 
-  {nextGame ? (
-    <div class="next-game">
-      <div class="next-pill">NEXT GAME</div>
-      <div class="next-opp">{nextGame.home ? 'vs' : '@'} <strong>{nextGame.opponent}</strong></div>
-      <div class="next-info">
-        <span>{fmt(nextGame.date)}</span>
-        {nextGame.time && nextGame.time !== 'TBD' && <span>· {nextGame.time}</span>}
-        {nextGame.tv && nextGame.tv !== 'TBD'  && <span class="next-tv">· {nextGame.tv}</span>}
+  <div class="sched-list">
+    {schedule.map(g => (
+      <div class="sched-row">
+        <span class="sched-wk">{g.week}</span>
+        <span class="sched-ha">{g.home === null ? '—' : g.home ? 'vs' : '@'}</span>
+        <span class="sched-opp">{g.opponent !== 'TBD' ? g.opponent : <em class="tbd">TBD</em>}</span>
       </div>
-      <div class="next-venue">{nextGame.home ? 'Home — Northwest Stadium' : 'Away'}</div>
-    </div>
-  ) : (
-    <p class="no-data">Schedule pending</p>
-  )}
-
-  {rest.length > 0 && (
-    <div class="sched-list">
-      {rest.map(g => (
-        <div class="sched-row">
-          <span class="sched-wk">{g.week}</span>
-          <span class="sched-ha">{g.home === null ? '—' : g.home ? 'vs' : '@'}</span>
-          <span class="sched-opp">{g.opponent}</span>
-          <span class="sched-dt">{fmtShort(g.date)}</span>
-        </div>
-      ))}
-    </div>
-  )}
-
-  <p class="sched-note">Dates estimated — official schedule releases ~May 2026</p>
+    ))}
+  </div>
 
   <!-- 2025 Season Results -->
   <div class="season-hd">
@@ -62,7 +31,7 @@ function fmtShort(d: string): string {
 
   <div class="results-list">
     {lastSeason.games.map(g => (
-      <div class={`result-row result-${g.result.toLowerCase()}`}>
+      <div class="result-row">
         <span class="res-wk">{g.week}</span>
         <span class="res-ha">{g.home === null ? '' : g.home ? 'vs' : '@'}</span>
         <span class="res-opp">{g.opponent}</span>
@@ -85,60 +54,35 @@ function fmtShort(d: string): string {
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 10px;
-  }
-  .next-game {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    padding: 10px 12px;
-    margin-bottom: 10px;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .next-pill {
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-  }
-  .next-opp {
-    font-size: 16px;
-    color: var(--text);
-    font-weight: 400;
-    line-height: 1.2;
-  }
-  .next-opp strong { font-weight: 800; }
-  .next-info {
-    font-size: 12px;
-    color: var(--text-2);
-    display: flex;
-    gap: 4px;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
     flex-wrap: wrap;
   }
-  .next-tv { font-weight: 700; color: var(--accent); }
-  .next-venue { font-size: 11px; color: var(--text-3); }
+  .sched-pending {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-4);
+    font-style: italic;
+  }
 
-  .sched-list { display: flex; flex-direction: column; }
+  .sched-list { display: flex; flex-direction: column; margin-bottom: 4px; }
   .sched-row {
     display: grid;
-    grid-template-columns: 28px 24px 1fr auto;
+    grid-template-columns: 28px 24px 1fr;
     gap: 4px;
     align-items: center;
-    padding: 6px 0;
+    padding: 5px 0;
     border-bottom: 1px solid var(--border);
     font-size: 12px;
   }
-  .sched-wk   { font-size: 10px; font-weight: 700; color: var(--text-4); }
-  .sched-ha   { color: var(--text-3); font-size: 11px; }
-  .sched-opp  { color: var(--text); font-weight: 600; }
-  .sched-dt   { color: var(--text-3); text-align: right; white-space: nowrap; }
-  .sched-note {
-    font-size: 10px;
-    color: var(--text-4);
-    font-style: italic;
-    margin: 6px 0 14px;
-  }
+  .sched-wk  { font-size: 10px; font-weight: 700; color: var(--text-4); }
+  .sched-ha  { color: var(--text-3); font-size: 11px; }
+  .sched-opp { color: var(--text); font-weight: 600; }
+  .tbd       { color: var(--text-4); font-weight: 400; }
 
   /* ── 2025 Results ──────────────────────────────────────────────────────── */
   .season-hd {
@@ -147,7 +91,7 @@ function fmtShort(d: string): string {
     justify-content: space-between;
     padding: 10px 0 6px;
     border-top: 1px solid var(--border);
-    margin-top: 4px;
+    margin-top: 8px;
   }
   .season-yr {
     font-size: 10px;
@@ -173,11 +117,11 @@ function fmtShort(d: string): string {
     border-bottom: 1px solid var(--border);
     font-size: 11px;
   }
-  .res-wk   { font-size: 10px; font-weight: 700; color: var(--text-4); }
-  .res-ha   { color: var(--text-3); font-size: 10px; }
-  .res-opp  { color: var(--text-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .res-score { color: var(--text-3); text-align: right; white-space: nowrap; font-size: 11px; font-variant-numeric: tabular-nums; }
-  .res-bye  { color: var(--text-4); font-style: italic; }
+  .res-wk    { font-size: 10px; font-weight: 700; color: var(--text-4); }
+  .res-ha    { color: var(--text-3); font-size: 10px; }
+  .res-opp   { color: var(--text-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .res-score { color: var(--text-3); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .res-bye   { color: var(--text-4); font-style: italic; }
 
   .res-tag {
     font-size: 9px;
@@ -190,6 +134,4 @@ function fmtShort(d: string): string {
   .res-tag--w { color: #22c55e; }
   .res-tag--l { color: var(--text-4); }
   .res-tag--— { color: var(--text-4); }
-
-  .no-data { font-size: 12px; color: var(--text-3); }
 </style>
