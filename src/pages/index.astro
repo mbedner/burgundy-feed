@@ -489,6 +489,11 @@ const lastUpdated = lastRun?.completedAt ?? null;
       .subnav-full  { display: inline; }
     }
 
+    /* ── Anchor scroll offset — compensate for the 36px fixed subnav ───────── */
+    #leads, #stream, #rail, #voices {
+      scroll-margin-top: 44px;   /* 36px bar + 8px breathing room */
+    }
+
     /* ── Empty state ─────────────────────────────────────────────────────────── */
     .empty-msg {
       font-size: 13px;
