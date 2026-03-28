@@ -405,7 +405,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
       margin: 4px 0;
     }
 
-    /* ── Anchor nav ──────────────────────────────────────────────────────────── */
+    /* ── Anchor nav (inline, at top of content) ─────────────────────────────── */
     .anchor-nav {
       display: none;
     }
@@ -428,6 +428,55 @@ const lastUpdated = lastRun?.completedAt ?? null;
       .anchor-nav a:hover { color: var(--accent); }
     }
 
+    /* ── Sticky subnav (burgundy bar, appears on scroll) ────────────────────── */
+    .sticky-subnav {
+      display: none;
+    }
+    @media (min-width: 960px) {
+      .sticky-subnav {
+        display: flex;
+        position: fixed;
+        top: 52px;               /* sits flush under the masthead */
+        left: 0;
+        right: 0;
+        z-index: 190;
+        background: #9b1535;
+        align-items: center;
+        gap: 0;
+        padding: 0 16px;
+        height: 36px;
+        transform: translateY(-100%);
+        opacity: 0;
+        transition: transform 0.22s ease, opacity 0.22s ease;
+        pointer-events: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      }
+      .sticky-subnav.is-visible {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .sticky-subnav-inner {
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        gap: 28px;
+        align-items: center;
+      }
+      .sticky-subnav a {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.75);
+        text-decoration: none;
+        transition: color 0.15s;
+        white-space: nowrap;
+      }
+      .sticky-subnav a:hover { color: #ffffff; }
+    }
+
     /* ── Empty state ─────────────────────────────────────────────────────────── */
     .empty-msg {
       font-size: 13px;
@@ -445,6 +494,16 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
 <body>
   <Masthead lastUpdated={lastUpdated} />
+
+  <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
+  <nav class="sticky-subnav" id="stickySubnav" aria-label="Quick navigation">
+    <div class="sticky-subnav-inner">
+      <a href="#leads">Top Stories</a>
+      <a href="#stream">News Feed</a>
+      <a href="#rail">Schedule &amp; Stats</a>
+      <a href="#voices">Reporter Voices</a>
+    </div>
+  </nav>
 
   {hasBreaking && <BreakingTicker items={freshBreaking} />}
 
@@ -497,6 +556,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
   </main>
 
   <script define:vars={{ refreshMs: SITE.refreshIntervalMs }}>
+    // ── Auto-reload ───────────────────────────────────────────────────────────
     let idle = false;
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && idle) window.location.reload();
@@ -505,6 +565,32 @@ const lastUpdated = lastRun?.completedAt ?? null;
       idle = true;
       if (document.visibilityState === 'visible') window.location.reload();
     }, refreshMs);
+
+    // ── Sticky burgundy subnav ────────────────────────────────────────────────
+    const stickyNav  = document.getElementById('stickySubnav');
+    const inlineNav  = document.querySelector('.anchor-nav');
+
+    if (stickyNav && inlineNav) {
+      let ticking = false;
+
+      function updateStickyNav() {
+        // Show once the inline nav has scrolled off the top of the viewport
+        const bottom = inlineNav.getBoundingClientRect().bottom;
+        if (bottom < 0) {
+          stickyNav.classList.add('is-visible');
+        } else {
+          stickyNav.classList.remove('is-visible');
+        }
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(updateStickyNav);
+          ticking = true;
+        }
+      }, { passive: true });
+    }
   </script>
 </body>
 </html>
