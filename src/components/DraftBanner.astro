@@ -534,6 +534,13 @@ const countdownIso = roundStartIso();
       width: 48%;
       border-right: 1px solid #2a2a2a;
       border-bottom: none;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Picks list stretches to fill the left column — scrolls if it overflows */
+    .dr-body--split .dr-was-picks {
+      flex: 1;
+      max-height: none;
     }
     .dr-body--split .dr-recent {
       flex: 1 1 auto;
