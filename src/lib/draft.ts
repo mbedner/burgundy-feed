@@ -179,10 +179,15 @@ export async function fetchDraftData(): Promise<DraftInfo | null> {
 // ── Dev mock ──────────────────────────────────────────────────────────────────
 
 export function getMockDraft(state: DraftState = 'active'): DraftInfo {
+  // All 7 projected 2026 Washington picks
   const wasPicks: DraftPick[] = [
-    { overall:7,  round:1, pick:7,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Caleb Downs',    position:'S',  college:'Ohio State',   isWashington:true, traded:false, tradeNote:'', completed: state !== 'pre' },
-    { overall:39, round:2, pick:7,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Elic Ayomanor',  position:'WR', college:'Stanford',     isWashington:true, traded:false, tradeNote:'', completed: state === 'post' },
-    { overall:72, round:3, pick:8,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Grey Zabel',     position:'OL', college:'NDSU',         isWashington:true, traded:false, tradeNote:'', completed: state === 'post' },
+    { overall:7,   round:1, pick:7,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Mykel Williams',  position:'EDGE', college:'Georgia',     isWashington:true, traded:false,  tradeNote:'', completed: state !== 'pre' },
+    { overall:39,  round:2, pick:7,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Elic Ayomanor',   position:'WR',   college:'Stanford',    isWashington:true, traded:false,  tradeNote:'', completed: state === 'post' },
+    { overall:72,  round:3, pick:8,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Grey Zabel',      position:'OG',   college:'NDSU',        isWashington:true, traded:false,  tradeNote:'', completed: state === 'post' },
+    { overall:107, round:4, pick:7,  teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Dont\'e Thornton', position:'WR',  college:'Tennessee',   isWashington:true, traded:false,  tradeNote:'', completed: state === 'post' },
+    { overall:145, round:5, pick:12, teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Jake Briningstool',position:'TE',  college:'Clemson',     isWashington:true, traded:true,   tradeNote:'via trade with Pittsburgh', completed: state === 'post' },
+    { overall:183, round:6, pick:19, teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Trey Amos',       position:'CB',   college:'Ole Miss',    isWashington:true, traded:false,  tradeNote:'', completed: state === 'post' },
+    { overall:221, round:7, pick:18, teamId:'28', teamName:'Commanders', teamAbbr:'WAS', playerName:'Josaiah Stewart', position:'EDGE', college:'Michigan',    isWashington:true, traded:false,  tradeNote:'', completed: state === 'post' },
   ];
 
   const recentPicks: DraftPick[] = state === 'pre' ? [] : [
@@ -209,6 +214,6 @@ export function getMockDraft(state: DraftState = 'active'): DraftInfo {
     recentPicks,
     washingtonPicks: wasPicks,
     totalPicks:     257,
-    completedCount: state === 'pre' ? 0 : 7,
+    completedCount: state === 'pre' ? 0 : state === 'active' ? 7 : 257,
   };
 }
