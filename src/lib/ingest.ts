@@ -193,8 +193,30 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
   // Sort by composite score
   deduped.sort((a, b) => b.score - a.score);
 
+  // Enforce per-source diversity cap: no single source can dominate the feed.
+  // Commanders-focused sources get a slightly higher cap.
+  const SOURCE_CAP_FOCUS    = 4; // Commanders-specific blogs (Hogs Haven, etc.)
+  const SOURCE_CAP_NATIONAL = 6; // National sources
+  const sourceCounts = new Map<string, number>();
+  const capped: Article[] = [];
+  const sourceCapMap = new Map(
+    SOURCES.map(s => [s.id, s.commandersFocus ? SOURCE_CAP_FOCUS : SOURCE_CAP_NATIONAL])
+  );
+
+  for (const article of deduped) {
+    const cap = sourceCapMap.get(article.sourceId) ?? SOURCE_CAP_NATIONAL;
+    const count = sourceCounts.get(article.sourceId) ?? 0;
+    if (count < cap) {
+      capped.push(article);
+      sourceCounts.set(article.sourceId, count + 1);
+    }
+  }
+
+  // Re-sort after capping (order may have shifted)
+  capped.sort((a, b) => b.score - a.score);
+
   // Keep top N stories
-  const topArticles = deduped.slice(0, SITE.storyCount + 10); // extra buffer
+  const topArticles = capped.slice(0, SITE.storyCount + 10); // extra buffer
 
   const run: IngestRun = {
     id:            runId,

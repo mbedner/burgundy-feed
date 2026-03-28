@@ -32,7 +32,7 @@ export default {
       }
       const result = await doIngest(env);
       return new Response(
-        JSON.stringify({ success: true, articlesNew: result.articlesNew, errors: result.errors, completedAt: result.completedAt }),
+        JSON.stringify({ success: true, articlesFound: result.articlesFound, articlesNew: result.articlesNew, sources: result.sources, errors: result.errors, completedAt: result.completedAt }),
         { headers: { 'Content-Type': 'application/json' } },
       );
     }
