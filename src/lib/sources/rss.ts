@@ -80,43 +80,63 @@ function extractAuthor(item: Record<string, unknown>): string | null {
   return null;
 }
 
+function attrUrl(obj: unknown): string | null {
+  if (!obj || typeof obj !== 'object') return null;
+  const url = (obj as Record<string, unknown>)['@_url'];
+  if (typeof url === 'string' && url.startsWith('http')) return url;
+  return null;
+}
+
+function rawHtml(val: unknown): string | null {
+  if (typeof val === 'string') return val;
+  if (val && typeof val === 'object') {
+    const v = val as Record<string, unknown>;
+    // Atom <content type="html"> parsed as { '@_type': 'html', '#text': '...' }
+    if (typeof v['#text'] === 'string') return v['#text'];
+    if (typeof v['_'] === 'string') return v['_'];
+  }
+  return null;
+}
+
+function firstImgSrc(html: string): string | null {
+  const m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return m && m[1].startsWith('http') ? m[1] : null;
+}
+
 function extractImage(item: Record<string, unknown>): string | null {
-  // 1. media:content — most common on ESPN, Bleacher Report, NBC4
+  // 1. media:content[@url] — Bleacher Report (when present), ESPN, NBC4
   const mc = item['media:content'];
-  if (mc) {
-    const first = Array.isArray(mc) ? mc[0] : mc;
-    if (first && typeof first === 'object') {
-      const url = (first as Record<string, unknown>)['@_url'];
-      if (url && typeof url === 'string' && url.startsWith('http')) return url;
-    }
-  }
+  const mcFirst = Array.isArray(mc) ? mc[0] : mc;
+  const mcUrl = attrUrl(mcFirst);
+  if (mcUrl) return mcUrl;
 
-  // 2. media:thumbnail
+  // 2. media:thumbnail[@url]
   const mt = item['media:thumbnail'];
-  if (mt) {
-    const first = Array.isArray(mt) ? mt[0] : mt;
-    if (first && typeof first === 'object') {
-      const url = (first as Record<string, unknown>)['@_url'];
-      if (url && typeof url === 'string' && url.startsWith('http')) return url;
-    }
-    if (typeof mt === 'string' && mt.startsWith('http')) return mt;
-  }
+  const mtFirst = Array.isArray(mt) ? mt[0] : mt;
+  const mtUrl = attrUrl(mtFirst);
+  if (mtUrl) return mtUrl;
+  if (typeof mt === 'string' && mt.startsWith('http')) return mt;
 
-  // 3. enclosure (image/* type only)
+  // 3. enclosure[@url] — Bleacher Report RSS 2.0 feeds
+  //    fast-xml-parser may put all attributes directly on the object
+  //    regardless of whether the element is self-closing
   const enc = item['enclosure'];
-  if (enc && typeof enc === 'object') {
-    const e = enc as Record<string, unknown>;
-    const type = String(e['@_type'] ?? '');
-    const url  = String(e['@_url']  ?? '');
-    if (type.startsWith('image/') && url.startsWith('http')) return url;
+  if (enc) {
+    // Could be a single object or array of objects
+    const encFirst = Array.isArray(enc) ? enc[0] : enc;
+    if (encFirst && typeof encFirst === 'object') {
+      const e = encFirst as Record<string, unknown>;
+      const url  = String(e['@_url']  ?? '');
+      // Accept any enclosure with an http URL (type check too loose with image/jpg vs image/jpeg)
+      if (url.startsWith('http')) return url;
+    }
   }
 
-  // 4. Scrape first <img src> from the raw description HTML
-  //    (fast-xml-parser returns description before decoding, so check the raw field)
-  const rawDesc = item['description'];
-  if (typeof rawDesc === 'string') {
-    const m = rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
-    if (m && m[1].startsWith('http')) return m[1];
+  // 4. Scrape <img src> from raw HTML in description, content, or summary
+  //    Covers Atom feeds (Hogs Haven) where image is inside <content> CDATA
+  for (const field of ['description', 'content', 'summary']) {
+    const src = firstImgSrc(rawHtml(item[field]) ?? '');
+    if (src) return src;
   }
 
   return null;
