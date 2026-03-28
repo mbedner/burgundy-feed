@@ -1,5 +1,5 @@
 # ─── Main Ingest Worker ───────────────────────────────────────────────────────
-name = "commanders-wire-ingest"
+name = "burgundy-feed-ingest"
 main = "workers/ingest-worker.ts"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
@@ -19,6 +19,6 @@ REWRITE_MODE   = "witty"   # straight | witty | savage
 # ─── Astro Pages site uses the SAME KV namespace ──────────────────────────────
 # In Cloudflare Pages → Settings → Functions → KV namespace bindings:
 #   Variable name: ARTICLES_KV
-#   KV namespace:  commanders-wire-articles  (same namespace as above)
+#   KV namespace:  burgundy-feed-articles  (same namespace as above)
 #
 # That binding makes `env.ARTICLES_KV` available in your Astro SSR routes.

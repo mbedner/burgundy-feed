@@ -2,9 +2,9 @@
 // Edit this file to change the site's identity, refresh behavior, and tone.
 
 export const SITE = {
-  name:       'COMMANDERS WIRE',
+  name:       'BURGUNDY FEED',
   tagline:    'Every story. No fluff. All burgundy.',
-  url:        'https://commanders-wire.pages.dev', // update after deploy
+  url:        'https://burgundyfeed.pages.dev', // update after deploy
 
   // Tone for display headline rewrites: 'straight' | 'witty' | 'savage'
   // Override via REWRITE_MODE env var in wrangler.toml

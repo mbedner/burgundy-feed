@@ -5,6 +5,7 @@
       "name": "Commanders Wire Dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "4321"],
+      "cwd": "/Users/mbedner/commanders-wire",
       "port": 4321
     }
   ]

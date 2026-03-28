@@ -64,7 +64,7 @@ async function fetchJson(url: string, timeoutMs = 8000): Promise<unknown> {
   try {
     const res = await fetch(url, {
       signal:  ctrl.signal,
-      headers: { 'User-Agent': 'CommandersWire/1.0' },
+      headers: { 'User-Agent': 'BurgundyFeed/1.0' },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
