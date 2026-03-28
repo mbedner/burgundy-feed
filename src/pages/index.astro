@@ -214,25 +214,26 @@ const mockBreaking: BreakingItem[] = [
   },
 ];
 
-// ── LIVE DATA (uncomment when deployed to Cloudflare) ─────────────────────────
-// let data: StoredData = { articles: [], breaking: [], lastRun: null };
-// let liveStats: LiveStats | null = null;
-// try {
-//   const kv = (Astro.locals as any).runtime?.env?.ARTICLES_KV;
-//   if (kv) {
-//     const [allData, statsRaw] = await Promise.all([readAll(kv), kv.get('stats:snapshot')]);
-//     data = allData;
-//     if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
-//   }
-// } catch (_e) {}
-// const stats = liveStats ?? { ...TEAM_STATS, source: 'fallback' as const };
-// const { articles, breaking, lastRun } = data;
-// ─────────────────────────────────────────────────────────────────────────────
+// ── LIVE DATA ────────────────────────────────────────────────────────────────
+let data: StoredData = { articles: [], breaking: [], lastRun: null };
+let liveStats: LiveStats | null = null;
+try {
+  const kv = (Astro.locals as any).runtime?.env?.ARTICLES_KV;
+  if (kv) {
+    const [allData, statsRaw] = await Promise.all([readAll(kv), kv.get('stats:snapshot')]);
+    data = allData;
+    if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
+  }
+} catch (_e) {}
+const stats = liveStats ?? { ...TEAM_STATS, source: 'fallback' as const };
+let { articles, breaking, lastRun } = data;
 
-const articles  = mockArticles;
-const breaking  = mockBreaking;
-const lastRun   = null;
-const stats     = { ...TEAM_STATS, source: 'fallback' as const };
+// Fall back to mock data if KV is empty
+if (articles.length === 0) {
+  articles = mockArticles;
+  breaking = mockBreaking;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const leads       = articles.slice(0, SITE.leadCount);
 const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
