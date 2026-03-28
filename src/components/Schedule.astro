@@ -14,11 +14,10 @@ const { schedule, lastSeason } = Astro.props;
   </div>
 
   <div class="sched-list">
-    {schedule.map(g => (
+    {schedule.filter(g => g.opponent !== 'TBD').map(g => (
       <div class="sched-row">
-        <span class="sched-wk">{g.week}</span>
         <span class="sched-ha">{g.home === null ? '—' : g.home ? 'vs' : '@'}</span>
-        <span class="sched-opp">{g.opponent !== 'TBD' ? g.opponent : <em class="tbd">TBD</em>}</span>
+        <span class="sched-opp">{g.opponent}</span>
       </div>
     ))}
   </div>
@@ -72,17 +71,15 @@ const { schedule, lastSeason } = Astro.props;
   .sched-list { display: flex; flex-direction: column; margin-bottom: 4px; }
   .sched-row {
     display: grid;
-    grid-template-columns: 28px 24px 1fr;
-    gap: 4px;
+    grid-template-columns: 24px 1fr;
+    gap: 6px;
     align-items: center;
     padding: 5px 0;
     border-bottom: 1px solid var(--border);
     font-size: 12px;
   }
-  .sched-wk  { font-size: 10px; font-weight: 700; color: var(--text-4); }
   .sched-ha  { color: var(--text-3); font-size: 11px; }
   .sched-opp { color: var(--text); font-weight: 600; }
-  .tbd       { color: var(--text-4); font-weight: 400; }
 
   /* ── 2025 Results ──────────────────────────────────────────────────────── */
   .season-hd {
