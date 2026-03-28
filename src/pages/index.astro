@@ -2,6 +2,10 @@
 import type { StoredData } from '../lib/types';
 import type { LiveStats, EspnTransaction } from '../lib/espn';
 import { fetchTransactions } from '../lib/espn';
+import { detectGameDay, getMockGame } from '../lib/gameday';
+import type { GameDayInfo, GamePhase } from '../lib/gameday';
+import { isDraftDay, fetchDraftData, getMockDraft } from '../lib/draft';
+import type { DraftInfo, DraftState } from '../lib/draft';
 import { readAll } from '../lib/kv';
 import { SITE, TRANSACTION_SEASON } from '../config/site';
 import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS, LAST_SEASON } from '../config/schedule';
@@ -14,6 +18,8 @@ import LeadStories         from '../components/LeadStories.astro';
 import NewsStream          from '../components/NewsStream.astro';
 import RightRail           from '../components/RightRail.astro';
 import ReporterVoices      from '../components/ReporterVoices.astro';
+import GameDayBanner       from '../components/GameDayBanner.astro';
+import DraftBanner         from '../components/DraftBanner.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
 
@@ -254,6 +260,26 @@ if (articles.length === 0) {
   breaking = mockBreaking;
 }
 // ─────────────────────────────────────────────────────────────────────────────
+
+// ── Game Day Detection ────────────────────────────────────────────────────────
+const VALID_PHASES = new Set(['pregame', 'live', 'halftime', 'postgame']);
+const forcePhase = Astro.url.searchParams.get('gameday') as GamePhase | null;
+let gameDay: GameDayInfo | null = null;
+if (forcePhase && VALID_PHASES.has(forcePhase)) {
+  gameDay = getMockGame(forcePhase);
+} else {
+  try { gameDay = await detectGameDay(); } catch {}
+}
+
+// ── Draft Day Detection ───────────────────────────────────────────────────────
+const VALID_DRAFT_STATES = new Set(['pre', 'active', 'post']);
+const forceDraft = Astro.url.searchParams.get('draft') as DraftState | null;
+let draftDay: DraftInfo | null = null;
+if (forceDraft && VALID_DRAFT_STATES.has(forceDraft)) {
+  draftDay = getMockDraft(forceDraft);
+} else if (isDraftDay()) {
+  try { draftDay = await fetchDraftData(); } catch {}
+}
 
 const leads       = articles.slice(0, SITE.leadCount);
 const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
@@ -527,7 +553,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
     @media (min-width: 480px) { .subnav-hide-mobile { display: block; } }
 
     /* ── Anchor scroll offset — compensate for the 36px fixed subnav ───────── */
-    #leads, #stream, #rail, #voices, #transactions {
+    #gameday, #draft, #leads, #stream, #rail, #voices, #transactions {
       scroll-margin-top: 44px;   /* 36px bar + 8px breathing room */
     }
 
@@ -552,6 +578,8 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
   <nav class="sticky-subnav" id="stickySubnav" aria-label="Quick navigation">
     <div class="sticky-subnav-inner">
+      {gameDay && <a href="#gameday"><span class="subnav-short">Game</span><span class="subnav-full">Game Day</span></a>}
+      {draftDay && <a href="#draft"><span class="subnav-short">Draft</span><span class="subnav-full">Draft</span></a>}
       <a href="#leads"><span class="subnav-short">Top</span><span class="subnav-full">Top Stories</span></a>
       <a href="#stream"><span class="subnav-short">Feed</span><span class="subnav-full">News Feed</span></a>
       <a href="#transactions"><span class="subnav-short">Moves</span><span class="subnav-full">Transactions</span></a>
@@ -564,6 +592,8 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   <main class="page-wrap">
     <nav class="anchor-nav" aria-label="Page sections">
+      {gameDay && <a href="#gameday">Game Day</a>}
+      {draftDay && <a href="#draft">Draft</a>}
       <a href="#leads">Top Stories</a>
       <a href="#stream">News Feed</a>
       {showTxTracker && <a href="#transactions">Transactions</a>}
@@ -573,6 +603,18 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
     <div class="content-grid">
       <div class="news-col">
+        {gameDay && (
+          <section id="gameday">
+            <GameDayBanner game={gameDay} />
+          </section>
+        )}
+
+        {draftDay && (
+          <section id="draft">
+            <DraftBanner draft={draftDay} />
+          </section>
+        )}
+
         <section id="leads">
           {leads.length > 0
             ? <LeadStories items={leads} />

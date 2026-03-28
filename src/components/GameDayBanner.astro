@@ -1,0 +1,434 @@
+---
+import type { GameDayInfo } from '../lib/gameday';
+
+interface Props { game: GameDayInfo; }
+const { game } = Astro.props;
+
+const { phase, washington, opponent, period, periodDisplay, clock,
+        situation, recentPlays, scoringPlays, kickoffDisplay,
+        network, venue, kickoffIso, gameId } = game;
+
+const wasWinning  = washington.score > opponent.score;
+const tied        = washington.score === opponent.score;
+const wasWon      = phase === 'postgame' && washington.winner;
+const wasLost     = phase === 'postgame' && !washington.winner && !tied;
+
+function ordSuffix(n: number) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+---
+
+<div class="gd-banner" id="gdBanner" data-game-id={gameId} data-phase={phase}>
+
+  {/* ── Score bar (all phases) ── */}
+  <div class="gd-scorebar">
+    <div class="gd-team gd-team--was">
+      <span class="gd-abbr">WAS</span>
+      <span class="gd-score" id="gdWasScore">{washington.score}</span>
+    </div>
+
+    <div class="gd-middle">
+      {phase === 'pregame' && (
+        <div class="gd-pregame-info">
+          <span class="gd-phase-label">GAME DAY</span>
+          <span class="gd-kickoff">{kickoffDisplay}</span>
+          {network && <span class="gd-network">{network}</span>}
+          {venue   && <span class="gd-venue">{venue}</span>}
+        </div>
+      )}
+      {(phase === 'live' || phase === 'halftime') && (
+        <div class="gd-live-info">
+          <span class="gd-live-dot"></span>
+          <span class="gd-period" id="gdPeriod">
+            {phase === 'halftime' ? 'HALF' : periodDisplay}
+          </span>
+          {phase === 'live' && (
+            <span class="gd-clock" id="gdClock">{clock}</span>
+          )}
+        </div>
+      )}
+      {phase === 'postgame' && (
+        <div class="gd-final-info">
+          <span class="gd-final-label">FINAL</span>
+          <span class={`gd-result gd-result--${wasWon ? 'win' : wasLost ? 'loss' : 'tie'}`}>
+            {wasWon ? 'W' : wasLost ? 'L' : 'T'}
+          </span>
+        </div>
+      )}
+    </div>
+
+    <div class="gd-team gd-team--opp">
+      <span class="gd-score" id="gdOppScore">{opponent.score}</span>
+      <span class="gd-abbr">{opponent.abbreviation}</span>
+    </div>
+  </div>
+
+  {/* ── Situation bar (live only) ── */}
+  {phase === 'live' && situation && (
+    <div class="gd-situation" id="gdSituation">
+      <span class="gd-possession">
+        {situation.isWashingtonPossession ? '🏈 WAS' : `🏈 ${opponent.abbreviation}`}
+      </span>
+      <span class="gd-down-dist">{situation.downDistanceText}</span>
+    </div>
+  )}
+
+  {/* ── Countdown (pregame only) ── */}
+  {phase === 'pregame' && (
+    <div class="gd-countdown">
+      <span id="gdCountdown" data-kickoff={kickoffIso}>Kickoff soon</span>
+    </div>
+  )}
+
+  {/* ── Play by play (live + postgame) ── */}
+  {(phase === 'live' || phase === 'halftime' || phase === 'postgame') && (
+    <div class="gd-plays">
+      <div class="gd-plays-hd">
+        {phase === 'postgame' ? 'Scoring Summary' : 'Play by Play'}
+      </div>
+      <div class="gd-plays-list" id="gdPlaysList">
+        {(phase === 'postgame' ? scoringPlays : recentPlays).map(play => (
+          <div class={`gd-play ${play.isScoring ? 'gd-play--scoring' : ''}`}>
+            <span class="gd-play-meta">
+              {play.isScoring && play.scoringType && (
+                <span class="gd-play-score-type">{play.scoringType}</span>
+              )}
+              <span class="gd-play-period">Q{play.period}</span>
+              <span class="gd-play-clock">{play.clock}</span>
+            </span>
+            <span class="gd-play-text">{play.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
+
+{/* ── Client-side live updater ── */}
+{phase === 'live' || phase === 'halftime' ? (
+  <script define:vars={{ gameId, POLL_MS: 30000 }}>
+    const ESPN_URL = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${gameId}`;
+    const WAS_ID = '28';
+
+    async function pollGame() {
+      try {
+        const res = await fetch(ESPN_URL);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const headerComp = data?.header?.competitions?.[0];
+        const status     = headerComp?.status;
+        const state      = status?.type?.state;
+
+        // Update score
+        const competitors = headerComp?.competitors ?? [];
+        const was = competitors.find(c => c.id === WAS_ID);
+        const opp = competitors.find(c => c.id !== WAS_ID);
+        if (was) document.getElementById('gdWasScore').textContent = was.score ?? '0';
+        if (opp) document.getElementById('gdOppScore').textContent = opp.score ?? '0';
+
+        // Update clock + period
+        const period = status?.period ?? 1;
+        const clock  = status?.displayClock ?? '0:00';
+        const isHalf = status?.type?.description?.toLowerCase().includes('halftime');
+        const isPost = state === 'post';
+
+        const periodEl = document.getElementById('gdPeriod');
+        const clockEl  = document.getElementById('gdClock');
+        if (periodEl) periodEl.textContent = isHalf ? 'HALF' : period > 4 ? `OT` : `Q${period}`;
+        if (clockEl)  clockEl.textContent  = clock;
+
+        // Update situation
+        const sit = data?.header?.competitions?.[0]?.situation ?? null;
+        const sitEl = document.getElementById('gdSituation');
+        if (sitEl && sit) {
+          sitEl.querySelector('.gd-possession').textContent =
+            sit.possessionTeam?.id === WAS_ID ? '🏈 WAS' :
+            `🏈 ${opp?.team?.abbreviation ?? 'OPP'}`;
+          sitEl.querySelector('.gd-down-dist').textContent = sit.downDistanceText ?? '';
+        }
+
+        // Update plays
+        const drives = data?.drives ?? {};
+        const plays = [];
+        const curr = [...(drives?.current?.plays ?? [])].reverse();
+        for (const p of curr) plays.push(p);
+        const prev = drives?.previous ?? [];
+        for (const d of [...prev].reverse()) {
+          for (const p of [...(d.plays ?? [])].reverse()) {
+            plays.push(p);
+            if (plays.length >= 10) break;
+          }
+          if (plays.length >= 10) break;
+        }
+
+        const listEl = document.getElementById('gdPlaysList');
+        if (listEl && plays.length) {
+          listEl.innerHTML = plays.slice(0, 10).map(p => {
+            const isScore = !!p.scoringPlay;
+            const typeId  = p?.type?.id ?? '';
+            const scoreTypeMap = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
+            const sType = scoreTypeMap[typeId] ?? '';
+            return `<div class="gd-play ${isScore ? 'gd-play--scoring' : ''}">
+              <span class="gd-play-meta">
+                ${isScore && sType ? `<span class="gd-play-score-type">${sType}</span>` : ''}
+                <span class="gd-play-period">Q${p?.period?.number ?? ''}</span>
+                <span class="gd-play-clock">${p?.clock?.displayValue ?? ''}</span>
+              </span>
+              <span class="gd-play-text">${p?.text ?? ''}</span>
+            </div>`;
+          }).join('');
+        }
+
+        // If game ended, stop polling and reload for postgame layout
+        if (isPost) { window.location.reload(); return; }
+
+      } catch (e) { /* silent — retry next poll */ }
+    }
+
+    // Start polling
+    setInterval(pollGame, POLL_MS);
+  </script>
+) : null}
+
+{/* ── Pregame countdown ── */}
+{phase === 'pregame' ? (
+  <script>
+    const el = document.getElementById('gdCountdown');
+    if (el) {
+      const kickoff = new Date(el.dataset.kickoff);
+      function updateCountdown() {
+        const diff = kickoff - Date.now();
+        if (diff <= 0) { el.textContent = 'Kickoff!'; return; }
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        el.textContent = h > 0
+          ? `Kickoff in ${h}h ${m}m`
+          : `Kickoff in ${m}m`;
+      }
+      updateCountdown();
+      setInterval(updateCountdown, 30000);
+    }
+  </script>
+) : null}
+
+<style>
+  /* ── Banner shell ── */
+  .gd-banner {
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    color: #f0eeeb;
+  }
+
+  /* ── Score bar ── */
+  .gd-scorebar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: #141414;
+  }
+  .gd-team {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gd-team--was { justify-content: flex-end; }
+  .gd-team--opp { justify-content: flex-start; }
+
+  .gd-abbr {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #a09890;
+  }
+  .gd-team--was .gd-abbr { color: #e8a820; }
+
+  .gd-score {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: #f0eeeb;
+  }
+
+  /* ── Middle section ── */
+  .gd-middle { text-align: center; }
+
+  .gd-pregame-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .gd-phase-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #e8a820;
+  }
+  .gd-kickoff {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f0eeeb;
+  }
+  .gd-network, .gd-venue {
+    font-size: 10px;
+    color: #9a9080;
+  }
+
+  .gd-live-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .gd-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: gd-blink 1.2s ease-in-out infinite;
+    margin-bottom: 2px;
+  }
+  @keyframes gd-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+  .gd-period {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #f0eeeb;
+  }
+  .gd-clock {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #f0eeeb;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gd-final-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .gd-final-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: #9a9080;
+  }
+  .gd-result {
+    font-size: 20px;
+    font-weight: 900;
+  }
+  .gd-result--win  { color: #4ade80; }
+  .gd-result--loss { color: #f87171; }
+  .gd-result--tie  { color: #a09890; }
+
+  /* ── Situation bar ── */
+  .gd-situation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 6px 20px;
+    background: #1a1a1a;
+    border-top: 1px solid #2a2a2a;
+    font-size: 12px;
+    font-weight: 600;
+    color: #c0b8b0;
+  }
+  .gd-possession { color: #e8a820; }
+  .gd-down-dist  { color: #f0eeeb; }
+
+  /* ── Countdown ── */
+  .gd-countdown {
+    text-align: center;
+    padding: 8px 20px;
+    background: #1a1a1a;
+    border-top: 1px solid #2a2a2a;
+    font-size: 12px;
+    font-weight: 600;
+    color: #a09890;
+  }
+
+  /* ── Play by play ── */
+  .gd-plays {
+    border-top: 1px solid #2a2a2a;
+  }
+  .gd-plays-hd {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9a9080;
+    padding: 8px 14px 4px;
+  }
+  .gd-plays-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .gd-play {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 6px 14px;
+    border-bottom: 1px solid #1e1e1e;
+    transition: background 0.1s;
+  }
+  .gd-play:last-child { border-bottom: none; }
+  .gd-play--scoring {
+    background: #1a1200;
+    border-bottom-color: #2a2000;
+  }
+  .gd-play-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    min-width: 48px;
+    flex-shrink: 0;
+  }
+  .gd-play-score-type {
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    color: #e8a820;
+    background: rgba(232,168,32,0.15);
+    padding: 1px 4px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .gd-play-period {
+    font-size: 9px;
+    color: #9a9080;
+    font-weight: 600;
+  }
+  .gd-play-clock {
+    font-size: 10px;
+    color: #9a9080;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .gd-play-text {
+    font-size: 12px;
+    color: #c0b8b0;
+    line-height: 1.4;
+  }
+  .gd-play--scoring .gd-play-text { color: #e0d8d0; }
+</style>

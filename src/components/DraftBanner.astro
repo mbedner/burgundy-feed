@@ -1,0 +1,650 @@
+---
+import type { DraftInfo, DraftPick } from '../lib/draft';
+import { DRAFT_CONFIG } from '../lib/draft';
+
+interface Props { draft: DraftInfo; }
+const { draft } = Astro.props;
+
+const { year, state, currentRound, onTheClock, recentPicks, washingtonPicks, totalPicks, completedCount } = draft;
+
+const completedWasPicks  = washingtonPicks.filter(p => p.completed);
+const upcomingWasPicks   = washingtonPicks.filter(p => !p.completed);
+
+function ordSuffix(n: number) {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+// Next Washington pick (first upcoming)
+const nextWasPick = upcomingWasPicks[0] ?? null;
+
+// Countdown target: round start time for the next relevant round
+function roundStartIso(): string | null {
+  const round = state === 'pre' ? 1 : currentRound;
+  const info = DRAFT_CONFIG.rounds[round];
+  if (!info) return null;
+  // Build ISO: date + startHour in ET → use fixed offset -04:00 (EDT, April)
+  return `${info.date}T${String(info.startHour).padStart(2,'0')}:00:00-04:00`;
+}
+const countdownIso = roundStartIso();
+---
+
+<div class="dr-banner" id="draftBanner" data-state={state} data-year={year}>
+
+  {/* ── Header bar ── */}
+  <div class="dr-header">
+    <div class="dr-header-left">
+      {state === 'active' && <span class="dr-live-dot"></span>}
+      <span class="dr-title">NFL Draft {year}</span>
+    </div>
+    <div class="dr-header-right">
+      {state === 'pre' && <span class="dr-state-badge dr-state-badge--pre">Upcoming</span>}
+      {state === 'active' && (
+        <span class="dr-state-badge dr-state-badge--active">
+          {ordSuffix(currentRound)} Round · Live
+        </span>
+      )}
+      {state === 'post' && <span class="dr-state-badge dr-state-badge--post">Complete</span>}
+    </div>
+  </div>
+
+  {/* ── On the Clock (active only) ── */}
+  {state === 'active' && onTheClock && (
+    <div class={`dr-clock ${onTheClock.isWashington ? 'dr-clock--was' : ''}`} id="drClock">
+      <div class="dr-clock-label">On the Clock</div>
+      <div class="dr-clock-team" id="drClockTeam">{onTheClock.teamName}</div>
+      <div class="dr-clock-pick" id="drClockPick">
+        Pick #{onTheClock.overall} · {ordSuffix(onTheClock.round)} Rd · #{onTheClock.pick}
+      </div>
+    </div>
+  )}
+
+  {/* ── Pre-draft countdown — sits right below header, above picks ── */}
+  {state === 'pre' && countdownIso && (
+    <div class="dr-countdown">
+      <span class="dr-countdown-label">Round 1 starts in</span>
+      <span class="dr-countdown-timer" id="drCountdown" data-target={countdownIso}>—</span>
+    </div>
+  )}
+
+  {/* ── Body: Washington picks + recent picks (side-by-side on wider screens) ── */}
+  <div class={`dr-body ${(state === 'active' || state === 'post') && recentPicks.length > 0 ? 'dr-body--split' : ''}`}>
+
+    {/* Washington's Picks */}
+    {washingtonPicks.length > 0 && (
+      <div class="dr-was-section">
+        <div class="dr-section-hd">
+          <span class="dr-section-title">Washington's Picks</span>
+          {nextWasPick && state !== 'post' && (
+            <span class="dr-next-pick">Next: #{nextWasPick.overall} ({ordSuffix(nextWasPick.round)} Rd)</span>
+          )}
+        </div>
+        <div class="dr-was-picks" id="drWasPicks">
+          {washingtonPicks.map(pick => (
+            <div class={`dr-was-pick ${pick.completed ? 'dr-was-pick--done' : 'dr-was-pick--upcoming'}`}>
+              <div class="dr-was-pick-meta">
+                <span class="dr-was-pick-round">{ordSuffix(pick.round)}</span>
+                <span class="dr-was-pick-overall">#{pick.overall}</span>
+              </div>
+              {pick.completed ? (
+                <div class="dr-was-pick-player">
+                  <span class="dr-was-pick-name">{pick.playerName}</span>
+                  <span class="dr-was-pick-pos">{pick.position}</span>
+                  {pick.college && <span class="dr-was-pick-college">{pick.college}</span>}
+                </div>
+              ) : (
+                <div class="dr-was-pick-player">
+                  <span class="dr-was-pick-name dr-was-pick-name--tbd">
+                    {state === 'active' && nextWasPick?.overall === pick.overall ? 'Up Next' : 'Upcoming'}
+                  </span>
+                  <span class="dr-was-pick-college">Pick #{pick.pick} in round</span>
+                </div>
+              )}
+              {pick.traded && pick.tradeNote && (
+                <span class="dr-was-pick-trade" title={pick.tradeNote}>via trade</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* Recent Picks (active + post) — right column in split layout */}
+    {(state === 'active' || state === 'post') && recentPicks.length > 0 && (
+      <div class="dr-recent">
+        <div class="dr-section-hd">
+          <span class="dr-section-title">
+            {state === 'post' ? `Draft Complete · ${completedCount} picks` : `Recent Picks · ${completedCount} of ${totalPicks}`}
+          </span>
+        </div>
+        <div class="dr-recent-list" id="drRecentList">
+          {recentPicks.map(pick => (
+            <div class={`dr-pick-row ${pick.isWashington ? 'dr-pick-row--was' : ''}`}>
+              <div class="dr-pick-meta">
+                <span class="dr-pick-num">#{pick.overall}</span>
+                <span class="dr-pick-rnd">Rd {pick.round}</span>
+              </div>
+              <div class="dr-pick-info">
+                <span class="dr-pick-team">{pick.teamAbbr}</span>
+                <span class="dr-pick-player">{pick.playerName}</span>
+              </div>
+              <span class="dr-pick-pos">{pick.position}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+  </div>{/* end dr-body */}
+
+</div>
+
+{/* ── Client-side live updater (active only) ── */}
+{state === 'active' ? (
+  <script define:vars={{ DRAFT_YEAR: year, POLL_MS: 30000 }}>
+    const DRAFT_API = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/draft?season=${DRAFT_YEAR}`;
+    const WAS_ID = '28';
+
+    const POS_MAP = {
+      '1':'WR','7':'TE','8':'QB','9':'RB','10':'FB','11':'K','12':'P',
+      '14':'OT','15':'OG','16':'C','17':'OL','20':'DE','21':'DT','22':'NT',
+      '23':'DL','24':'ILB','25':'OLB','26':'LB','28':'CB','29':'S',
+      '30':'LB','31':'SS','32':'FS','36':'S','91':'OT',
+    };
+
+    function ordSuffix(n) {
+      const s = ['th','st','nd','rd'];
+      const v = n % 100;
+      return n + (s[(v-20)%10] || s[v] || s[0]);
+    }
+    function safeStr(v, fb = '') { return v ? String(v) : fb; }
+
+    async function pollDraft() {
+      try {
+        const res = await fetch(DRAFT_API);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const state = data?.status?.state; // 'pre' | 'in' | 'post'
+        const round = data?.status?.round ?? 1;
+
+        // Build team map
+        const teamMap = new Map();
+        for (const t of data?.teams ?? []) {
+          teamMap.set(String(t.id), {
+            name: safeStr(t.shortDisplayName ?? t.name, 'Unknown'),
+            abbr: safeStr(t.abbreviation, '???'),
+          });
+        }
+
+        // Parse all picks
+        const allPicks = (data?.picks ?? []).map(p => {
+          const teamId = safeStr(p?.teamId);
+          const team = teamMap.get(teamId) ?? { name: 'Unknown', abbr: '???' };
+          const athlete = p?.athlete;
+          const posId = safeStr(athlete?.position?.id);
+          const completed = p?.status === 'COMPLETED' || !!athlete?.displayName;
+          return {
+            overall: p?.overall ?? 0,
+            round: p?.round ?? 1,
+            pick: p?.pick ?? 0,
+            teamId,
+            teamName: team.name,
+            teamAbbr: team.abbr,
+            playerName: safeStr(athlete?.displayName, '—'),
+            position: POS_MAP[posId] ?? safeStr(athlete?.position?.abbreviation, '?'),
+            college: safeStr(athlete?.team?.shortDisplayName ?? athlete?.team?.location, ''),
+            isWashington: teamId === WAS_ID,
+            traded: !!p?.traded,
+            tradeNote: safeStr(p?.tradeNote),
+            completed,
+          };
+        });
+
+        const completedPicks = allPicks.filter(p => p.completed);
+        const clockPick = allPicks.find(p => !p.completed);
+
+        // Update On the Clock
+        const clockEl = document.getElementById('drClock');
+        if (clockEl && clockPick) {
+          const teamEl = document.getElementById('drClockTeam');
+          const pickEl = document.getElementById('drClockPick');
+          if (teamEl) teamEl.textContent = clockPick.teamName;
+          if (pickEl) pickEl.textContent = `Pick #${clockPick.overall} · ${ordSuffix(clockPick.round)} Rd · #${clockPick.pick}`;
+          clockEl.classList.toggle('dr-clock--was', clockPick.isWashington);
+        }
+
+        // Update Washington's picks
+        const wasPicks = allPicks.filter(p => p.isWashington);
+        const wasPicksEl = document.getElementById('drWasPicks');
+        if (wasPicksEl && wasPicks.length) {
+          const nextWas = wasPicks.find(p => !p.completed);
+          wasPicksEl.innerHTML = wasPicks.map(pick => `
+            <div class="dr-was-pick ${pick.completed ? 'dr-was-pick--done' : 'dr-was-pick--upcoming'}">
+              <div class="dr-was-pick-meta">
+                <span class="dr-was-pick-round">${ordSuffix(pick.round)}</span>
+                <span class="dr-was-pick-overall">#${pick.overall}</span>
+              </div>
+              <div class="dr-was-pick-player">
+                ${pick.completed
+                  ? `<span class="dr-was-pick-name">${pick.playerName}</span>
+                     <span class="dr-was-pick-pos">${pick.position}</span>
+                     ${pick.college ? `<span class="dr-was-pick-college">${pick.college}</span>` : ''}`
+                  : `<span class="dr-was-pick-name dr-was-pick-name--tbd">${nextWas?.overall === pick.overall ? 'Up Next' : 'Upcoming'}</span>
+                     <span class="dr-was-pick-college">Pick #${pick.pick} in round</span>`
+                }
+              </div>
+              ${pick.traded && pick.tradeNote ? `<span class="dr-was-pick-trade" title="${pick.tradeNote}">via trade</span>` : ''}
+            </div>
+          `).join('');
+        }
+
+        // Update recent picks list — newest pick always at top
+        const recentPicksData = [...completedPicks].reverse().slice(0, 15);
+        const listEl = document.getElementById('drRecentList');
+        if (listEl && recentPicksData.length) {
+          const prevTopOverall = listEl.querySelector('.dr-pick-num')?.textContent;
+          const newTopOverall  = `#${recentPicksData[0]?.overall}`;
+          const hasNewPick     = prevTopOverall !== newTopOverall;
+
+          listEl.innerHTML = recentPicksData.map((pick, i) => `
+            <div class="dr-pick-row ${pick.isWashington ? 'dr-pick-row--was' : ''} ${i === 0 && hasNewPick ? 'dr-pick-row--new' : ''}">
+              <div class="dr-pick-meta">
+                <span class="dr-pick-num">#${pick.overall}</span>
+                <span class="dr-pick-rnd">Rd ${pick.round}</span>
+              </div>
+              <div class="dr-pick-info">
+                <span class="dr-pick-team">${pick.teamAbbr}</span>
+                <span class="dr-pick-player">${pick.playerName}</span>
+              </div>
+              <span class="dr-pick-pos">${pick.position}</span>
+            </div>
+          `).join('');
+
+          // Always snap back to top so newest pick is in view
+          listEl.scrollTop = 0;
+        }
+
+        // If draft completed, reload for post-draft layout
+        if (state === 'post') { window.location.reload(); }
+
+      } catch (e) { /* silent — retry next poll */ }
+    }
+
+    setInterval(pollDraft, POLL_MS);
+  </script>
+) : null}
+
+{/* ── Pre-draft countdown script ── */}
+{state === 'pre' ? (
+  <script>
+    const el = document.getElementById('drCountdown');
+    if (el) {
+      const target = new Date(el.dataset.target);
+      function update() {
+        const diff = target - Date.now();
+        if (diff <= 0) { el.textContent = 'Starting soon!'; return; }
+        const d = Math.floor(diff / 86400000);
+        const h = Math.floor((diff % 86400000) / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        if (d > 0) {
+          el.textContent = `${d}d ${h}h ${m}m`;
+        } else if (h > 0) {
+          el.textContent = `${h}h ${m}m`;
+        } else {
+          el.textContent = `${m}m`;
+        }
+      }
+      update();
+      setInterval(update, 30000);
+    }
+  </script>
+) : null}
+
+<style>
+  /* ── Banner shell ── */
+  .dr-banner {
+    background: #0f0f0f;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    color: #f0eeeb;
+  }
+
+  /* ── Header bar ── */
+  .dr-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #141414;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .dr-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dr-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: dr-blink 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes dr-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+  .dr-title {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #e8a820;
+  }
+  .dr-state-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .dr-state-badge--pre    { background: #1e1e1e; color: #a09890; border: 1px solid #3a3a3a; }
+  .dr-state-badge--active { background: #3f0a0a; color: #f87171; border: 1px solid #7a1a1a; }
+  .dr-state-badge--post   { background: #1a1a1a; color: #a09890; border: 1px solid #3a3a3a; }
+
+  /* ── On the Clock ── */
+  .dr-clock {
+    padding: 14px 16px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+    text-align: center;
+  }
+  .dr-clock--was {
+    background: #1a1000;
+    border-bottom-color: #2a2000;
+  }
+  .dr-clock-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #9a9080;
+    margin-bottom: 4px;
+  }
+  .dr-clock--was .dr-clock-label { color: #c89010; }
+  .dr-clock-team {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #f0eeeb;
+    line-height: 1.1;
+  }
+  .dr-clock--was .dr-clock-team { color: #e8a820; }
+  .dr-clock-pick {
+    font-size: 11px;
+    color: #9a9080;
+    margin-top: 3px;
+    font-weight: 600;
+  }
+
+  /* ── Section header ── */
+  .dr-section-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 4px;
+    border-bottom: 1px solid #1e1e1e;
+  }
+  .dr-section-title {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9a9080;
+  }
+  .dr-next-pick {
+    font-size: 9px;
+    font-weight: 700;
+    color: #e8a820;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Washington's picks list ── */
+  .dr-was-section {
+    border-bottom: 1px solid #2a2a2a;  /* shown when stacked */
+  }
+  /* In split layout the border is on the right, handled above */
+  .dr-was-picks {
+    display: flex;
+    flex-direction: column;
+    max-height: 210px;
+    overflow-y: auto;
+  }
+  .dr-was-pick {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .dr-was-pick:last-child { border-bottom: none; }
+  .dr-was-pick--done { }
+  .dr-was-pick--upcoming {
+    opacity: 0.55;
+  }
+  .dr-was-pick-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+  .dr-was-pick-round {
+    font-size: 9px;
+    font-weight: 700;
+    color: #9a9080;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dr-was-pick-overall {
+    font-size: 18px;
+    font-weight: 900;
+    color: #e8a820;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .dr-was-pick-player {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .dr-was-pick-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f0eeeb;
+    line-height: 1.2;
+  }
+  .dr-was-pick-name--tbd {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9a9080;
+    font-style: italic;
+  }
+  .dr-was-pick-pos {
+    font-size: 10px;
+    font-weight: 700;
+    color: #e8a820;
+    letter-spacing: 0.06em;
+  }
+  .dr-was-pick-college {
+    font-size: 10px;
+    color: #9a9080;
+  }
+  .dr-was-pick-trade {
+    font-size: 9px;
+    font-weight: 700;
+    color: #c89010;
+    background: rgba(232,168,32,0.12);
+    border: 1px solid rgba(232,168,32,0.25);
+    padding: 1px 5px;
+    border-radius: 3px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    align-self: center;
+  }
+
+  /* ── Pre-draft countdown ── */
+  .dr-countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #1a1000;
+    border-bottom: 1px solid #2a2000;
+  }
+  .dr-countdown-label {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #b08020;
+  }
+  .dr-countdown-timer {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: #e8a820;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Body split layout ── */
+  .dr-body {
+    display: flex;
+    flex-direction: column;
+  }
+  /* On wider screens: Washington picks left, recent picks right */
+  @media (min-width: 480px) {
+    .dr-body--split {
+      flex-direction: row;
+    }
+    /* Each section gets its own definite height — this is what enables scroll */
+    .dr-body--split .dr-was-section {
+      flex: 0 0 48%;
+      height: 320px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid #2a2a2a;
+      border-bottom: none;
+    }
+    .dr-body--split .dr-was-picks {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+      overflow-y: auto;
+    }
+    .dr-body--split .dr-recent {
+      flex: 1;
+      height: 320px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .dr-body--split .dr-recent-list {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+      overflow-y: auto;
+    }
+  }
+
+  /* ── Recent picks list ── */
+  .dr-recent { }
+  .dr-recent-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .dr-pick-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .dr-pick-row:last-child { border-bottom: none; }
+  .dr-pick-row--was {
+    background: #1a1000;
+    border-bottom-color: #2a2000;
+  }
+  /* Flash on newly arrived pick */
+  @keyframes dr-new-pick {
+    0%   { background: #1e2a1e; }
+    100% { background: transparent; }
+  }
+  .dr-pick-row--new {
+    animation: dr-new-pick 1.2s ease-out forwards;
+  }
+  .dr-pick-row--was.dr-pick-row--new {
+    animation: none; /* WAS rows keep their gold bg, no flash needed */
+  }
+  .dr-pick-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    align-items: flex-start;
+  }
+  .dr-pick-num {
+    font-size: 12px;
+    font-weight: 800;
+    color: #f0eeeb;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .dr-pick-row--was .dr-pick-num { color: #e8a820; }
+  .dr-pick-rnd {
+    font-size: 9px;
+    color: #9a9080;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .dr-pick-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .dr-pick-team {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #a09890;
+    text-transform: uppercase;
+  }
+  .dr-pick-row--was .dr-pick-team { color: #e8a820; }
+  .dr-pick-player {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c0b8b0;
+    line-height: 1.2;
+  }
+  .dr-pick-row--was .dr-pick-player { color: #f0eeeb; }
+  .dr-pick-pos {
+    font-size: 10px;
+    font-weight: 700;
+    color: #9a9080;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    align-self: center;
+  }
+  .dr-pick-row--was .dr-pick-pos { color: #c89010; }
+</style>
