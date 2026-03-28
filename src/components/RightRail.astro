@@ -3,11 +3,11 @@ import TeamDates from './TeamDates.astro';
 import Schedule  from './Schedule.astro';
 import TeamStats from './TeamStats.astro';
 
-const { dates, schedule, stats, players } = Astro.props;
+const { dates, schedule, lastSeason, stats, players } = Astro.props;
 ---
 
 <div class="rail">
-  <Schedule schedule={schedule} />
+  <Schedule schedule={schedule} lastSeason={lastSeason} />
   <div class="rail-sep"></div>
   <TeamStats stats={stats} players={players} />
   <div class="rail-sep"></div>

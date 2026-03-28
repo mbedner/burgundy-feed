@@ -3,7 +3,7 @@ import type { StoredData } from '../lib/types';
 import type { LiveStats } from '../lib/espn';
 import { readAll } from '../lib/kv';
 import { SITE } from '../config/site';
-import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS } from '../config/schedule';
+import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS, LAST_SEASON } from '../config/schedule';
 import { FEATURED_PLAYERS } from '../config/players';
 import { REPORTER_CONFIG } from '../config/reporters';
 
@@ -473,6 +473,7 @@ const lastUpdated = lastRun;
         <RightRail
           dates={IMPORTANT_DATES}
           schedule={UPCOMING_SCHEDULE}
+          lastSeason={LAST_SEASON}
           stats={stats}
           players={FEATURED_PLAYERS}
         />

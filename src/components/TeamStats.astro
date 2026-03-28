@@ -1,5 +1,6 @@
 ---
-import type { TEAM_STATS, FEATURED_PLAYERS } from '../config/schedule';
+import type { TEAM_STATS } from '../config/schedule';
+import type { FEATURED_PLAYERS } from '../config/players';
 interface Props { stats: typeof TEAM_STATS; players: typeof FEATURED_PLAYERS; }
 const { stats, players } = Astro.props;
 

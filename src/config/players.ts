@@ -18,13 +18,6 @@ export const FEATURED_PLAYERS = [
     note:     'Still open. Always.',
   },
   {
-    id:       'brian-robinson',
-    name:     'Brian Robinson Jr.',
-    number:   8,
-    position: 'RB',
-    note:     'Built different.',
-  },
-  {
     id:       'daron-payne',
     name:     'Daron Payne',
     number:   94,
@@ -32,10 +25,17 @@ export const FEATURED_PLAYERS = [
     note:     'Interior pressure monster.',
   },
   {
-    id:       'noah-brown',
-    name:     'Noah Brown',
-    number:   85,
-    position: 'WR',
-    note:     'The veteran presence.',
+    id:       'rachaad-white',
+    name:     'Rachaad White',
+    number:   27,
+    position: 'RB',
+    note:     'The new backfield engine.',
+  },
+  {
+    id:       'odafe-oweh',
+    name:     'Odafe Oweh',
+    number:   99,
+    position: 'EDGE',
+    note:     'Pass-rush upgrade from Baltimore.',
   },
 ];
