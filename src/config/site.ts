@@ -32,4 +32,4 @@ export const SITE = {
 export const BREAKING_THRESHOLD = 72;
 
 // Minimum Commanders relevance score to include a story at all (0–100)
-export const MIN_RELEVANCE_SCORE = 20;
+export const MIN_RELEVANCE_SCORE = 10;
