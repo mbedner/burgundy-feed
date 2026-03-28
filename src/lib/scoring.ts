@@ -71,9 +71,10 @@ export function scoreRelevance(title: string, summary: string): number {
   // General keyword matches supplement
   score += Math.min(kwMatches * 8, 30);
 
-  // Broad NFL context gives a small bump if no direct mention yet
-  if (score < 20 && nflContext > 0) {
-    score += Math.min(nflContext * 5, 15);
+  // Broad NFL context gives a bump — articles covering all 32 teams
+  // (draft boards, free agency rankings, cap analysis) will mention Washington
+  if (nflContext > 0) {
+    score += Math.min(nflContext * 6, 20);
   }
 
   return Math.min(score, 100);
