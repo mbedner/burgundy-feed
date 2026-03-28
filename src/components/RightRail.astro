@@ -7,11 +7,15 @@ const { dates, schedule, lastSeason, stats, players } = Astro.props;
 ---
 
 <div class="rail">
-  <Schedule schedule={schedule} lastSeason={lastSeason} />
-  <div class="rail-sep"></div>
-  <TeamStats stats={stats} players={players} />
-  <div class="rail-sep"></div>
-  <TeamDates dates={dates} />
+  <div class="rail-section">
+    <Schedule schedule={schedule} lastSeason={lastSeason} />
+  </div>
+  <div class="rail-section">
+    <TeamStats stats={stats} players={players} />
+  </div>
+  <div class="rail-section">
+    <TeamDates dates={dates} />
+  </div>
 </div>
 
 <style>
@@ -22,9 +26,9 @@ const { dates, schedule, lastSeason, stats, players } = Astro.props;
     padding-bottom: 32px;
     align-self: start;
   }
-  .rail-sep {
-    height: 1px;
-    background: var(--border);
-    margin: 14px 0;
+  .rail-section + .rail-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
   }
 </style>

@@ -9,6 +9,8 @@ function ordinal(n: number): string {
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
+
+const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
 ---
 
 <div class="module">
@@ -19,14 +21,15 @@ function ordinal(n: number): string {
     <span class="div-rec">{stats.divisionRecord} DIV</span>
   </div>
 
+  <!-- Rank grid: offense rank, defense rank, PPG, points allowed -->
   <div class="rank-grid">
     <div class="rank-cell">
       <span class="rank-val rank-val--off">{ordinal(stats.offenseRank)}</span>
-      <span class="rank-lbl">Offense</span>
+      <span class="rank-lbl">Off Rank</span>
     </div>
     <div class="rank-cell">
       <span class="rank-val rank-val--def">{ordinal(stats.defenseRank)}</span>
-      <span class="rank-lbl">Defense</span>
+      <span class="rank-lbl">Def Rank</span>
     </div>
     <div class="rank-cell">
       <span class="rank-val">{stats.pointsPerGame}</span>
@@ -34,10 +37,27 @@ function ordinal(n: number): string {
     </div>
     <div class="rank-cell">
       <span class="rank-val">{stats.pointsAllowed}</span>
-      <span class="rank-lbl">OPP</span>
+      <span class="rank-lbl">Opp PPG</span>
     </div>
   </div>
 
+  <!-- Yards per game breakdown -->
+  <div class="yards-grid">
+    <div class="yards-cell">
+      <span class="yards-val">{stats.passYardsPerGame}</span>
+      <span class="yards-lbl">Pass Yds/G</span>
+    </div>
+    <div class="yards-cell">
+      <span class="yards-val">{stats.rushYardsPerGame}</span>
+      <span class="yards-lbl">Rush Yds/G</span>
+    </div>
+    <div class="yards-cell yards-cell--total">
+      <span class="yards-val">{totalYards}</span>
+      <span class="yards-lbl">Total Yds/G</span>
+    </div>
+  </div>
+
+  <!-- Season leaders -->
   <div class="leaders">
     {Object.entries(stats.leaders).map(([key, val]) => (
       <div class="leader-row">
@@ -50,6 +70,7 @@ function ordinal(n: number): string {
     ))}
   </div>
 
+  <!-- Player spotlight -->
   {players.length > 0 && (
     <div class="spotlight">
       <div class="spotlight-hd">Spotlight</div>
@@ -102,12 +123,13 @@ function ordinal(n: number): string {
     letter-spacing: 0.04em;
   }
 
+  /* ── Rank grid ── */
   .rank-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     border: 1px solid var(--border);
     background: var(--surface-2);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     border-radius: 4px;
     overflow: hidden;
   }
@@ -132,12 +154,51 @@ function ordinal(n: number): string {
   .rank-lbl {
     font-size: 9px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     color: var(--text-3);
     font-weight: 600;
+    text-align: center;
   }
 
-  .leaders { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; }
+  /* ── Yards grid ── */
+  .yards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    margin-bottom: 12px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .yards-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 4px;
+    border-right: 1px solid var(--border);
+    gap: 2px;
+  }
+  .yards-cell:last-child { border-right: none; }
+  .yards-cell--total { background: var(--surface-3); }
+  .yards-val {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .yards-lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-3);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  /* ── Leaders ── */
+  .leaders { display: flex; flex-direction: column; gap: 0; margin-bottom: 0; }
   .leader-row {
     display: flex;
     align-items: center;
@@ -171,7 +232,9 @@ function ordinal(n: number): string {
     text-align: right;
   }
 
-  .spotlight { margin-bottom: 8px; }
+  /* ── Spotlight ── */
+  /* No border-top here — spacing alone separates it from leaders */
+  .spotlight { margin-top: 16px; }
   .spotlight-hd {
     font-size: 10px;
     font-weight: 700;
@@ -179,8 +242,6 @@ function ordinal(n: number): string {
     text-transform: uppercase;
     color: var(--text-4);
     margin-bottom: 6px;
-    padding-top: 4px;
-    border-top: 1px solid var(--border);
   }
   .player-row {
     display: flex;
@@ -218,7 +279,7 @@ function ordinal(n: number): string {
     font-size: 10px;
     color: var(--text-4);
     text-align: right;
-    margin-top: 4px;
+    margin-top: 6px;
   }
   .live-badge { color: var(--live-dot); font-weight: 600; }
 </style>
