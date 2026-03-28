@@ -1,0 +1,56 @@
+---
+import type { Article } from '../lib/types';
+import StoryItem from './StoryItem.astro';
+interface Props { items: Article[]; }
+const { items } = Astro.props;
+
+const hot   = items.filter(i => i.score >= 75);
+const fresh = items.filter(i => i.score >= 50 && i.score < 75);
+const rest  = items.filter(i => i.score < 50);
+const useGroups = hot.length >= 2 && fresh.length >= 2;
+
+let rank = 1;
+---
+
+<div class="stream">
+  {useGroups ? (
+    <>
+      {hot.length > 0 && (
+        <div class="stream-group">
+          <div class="group-lbl">Major News</div>
+          {hot.map(item => <StoryItem item={item} rank={rank++} />)}
+        </div>
+      )}
+      {fresh.length > 0 && (
+        <div class="stream-group">
+          <div class="group-lbl">Fresh Takes</div>
+          {fresh.map(item => <StoryItem item={item} rank={rank++} />)}
+        </div>
+      )}
+      {rest.length > 0 && (
+        <div class="stream-group">
+          <div class="group-lbl">National Chatter</div>
+          {rest.map(item => <StoryItem item={item} rank={rank++} />)}
+        </div>
+      )}
+    </>
+  ) : (
+    <div class="stream-group">
+      {items.map(item => <StoryItem item={item} rank={rank++} />)}
+    </div>
+  )}
+</div>
+
+<style>
+  .stream { padding-bottom: 16px; }
+  .group-lbl {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    padding: 20px 0 4px;
+    border-top: 1px solid var(--border);
+  }
+  .stream-group:first-child .group-lbl { border-top: none; padding-top: 4px; }
+</style>

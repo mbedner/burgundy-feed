@@ -1,0 +1,224 @@
+---
+import type { TEAM_STATS, FEATURED_PLAYERS } from '../config/schedule';
+interface Props { stats: typeof TEAM_STATS; players: typeof FEATURED_PLAYERS; }
+const { stats, players } = Astro.props;
+
+function ordinal(n: number): string {
+  const s = ['th','st','nd','rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+---
+
+<div class="module">
+  <div class="module-hd">Team Stats — {stats.season}</div>
+
+  <div class="record-row">
+    <span class="record">{stats.record}</span>
+    <span class="div-rec">{stats.divisionRecord} DIV</span>
+  </div>
+
+  <div class="rank-grid">
+    <div class="rank-cell">
+      <span class="rank-val rank-val--off">{ordinal(stats.offenseRank)}</span>
+      <span class="rank-lbl">Offense</span>
+    </div>
+    <div class="rank-cell">
+      <span class="rank-val rank-val--def">{ordinal(stats.defenseRank)}</span>
+      <span class="rank-lbl">Defense</span>
+    </div>
+    <div class="rank-cell">
+      <span class="rank-val">{stats.pointsPerGame}</span>
+      <span class="rank-lbl">PPG</span>
+    </div>
+    <div class="rank-cell">
+      <span class="rank-val">{stats.pointsAllowed}</span>
+      <span class="rank-lbl">OPP</span>
+    </div>
+  </div>
+
+  <div class="leaders">
+    {Object.entries(stats.leaders).map(([key, val]) => (
+      <div class="leader-row">
+        <span class="leader-cat">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+        <div class="leader-right">
+          <span class="leader-name">{val.name}</span>
+          <span class="leader-stat">{val.stat}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {players.length > 0 && (
+    <div class="spotlight">
+      <div class="spotlight-hd">Spotlight</div>
+      {players.map(p => (
+        <div class="player-row">
+          <span class="player-num">#{p.number}</span>
+          <div class="player-info">
+            <span class="player-name">{p.name}</span>
+            <span class="player-note">{p.note}</span>
+          </div>
+          <span class="player-pos">{p.position}</span>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <div class="stats-footer">
+    {'source' in stats && stats.source === 'espn'
+      ? <span class="live-badge">● Live via ESPN</span>
+      : <span>Fallback — live data after first ingest</span>
+    }
+  </div>
+</div>
+
+<style>
+  .module-hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .record-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .record {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    line-height: 1;
+  }
+  .div-rec {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    letter-spacing: 0.04em;
+  }
+
+  .rank-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    margin-bottom: 12px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .rank-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border-right: 1px solid var(--border);
+    gap: 2px;
+  }
+  .rank-cell:last-child { border-right: none; }
+  .rank-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+  .rank-val--off { color: var(--gold); }
+  .rank-val--def { color: var(--gold); }
+  .rank-lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    font-weight: 600;
+  }
+
+  .leaders { display: flex; flex-direction: column; gap: 0; margin-bottom: 12px; }
+  .leader-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .leader-cat {
+    font-size: 11px;
+    color: var(--text-3);
+    white-space: nowrap;
+    min-width: 100px;
+    text-transform: capitalize;
+  }
+  .leader-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+  .leader-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: right;
+  }
+  .leader-stat {
+    font-size: 11px;
+    color: var(--text-3);
+    text-align: right;
+  }
+
+  .spotlight { margin-bottom: 8px; }
+  .spotlight-hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    margin-bottom: 6px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .player-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .player-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--accent);
+    width: 26px;
+    flex-shrink: 0;
+  }
+  .player-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .player-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .player-note { font-size: 11px; color: var(--text-3); font-style: italic; }
+  .player-pos {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 2px 5px;
+    border-radius: 3px;
+  }
+
+  .stats-footer {
+    font-size: 10px;
+    color: var(--text-4);
+    text-align: right;
+    margin-top: 4px;
+  }
+  .live-badge { color: var(--live-dot); font-weight: 600; }
+</style>

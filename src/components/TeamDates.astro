@@ -1,0 +1,102 @@
+---
+import type { IMPORTANT_DATES } from '../config/schedule';
+interface Props { dates: typeof IMPORTANT_DATES; }
+const { dates } = Astro.props;
+
+const now = new Date();
+function daysUntil(d: string): number {
+  return Math.ceil((new Date(d + 'T12:00:00').getTime() - now.getTime()) / 86400000);
+}
+function fmt(d: string): string {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+const sorted = dates
+  .map(d => ({ ...d, days: daysUntil(d.date) }))
+  .sort((a, b) => a.days - b.days);
+
+const future = sorted.filter(d => d.days >= 0).slice(0, 8);
+const past   = sorted.filter(d => d.days < 0).slice(-3);
+---
+
+<div class="module">
+  <div class="module-hd">Key Dates</div>
+  <div class="dates-list">
+    {future.map(d => (
+      <div class={`date-row ${d.days <= 7 ? 'date-row--soon' : ''}`}>
+        <div class="date-when">
+          <span class="date-mmdd">{fmt(d.date)}</span>
+          <span class="date-cd">{d.days === 0 ? 'TODAY' : `${d.days}d`}</span>
+        </div>
+        <div class="date-detail">
+          <span class="date-lbl">{d.label}</span>
+          {d.note && <span class="date-note">{d.note}</span>}
+        </div>
+      </div>
+    ))}
+  </div>
+  {past.length > 0 && (
+    <div class="past-dates">
+      <div class="past-hd">Past</div>
+      {past.map(d => (
+        <div class="date-row date-row--past">
+          <span class="date-mmdd">{fmt(d.date)}</span>
+          <span class="date-lbl">{d.label}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+<style>
+  .module-hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .dates-list { display: flex; flex-direction: column; }
+  .date-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .date-row--past  { opacity: 0.45; }
+  .date-row--soon .date-lbl { color: var(--accent); font-weight: 700; }
+  .date-when {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 42px;
+    flex-shrink: 0;
+  }
+  .date-mmdd {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .date-cd {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text-4);
+    letter-spacing: 0.04em;
+  }
+  .date-row--soon .date-cd { color: var(--accent); }
+  .date-detail { display: flex; flex-direction: column; gap: 2px; }
+  .date-lbl  { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.2; }
+  .date-note { font-size: 10px; color: var(--text-3); font-style: italic; }
+  .past-dates { margin-top: 8px; }
+  .past-hd {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    margin-bottom: 4px;
+  }
+</style>

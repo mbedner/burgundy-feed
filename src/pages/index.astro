@@ -1,0 +1,492 @@
+---
+import type { StoredData } from '../lib/types';
+import type { LiveStats } from '../lib/espn';
+import { readAll } from '../lib/kv';
+import { SITE } from '../config/site';
+import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS } from '../config/schedule';
+import { FEATURED_PLAYERS } from '../config/players';
+import { REPORTER_CONFIG } from '../config/reporters';
+
+import Masthead       from '../components/Masthead.astro';
+import BreakingTicker from '../components/BreakingTicker.astro';
+import LeadStories    from '../components/LeadStories.astro';
+import NewsStream     from '../components/NewsStream.astro';
+import RightRail      from '../components/RightRail.astro';
+import ReporterVoices from '../components/ReporterVoices.astro';
+
+import type { Article, BreakingItem } from '../lib/types';
+
+// ── DEV MOCK DATA ─────────────────────────────────────────────────────────────
+// Replace with KV reads once deployed. Remove this block and uncomment the
+// KV section below when you go live.
+function minsAgo(m: number) { return new Date(Date.now() - m * 60000).toISOString(); }
+
+const mockArticles: Article[] = [
+  {
+    id: '1', sourceId: 'washington-post', sourceName: 'Washington Post',
+    sourceUrl: 'https://washingtonpost.com', canonicalUrl: 'https://washingtonpost.com',
+    author: 'Nicki Jhabvala', publishedAt: minsAgo(18), ingestedAt: minsAgo(15),
+    originalHeadline: 'Commanders sign edge rusher Dante Fowler Jr. to bolster pass rush',
+    displayHeadline: 'Good news, actually: Commanders add edge rusher Dante Fowler Jr.',
+    summary: 'Washington continued to reshape its defensive front Wednesday, agreeing to terms with veteran edge rusher Dante Fowler Jr. on a one-year deal, per sources.',
+    tags: ['signing', 'defense', 'roster', 'good'], score: 92, relevanceScore: 98, isBreaking: true, sentiment: 'positive',
+  },
+  {
+    id: '2', sourceId: 'espn-nfl', sourceName: 'ESPN',
+    sourceUrl: 'https://espn.com', canonicalUrl: 'https://espn.com',
+    author: 'John Keim', publishedAt: minsAgo(34), ingestedAt: minsAgo(30),
+    originalHeadline: 'Jayden Daniels named to initial Pro Bowl roster as alternate',
+    displayHeadline: 'Mark the date: Jayden Daniels earns Pro Bowl nod as alternate.',
+    summary: 'The second-year quarterback was added to the NFC Pro Bowl roster following an injury to another quarterback, the NFL announced Tuesday.',
+    tags: ['QB', 'good'], score: 89, relevanceScore: 97, isBreaking: false, sentiment: 'positive',
+  },
+  {
+    id: '3', sourceId: 'the-athletic', sourceName: 'The Athletic',
+    sourceUrl: 'https://theathletic.com', canonicalUrl: 'https://theathletic.com',
+    author: 'Ben Standig', publishedAt: minsAgo(52), ingestedAt: minsAgo(48),
+    originalHeadline: 'Commanders restructure Daron Payne contract, creating $14M in cap space',
+    displayHeadline: 'Commanders kick the can with Payne restructure, free up $14M.',
+    summary: 'Washington freed up significant salary-cap room by restructuring defensive tackle Daron Payne\'s deal ahead of the legal tampering window.',
+    tags: ['cap', 'roster', 'defense'], score: 85, relevanceScore: 95, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '4', sourceId: 'commanders-wire', sourceName: 'Commanders Wire',
+    sourceUrl: 'https://commanderswire.com', canonicalUrl: 'https://commanderswire.com',
+    author: 'Mitch Tischler', publishedAt: minsAgo(71), ingestedAt: minsAgo(68),
+    originalHeadline: 'Commanders to host top wide receiver prospects at local day visits',
+    displayHeadline: 'Commanders host WR prospects — the search for McLaurin\'s sidekick continues.',
+    summary: 'Washington brought in several wide receiver prospects for local visits this week as the front office evaluates options to add a No. 2 receiver opposite Terry McLaurin.',
+    tags: ['draft', 'offense', 'roster'], score: 81, relevanceScore: 96, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '5', sourceId: 'nbcs-washington', sourceName: 'NBC Sports Washington',
+    sourceUrl: 'https://nbcsports.com/washington', canonicalUrl: 'https://nbcsports.com/washington',
+    author: 'JP Finlay', publishedAt: minsAgo(88), ingestedAt: minsAgo(85),
+    originalHeadline: 'Brian Robinson Jr. nursing hamstring strain ahead of OTAs',
+    displayHeadline: 'Right on schedule: Brian Robinson nursing a hamstring heading into OTAs.',
+    summary: 'Running back Brian Robinson Jr. is managing a mild hamstring strain and is considered day-to-day as the team prepares to open organized team activities.',
+    tags: ['injury', 'offense', 'bad'], score: 80, relevanceScore: 97, isBreaking: false, sentiment: 'negative',
+  },
+  {
+    id: '6', sourceId: 'espn-nfl', sourceName: 'ESPN',
+    sourceUrl: 'https://espn.com/2', canonicalUrl: 'https://espn.com/2',
+    author: 'Adam Schefter', publishedAt: minsAgo(105), ingestedAt: minsAgo(100),
+    originalHeadline: 'NFC East salary cap projections: How Washington stacks up entering free agency',
+    displayHeadline: 'NFC East cap projections — Washington\'s in fine shape, all things considered.',
+    summary: 'A breakdown of where all four NFC East teams stand against the salary cap as the league year approaches.',
+    tags: ['cap', 'analysis'], score: 74, relevanceScore: 72, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '7', sourceId: 'washington-post', sourceName: 'Washington Post',
+    sourceUrl: 'https://washingtonpost.com/2', canonicalUrl: 'https://washingtonpost.com/2',
+    author: 'Sam Fortier', publishedAt: minsAgo(130), ingestedAt: minsAgo(125),
+    originalHeadline: 'Adam Peters on draft strategy: "We want the best player available"',
+    displayHeadline: 'Adam Peters goes full BPA on draft philosophy. Genuinely encouraging.',
+    summary: 'General manager Adam Peters spoke to reporters Wednesday about the team\'s approach to the upcoming draft, emphasizing flexibility over position-driven selections.',
+    tags: ['draft', 'analysis'], score: 73, relevanceScore: 94, isBreaking: false, sentiment: 'positive',
+  },
+  {
+    id: '8', sourceId: 'cbs-sports-nfl', sourceName: 'CBS Sports',
+    sourceUrl: 'https://cbssports.com', canonicalUrl: 'https://cbssports.com',
+    author: 'Jonathan Jones', publishedAt: minsAgo(150), ingestedAt: minsAgo(145),
+    originalHeadline: 'Terry McLaurin extension talks remain ongoing but no deal imminent',
+    displayHeadline: 'Terry McLaurin extension "ongoing." So: still not done.',
+    summary: 'Negotiations between Washington and wide receiver Terry McLaurin on a contract extension have not stalled but a deal is not expected before the start of the league year.',
+    tags: ['cap', 'offense', 'rumor'], score: 72, relevanceScore: 96, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '9', sourceId: 'hogs-haven', sourceName: 'Hogs Haven',
+    sourceUrl: 'https://hogshaven.com', canonicalUrl: 'https://hogshaven.com',
+    author: null, publishedAt: minsAgo(175), ingestedAt: minsAgo(170),
+    originalHeadline: 'Grading Washington\'s offseason moves so far: A mixed bag with upside',
+    displayHeadline: 'Grading the offseason: mixed bag, real upside, familiar anxiety.',
+    summary: 'A detailed look at how each of Washington\'s free agency moves grades out and what they mean for the 2025 roster.',
+    tags: ['analysis', 'roster'], score: 68, relevanceScore: 91, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '10', sourceId: 'theringer-nfl', sourceName: 'The Ringer',
+    sourceUrl: 'https://theringer.com', canonicalUrl: 'https://theringer.com',
+    author: 'Kevin Clark', publishedAt: minsAgo(200), ingestedAt: minsAgo(195),
+    originalHeadline: 'Daniels has the makings of a generational dual-threat quarterback',
+    displayHeadline: 'The Ringer goes long on Daniels: "generational dual-threat." No notes.',
+    summary: 'An analytical deep-dive into Jayden Daniels\' first NFL season and what the tape suggests about his long-term ceiling.',
+    tags: ['QB', 'analysis', 'good'], score: 67, relevanceScore: 88, isBreaking: false, sentiment: 'positive',
+  },
+  {
+    id: '11', sourceId: 'nfl-dot-com', sourceName: 'NFL.com',
+    sourceUrl: 'https://nfl.com', canonicalUrl: 'https://nfl.com',
+    author: 'Ian Rapoport', publishedAt: minsAgo(230), ingestedAt: minsAgo(225),
+    originalHeadline: 'Commanders among teams interested in veteran safety on trade market',
+    displayHeadline: 'Commanders sniffing around safety trade market. Adding to the pile.',
+    summary: 'Washington is one of several teams that has expressed interest in a veteran safety who has been made available via trade, sources tell NFL Network.',
+    tags: ['trade', 'defense', 'rumor'], score: 65, relevanceScore: 85, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '12', sourceId: 'si-nfl', sourceName: 'Sports Illustrated',
+    sourceUrl: 'https://si.com', canonicalUrl: 'https://si.com',
+    author: null, publishedAt: minsAgo(260), ingestedAt: minsAgo(255),
+    originalHeadline: 'Dan Quinn emerging as Coach of the Year candidate after turnaround season',
+    displayHeadline: 'Dan Quinn Coach of the Year conversation is real. That\'s where we are.',
+    summary: 'After leading Washington to a 12-5 record and playoff run in his first season, Quinn has entered the national conversation for the league\'s top coaching honor.',
+    tags: ['coach', 'good'], score: 63, relevanceScore: 90, isBreaking: false, sentiment: 'positive',
+  },
+  {
+    id: '13', sourceId: 'wtop', sourceName: 'WTOP',
+    sourceUrl: 'https://wtop.com', canonicalUrl: 'https://wtop.com',
+    author: null, publishedAt: minsAgo(290), ingestedAt: minsAgo(285),
+    originalHeadline: 'RFK Stadium development timeline faces new regulatory hurdles',
+    displayHeadline: 'RFK Stadium timeline hits more hurdles. Checks out.',
+    summary: 'The proposed redevelopment of the RFK Stadium site is facing additional regulatory review that could push the project\'s timeline back further.',
+    tags: ['stadium', 'weird'], score: 61, relevanceScore: 82, isBreaking: false, sentiment: 'negative',
+  },
+  {
+    id: '14', sourceId: 'commanders-wire', sourceName: 'Commanders Wire',
+    sourceUrl: 'https://commanderswire.com/2', canonicalUrl: 'https://commanderswire.com/2',
+    author: 'Zach Selby', publishedAt: minsAgo(320), ingestedAt: minsAgo(315),
+    originalHeadline: 'Washington releases updated depth chart heading into minicamp',
+    displayHeadline: 'Updated depth chart out — read it like a tea leaf.',
+    summary: 'The Commanders released their latest unofficial depth chart as the team prepares for mandatory minicamp this week.',
+    tags: ['roster'], score: 58, relevanceScore: 93, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '15', sourceId: 'bleacher-report', sourceName: 'Bleacher Report',
+    sourceUrl: 'https://bleacherreport.com', canonicalUrl: 'https://bleacherreport.com',
+    author: null, publishedAt: minsAgo(360), ingestedAt: minsAgo(355),
+    originalHeadline: 'NFL mock draft 2025: Commanders add interior offensive lineman in round 2',
+    displayHeadline: 'Mock draft has Washington taking interior OL in round 2. Bold and correct.',
+    summary: 'The latest mock draft from Bleacher Report slots Washington with a guard in the second round to address one of the team\'s lingering offensive line concerns.',
+    tags: ['draft', 'offense'], score: 54, relevanceScore: 79, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '16', sourceId: 'cbs-sports-nfl', sourceName: 'CBS Sports',
+    sourceUrl: 'https://cbssports.com/2', canonicalUrl: 'https://cbssports.com/2',
+    author: 'Pete Prisco', publishedAt: minsAgo(400), ingestedAt: minsAgo(395),
+    originalHeadline: 'Power rankings: Commanders hold steady at No. 8 after busy offseason',
+    displayHeadline: 'Power rankings say No. 8. Respectable. Suspicious. Fine.',
+    summary: 'Washington remains in the top 10 of CBS Sports\' power rankings after a flurry of offseason activity.',
+    tags: ['analysis', 'national'], score: 50, relevanceScore: 68, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '17', sourceId: 'fox-sports-nfl', sourceName: 'Fox Sports',
+    sourceUrl: 'https://foxsports.com', canonicalUrl: 'https://foxsports.com',
+    author: null, publishedAt: minsAgo(440), ingestedAt: minsAgo(435),
+    originalHeadline: 'Commanders among three teams on Chase Young\'s preferred destination list',
+    displayHeadline: 'Chase Young reportedly wants back in. This would be very Washington.',
+    summary: 'Defensive end Chase Young, the second overall pick in 2020, has Washington on his list of preferred landing spots if a deal materializes.',
+    tags: ['trade', 'defense', 'rumor', 'weird'], score: 47, relevanceScore: 75, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '18', sourceId: 'touchdown-wire', sourceName: 'Touchdown Wire',
+    sourceUrl: 'https://touchdownwire.com', canonicalUrl: 'https://touchdownwire.com',
+    author: null, publishedAt: minsAgo(490), ingestedAt: minsAgo(485),
+    originalHeadline: 'Every team\'s best cap move of the offseason — Washington edition',
+    displayHeadline: 'Best cap move of the offseason? The Commanders list is short but defensible.',
+    summary: 'A league-wide look at each team\'s most impactful salary cap decision so far this offseason.',
+    tags: ['cap', 'analysis', 'national'], score: 43, relevanceScore: 60, isBreaking: false, sentiment: 'neutral',
+  },
+  {
+    id: '19', sourceId: 'si-nfl', sourceName: 'Sports Illustrated',
+    sourceUrl: 'https://si.com/2', canonicalUrl: 'https://si.com/2',
+    author: null, publishedAt: minsAgo(540), ingestedAt: minsAgo(535),
+    originalHeadline: 'Jeremy Chinn quietly becoming one of league\'s best safeties',
+    displayHeadline: 'Jeremy Chinn quietly becoming one of the best safeties in the league.',
+    summary: 'A profile of how the veteran safety has transformed Washington\'s back end and earned national recognition after a standout season.',
+    tags: ['defense', 'analysis', 'good'], score: 41, relevanceScore: 72, isBreaking: false, sentiment: 'positive',
+  },
+  {
+    id: '20', sourceId: 'hogs-haven', sourceName: 'Hogs Haven',
+    sourceUrl: 'https://hogshaven.com/2', canonicalUrl: 'https://hogshaven.com/2',
+    author: null, publishedAt: minsAgo(600), ingestedAt: minsAgo(595),
+    originalHeadline: 'Jamin Davis entering contract year with something to prove',
+    displayHeadline: 'Jamin Davis enters contract year. Should be motivated. Hopefully.',
+    summary: 'The linebacker heads into 2025 on the final year of his rookie deal with a chance to cash in after a strong second half of last season.',
+    tags: ['defense', 'cap', 'roster'], score: 38, relevanceScore: 88, isBreaking: false, sentiment: 'neutral',
+  },
+];
+
+const mockBreaking: BreakingItem[] = [
+  {
+    id: 'b1',
+    headline: 'Commanders sign edge rusher Dante Fowler Jr. to one-year deal',
+    sourceUrl: 'https://washingtonpost.com',
+    sourceName: 'Washington Post',
+    detectedAt: minsAgo(18),
+  },
+];
+
+// ── LIVE DATA (uncomment when deployed to Cloudflare) ─────────────────────────
+// let data: StoredData = { articles: [], breaking: [], lastRun: null };
+// let liveStats: LiveStats | null = null;
+// try {
+//   const kv = (Astro.locals as any).runtime?.env?.ARTICLES_KV;
+//   if (kv) {
+//     const [allData, statsRaw] = await Promise.all([readAll(kv), kv.get('stats:snapshot')]);
+//     data = allData;
+//     if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
+//   }
+// } catch (_e) {}
+// const stats = liveStats ?? { ...TEAM_STATS, source: 'fallback' as const };
+// const { articles, breaking, lastRun } = data;
+// ─────────────────────────────────────────────────────────────────────────────
+
+const articles  = mockArticles;
+const breaking  = mockBreaking;
+const lastRun   = null;
+const stats     = { ...TEAM_STATS, source: 'fallback' as const };
+
+const leads       = articles.slice(0, SITE.leadCount);
+const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
+
+// Only show breaking ticker for items detected within the last 2 hours.
+const BREAKING_TTL_MS = 2 * 60 * 60 * 1000;
+const freshBreaking = breaking.filter(
+  b => Date.now() - new Date(b.detectedAt).getTime() < BREAKING_TTL_MS
+);
+const hasBreaking = freshBreaking.length > 0;
+const lastUpdated = lastRun;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Washington Commanders news — every story, every hour." />
+  <meta name="theme-color" content="#9b1535" />
+  <title>Commanders Wire — Washington Commanders Newswire</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400;1,14..32,500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+  <!-- Theme init: runs before paint to prevent flash -->
+  <script is:inline>
+    (function() {
+      const saved = localStorage.getItem('cw-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved ?? (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <style>
+    /* ── Theme tokens ────────────────────────────────────────────────────────── */
+    :root[data-theme="light"] {
+      --bg:            #f5f4f2;
+      --surface:       #ffffff;
+      --surface-2:     #f0eeec;
+      --surface-3:     #e8e5e2;
+      --border:        #e0dbd6;
+      --border-strong: #c8c2bc;
+      --text:          #111111;
+      --text-2:        #4a4540;
+      --text-3:        #655e58;   /* darkened for 5.4:1 contrast on light bg */
+      --text-4:        #706860;   /* darkened for 4.9:1 contrast on light bg */
+      --accent:        #9b1535;   /* burgundy label/CTA color in light mode */
+      --accent-dim:    #c04060;
+      --accent-alert:  #9b1535;   /* breaking ticker stays burgundy */
+      --gold:          #8a5200;   /* darkened amber for 5.4:1 on light bg */
+      --gold-bright:   #8a6000;   /* darkened for 4.8:1 on light bg */
+      --rank-def:      #3a6a8a;   /* steel blue for defense rank, 5.1:1 */
+      --gold-bg:       #fff8e8;
+      --tag-bg:        #f0eeec;
+      --tag-text:      #7a736d;
+      --live-dot:      #22c55e;
+      --shadow:        0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md:     0 4px 12px rgba(0,0,0,0.08);
+    }
+    :root[data-theme="dark"] {
+      --bg:            #141414;
+      --surface:       #141414;   /* same as bg — no two-tone */
+      --surface-2:     #1e1e1e;
+      --surface-3:     #282828;
+      --border:        #2e2e2e;
+      --border-strong: #404040;
+      --text:          #f0eeeb;
+      --text-2:        #c0b8b0;
+      --text-3:        #8a8078;
+      --text-4:        #7e7870;   /* lightened for 4.8:1 contrast on dark bg */
+      --rank-def:      #6aabe0;   /* steel blue for defense rank, 7.9:1 on dark bg */
+      --accent:        #e8a820;   /* gold — high contrast on dark, stays on-brand */
+      --accent-dim:    #c48c10;
+      --accent-alert:  #9b1535;   /* breaking ticker stays burgundy in dark too */
+      --gold:          #d4900a;
+      --gold-bright:   #e8a820;
+      --gold-bg:       #1a1200;
+      --tag-bg:        #242424;
+      --tag-text:      #908880;
+      --live-dot:      #4ade80;
+      --shadow:        0 1px 3px rgba(0,0,0,0.4);
+      --shadow-md:     0 4px 16px rgba(0,0,0,0.5);
+    }
+
+    /* ── Reset ───────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Layout ──────────────────────────────────────────────────────────────── */
+    .page-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 16px 0 40px;
+      min-width: 0;
+    }
+    .news-col { min-width: 0; overflow: hidden; }
+    @media (min-width: 960px) {
+      .content-grid {
+        grid-template-columns: 1fr 304px;
+        gap: 0 32px;
+        align-items: start;
+      }
+      .rail-col {
+        position: sticky;
+        top: 56px;
+        min-width: 0;
+        align-self: start;
+      }
+    }
+    @media (min-width: 1180px) {
+      .content-grid {
+        grid-template-columns: 1fr 320px;
+      }
+    }
+
+    /* ── Section labels ──────────────────────────────────────────────────────── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 16px 0 8px;
+    }
+
+    /* ── Divider ─────────────────────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 4px 0;
+    }
+
+    /* ── Anchor nav ──────────────────────────────────────────────────────────── */
+    .anchor-nav {
+      display: none;
+    }
+    @media (min-width: 960px) {
+      .anchor-nav {
+        display: flex;
+        gap: 24px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 4px;
+      }
+      .anchor-nav a {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        transition: color 0.15s;
+      }
+      .anchor-nav a:hover { color: var(--accent); }
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────────────── */
+    .empty-msg {
+      font-size: 13px;
+      color: var(--text-3);
+      padding: 24px 0;
+      font-style: italic;
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  </style>
+</head>
+
+<body>
+  <Masthead lastUpdated={lastUpdated} />
+
+  {hasBreaking && <BreakingTicker items={freshBreaking} />}
+
+  <main class="page-wrap">
+    <nav class="anchor-nav" aria-label="Page sections">
+      <a href="#leads">Top Stories</a>
+      <a href="#stream">News Feed</a>
+      <a href="#rail">Schedule &amp; Stats</a>
+      <a href="#voices">Reporter Voices</a>
+    </nav>
+
+    <div class="content-grid">
+      <div class="news-col">
+        <section id="leads">
+          {leads.length > 0
+            ? <LeadStories items={leads} />
+            : <div>
+                <p class="section-label">Top Stories</p>
+                <p class="empty-msg">No stories yet — trigger the ingest worker to populate.</p>
+              </div>
+          }
+        </section>
+
+        <hr class="divider" style="margin: 12px 0;" />
+
+        <section id="stream">
+          <p class="section-label">Latest News</p>
+          {streamItems.length > 0
+            ? <NewsStream items={streamItems} />
+            : <p class="empty-msg">Waiting for first ingest run…</p>
+          }
+        </section>
+      </div>
+
+      <aside class="rail-col" id="rail">
+        <RightRail
+          dates={IMPORTANT_DATES}
+          schedule={UPCOMING_SCHEDULE}
+          stats={stats}
+          players={FEATURED_PLAYERS}
+        />
+      </aside>
+    </div>
+
+    <section id="voices" style="padding-bottom: 48px;">
+      <hr class="divider" />
+      <ReporterVoices config={REPORTER_CONFIG} />
+    </section>
+  </main>
+
+  <script define:vars={{ refreshMs: SITE.refreshIntervalMs }}>
+    let idle = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && idle) window.location.reload();
+    });
+    setTimeout(() => {
+      idle = true;
+      if (document.visibilityState === 'visible') window.location.reload();
+    }, refreshMs);
+  </script>
+</body>
+</html>

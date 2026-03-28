@@ -1,0 +1,115 @@
+---
+import type { BreakingItem } from '../lib/types';
+interface Props { items: BreakingItem[]; }
+const { items } = Astro.props;
+if (!items.length) return;
+---
+
+<div class="ticker" role="marquee" aria-label="Breaking news ticker">
+  <span class="ticker-label">BREAKING</span>
+  <div class="ticker-viewport">
+    <div class="ticker-track" id="tickerTrack">
+      {items.map(item => (
+        <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer"
+           class="ticker-item">
+          <span class="ticker-hed">{item.headline}</span>
+          <span class="ticker-src">— {item.sourceName}</span>
+          <span class="ticker-sep" aria-hidden="true">◆</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const track = document.getElementById('tickerTrack') as HTMLElement | null;
+    if (!track) return;
+
+    const PX_PER_SEC = 90;
+
+    // Step 1: measure one "set" of content
+    const oneSetWidth = track.scrollWidth;
+
+    // Step 2: clone the set until the first half is at least 2× viewport wide
+    //         so there's never dead air, even on very wide screens.
+    const target = Math.max(window.innerWidth * 2, oneSetWidth);
+    const origHTML = track.innerHTML;
+    while (track.scrollWidth < target) {
+      track.insertAdjacentHTML('beforeend', origHTML);
+    }
+
+    // Step 3: record actual first-half width, then duplicate for the second half.
+    //         Second half is a pixel-perfect clone → seamless reset.
+    const halfWidth = track.scrollWidth;
+    const secondHalf = track.innerHTML; // current full track = first half
+    track.insertAdjacentHTML('beforeend', secondHalf);
+
+    // Step 4: set pixel-precise shift and speed-derived duration.
+    //         translateX(-halfWidth px) lands exactly at the start of the second half,
+    //         which is visually identical to position 0.
+    track.style.setProperty('--shift', `-${halfWidth}px`);
+    track.style.animationDuration = `${(halfWidth / PX_PER_SEC).toFixed(2)}s`;
+
+    // Step 5: pause on hover
+    track.addEventListener('mouseenter', () => { track.style.animationPlayState = 'paused'; });
+    track.addEventListener('mouseleave', () => { track.style.animationPlayState = 'running'; });
+  })();
+</script>
+
+<style>
+  .ticker {
+    background: var(--accent-alert);
+    display: flex;
+    align-items: center;
+    height: 32px;
+    overflow: hidden;
+  }
+  .ticker-label {
+    flex-shrink: 0;
+    padding: 0 12px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: #fff;
+    background: rgba(0,0,0,0.28);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid rgba(255,255,255,0.18);
+    white-space: nowrap;
+  }
+  .ticker-viewport {
+    flex: 1;
+    overflow: hidden;
+  }
+  .ticker-track {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    animation: ticker-loop 30s linear infinite;
+  }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px 0 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+  .ticker-item:hover .ticker-hed {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .ticker-hed { font-weight: 600; }
+  .ticker-src { font-size: 11px; opacity: 0.72; white-space: nowrap; }
+  .ticker-sep { font-size: 7px; opacity: 0.35; flex-shrink: 0; }
+
+  @keyframes ticker-loop {
+    from { transform: translateX(0); }
+    to   { transform: translateX(var(--shift, -50%)); }
+  }
+</style>

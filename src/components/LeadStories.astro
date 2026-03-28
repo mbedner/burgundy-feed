@@ -1,0 +1,238 @@
+---
+import type { Article } from '../lib/types';
+interface Props { items: Article[]; }
+const { items } = Astro.props;
+
+const [primary, ...secondaries] = items;
+
+function rel(iso: string): string {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+---
+
+<div class="leads">
+  <div class="leads-header">
+    <span class="section-label">Top Stories</span>
+  </div>
+
+  {/* ── Primary lead ── */}
+  {primary && (
+    <a href={primary.sourceUrl} target="_blank" rel="noopener noreferrer" class="primary">
+      <div class="primary-eyebrow">
+        <span class="eyebrow-source">{primary.sourceName}</span>
+        {primary.author && <span class="eyebrow-dot">·</span>}
+        {primary.author && <span class="eyebrow-author">{primary.author}</span>}
+        <span class="eyebrow-dot">·</span>
+        <span class="eyebrow-time">{rel(primary.publishedAt)}</span>
+        <span class="eyebrow-tags">
+          {primary.tags.slice(0, 3).map(tag => (
+            <span class={`tag tag--${tag}`}>{tag}</span>
+          ))}
+        </span>
+      </div>
+      <h2 class="primary-hed">{primary.displayHeadline}</h2>
+      {primary.summary && (
+        <p class="primary-summary">{primary.summary.slice(0, 200)}…</p>
+      )}
+      {primary.originalHeadline !== primary.displayHeadline && (
+        <p class="primary-orig">orig: {primary.originalHeadline}</p>
+      )}
+    </a>
+  )}
+
+  {/* ── Secondary leads ── */}
+  {secondaries.length > 0 && (
+    <div class="secondaries">
+      {secondaries.map((item, i) => (
+        <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer"
+           class={`secondary ${i < secondaries.length - 1 ? 'secondary--border' : ''}`}>
+          <div class="secondary-eyebrow">
+            <span class="eyebrow-source">{item.sourceName}</span>
+            <span class="eyebrow-dot">·</span>
+            <span class="eyebrow-time">{rel(item.publishedAt)}</span>
+            <span class="eyebrow-tags">
+              {item.tags.slice(0, 2).map(tag => (
+                <span class={`tag tag--${tag}`}>{tag}</span>
+              ))}
+            </span>
+          </div>
+          <h3 class="secondary-hed">{item.displayHeadline}</h3>
+          {item.originalHeadline !== item.displayHeadline && (
+            <p class="secondary-orig">orig: {item.originalHeadline}</p>
+          )}
+          {item.author && <p class="secondary-author">{item.author}</p>}
+        </a>
+      ))}
+    </div>
+  )}
+</div>
+
+<style>
+  .leads {
+    padding-top: 4px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .leads-header { margin-bottom: 14px; }
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* ── Primary ── */
+  .primary {
+    display: block;
+    text-decoration: none;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .primary,
+  .secondary { min-width: 0; overflow: hidden; }
+
+  .primary-eyebrow,
+  .secondary-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    min-width: 0;
+  }
+  .eyebrow-source {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .eyebrow-author {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .eyebrow-time {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .eyebrow-dot {
+    font-size: 12px;
+    color: var(--text-4);
+  }
+  .eyebrow-tags {
+    display: flex;
+    gap: 4px;
+    margin-left: 2px;
+  }
+
+  .primary-hed {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 10px;
+    transition: color 0.12s;
+    word-break: break-word;
+  }
+  @media (min-width: 640px) {
+    .primary-hed { font-size: 30px; }
+  }
+  .primary:hover .primary-hed { color: var(--accent); }
+
+  .primary-summary {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text-2);
+    margin-bottom: 8px;
+  }
+  .primary-orig {
+    font-size: 12px;
+    color: var(--text-4);
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  /* ── Secondaries ── */
+  .secondaries {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  @media (min-width: 560px) {
+    .secondaries { grid-template-columns: 1fr 1fr; }
+  }
+
+  .secondary {
+    display: block;
+    text-decoration: none;
+    padding: 0 0 14px;
+  }
+  .secondary--border {
+    padding-right: 20px;
+    border-right: 1px solid var(--border);
+    margin-right: 20px;
+  }
+  @media (max-width: 559px) {
+    .secondary--border {
+      padding-right: 0;
+      border-right: none;
+      margin-right: 0;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+    }
+  }
+
+  .secondary-hed {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    color: var(--text);
+    margin-bottom: 5px;
+    transition: color 0.12s;
+    word-break: break-word;
+  }
+  .secondary:hover .secondary-hed { color: var(--accent); }
+
+  .secondary-orig {
+    font-size: 12px;
+    color: var(--text-4);
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    margin-bottom: 3px;
+  }
+  .secondary-author {
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 2px;
+  }
+
+  /* ── Tags ── */
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface-3);
+    color: var(--text-3);
+    flex-shrink: 0;
+  }
+</style>

@@ -1,0 +1,129 @@
+---
+import type { REPORTER_CONFIG } from '../config/reporters';
+interface Props { config: typeof REPORTER_CONFIG; }
+const { config } = Astro.props;
+const useList = !!config.xListUrl;
+---
+
+<div class="voices">
+  <p class="section-label">Reporter Voices</p>
+  <p class="voices-sub">Washington Commanders beat — follow the people who cover this team every day.</p>
+
+  {useList ? (
+    <div class="embed-wrap">
+      <a class="twitter-timeline" data-theme="dark"
+         data-chrome="noheader nofooter noborders" data-tweet-limit="8"
+         href={config.xListUrl}>Loading reporter feed…</a>
+    </div>
+  ) : (
+    <div class="handles-grid">
+      {config.handles.map((r, i) => (
+        <div class="handle-card">
+          <a href={`https://x.com/${r.handle}`} target="_blank" rel="noopener noreferrer"
+             class="handle-at">@{r.handle}</a>
+          <span class="handle-name">{r.name}</span>
+          {i < config.maxEmbeds && (
+            <div class="handle-embed" data-handle={r.handle} data-idx={i}></div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+<script>
+  const MAX = 2;
+  let loaded = 0;
+
+  function buildEmbeds() {
+    document.querySelectorAll<HTMLElement>('[data-handle]').forEach(el => {
+      const idx = parseInt(el.getAttribute('data-idx') ?? '99', 10);
+      if (idx >= MAX || loaded >= MAX) return;
+      const handle = el.getAttribute('data-handle');
+      if (!handle) return;
+      const a = document.createElement('a');
+      a.className = 'twitter-timeline';
+      a.setAttribute('data-theme', document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+      a.setAttribute('data-chrome', 'noheader nofooter noborders');
+      a.setAttribute('data-tweet-limit', '4');
+      a.setAttribute('data-height', '300');
+      a.href = `https://x.com/${handle}`;
+      a.textContent = `@${handle}`;
+      el.appendChild(a);
+      loaded++;
+    });
+    if (!(window as any).twttr) {
+      const s = document.createElement('script');
+      s.src = 'https://platform.twitter.com/widgets.js';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+  }
+
+  const el = document.querySelector('.voices');
+  if (el) {
+    new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) { buildEmbeds(); }
+    }, { rootMargin: '300px' }).observe(el);
+  }
+</script>
+
+<style>
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 16px 0 8px;
+  }
+  .voices-sub {
+    font-size: 13px;
+    color: var(--text-3);
+    margin-bottom: 16px;
+  }
+  .embed-wrap {
+    max-width: 560px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .handles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  @media (min-width: 640px) {
+    .handles-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 900px) {
+    .handles-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .handle-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    transition: border-color 0.15s;
+  }
+  .handle-card:hover { border-color: var(--accent); }
+  .handle-at {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .handle-at:hover { color: var(--accent); }
+  .handle-name {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .handle-embed {
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    min-height: 40px;
+  }
+</style>

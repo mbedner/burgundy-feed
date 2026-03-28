@@ -1,0 +1,144 @@
+---
+import type { Article } from '../lib/types';
+interface Props { item: Article; rank: number; }
+const { item, rank } = Astro.props;
+
+function rel(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m  = Math.floor(ms / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+const ageMs   = Date.now() - new Date(item.publishedAt).getTime();
+const ageHrs  = ageMs / 3600000;
+const hotness = ageHrs < 1 ? 'hot' : ageHrs < 4 ? 'warm' : ageHrs < 12 ? 'cool' : 'old';
+const showOrig = item.originalHeadline !== item.displayHeadline;
+---
+
+<article class={`story ${item.isBreaking ? 'story--breaking' : ''}`}>
+  <div class="story-inner">
+    <span class="story-rank">{rank}</span>
+    <div class="story-body">
+      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer"
+         class="story-link" title={showOrig ? `Original: ${item.originalHeadline}` : undefined}>
+        <h3 class="story-hed">{item.displayHeadline}</h3>
+      </a>
+      {showOrig && <p class="story-orig">{item.originalHeadline}</p>}
+      <div class="story-meta">
+        {item.isBreaking && <span class="brk">BREAKING</span>}
+        <span class="story-src">{item.sourceName}</span>
+        {item.author && <span class="story-author">· {item.author}</span>}
+        {item.tags.slice(0, 3).map(tag => (
+          <span class={`tag tag--${tag}`}>{tag}</span>
+        ))}
+        <span class={`story-time story-time--${hotness}`}>{rel(item.publishedAt)}</span>
+      </div>
+    </div>
+  </div>
+</article>
+
+<style>
+  .story {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .story:last-child { border-bottom: none; }
+  .story:hover { background: var(--surface-2); }
+  .story--breaking { border-left: 2px solid var(--accent); }
+
+  .story-inner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 11px 10px 11px 0;
+  }
+  .story--breaking .story-inner { padding-left: 10px; }
+
+  .story-rank {
+    flex-shrink: 0;
+    width: 22px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-4);
+    padding-top: 3px;
+    text-align: right;
+  }
+  .story-body { flex: 1; min-width: 0; overflow: hidden; }
+
+  .story-link { display: block; text-decoration: none; }
+  .story-hed {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    transition: color 0.12s;
+    word-break: break-word;
+  }
+  .story-link:hover .story-hed { color: var(--accent); }
+
+  .story-orig {
+    font-size: 14px;
+    color: var(--text-4);
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+  }
+
+  .story-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .brk {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #fff;
+    background: var(--accent-alert);
+    padding: 1px 5px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .story-src {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .story-author {
+    font-size: 12px;
+    color: var(--text-4);
+  }
+  .story-time {
+    font-size: 13px;
+    font-weight: 600;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .story-time--hot  { color: var(--gold); }
+  .story-time--warm { color: var(--gold-bright); }
+  .story-time--cool { color: var(--text-3); }
+  .story-time--old  { color: var(--text-4); }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface-3);
+    color: var(--text-3);
+    flex-shrink: 0;
+  }
+</style>

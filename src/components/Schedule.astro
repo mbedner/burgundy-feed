@@ -1,0 +1,110 @@
+---
+import type { UPCOMING_SCHEDULE } from '../config/schedule';
+interface Props { schedule: typeof UPCOMING_SCHEDULE; }
+const { schedule } = Astro.props;
+
+const now = new Date();
+const upcoming = schedule
+  .filter(g => g.opponent !== 'BYE' && new Date(g.date + 'T12:00:00') >= now)
+  .slice(0, 7);
+const nextGame = upcoming[0] ?? null;
+const rest = upcoming.slice(1);
+
+function fmt(d: string): string {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+}
+function fmtShort(d: string): string {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+---
+
+<div class="module">
+  <div class="module-hd">Schedule</div>
+
+  {nextGame ? (
+    <div class="next-game">
+      <div class="next-pill">NEXT GAME</div>
+      <div class="next-opp">{nextGame.home ? 'vs' : '@'} <strong>{nextGame.opponent}</strong></div>
+      <div class="next-info">
+        <span>{fmt(nextGame.date)}</span>
+        {nextGame.time && nextGame.time !== 'TBD' && <span>· {nextGame.time}</span>}
+        {nextGame.tv && nextGame.tv !== 'TBD'  && <span class="next-tv">· {nextGame.tv}</span>}
+      </div>
+      <div class="next-venue">{nextGame.home ? 'Home — FedExField' : 'Away'}</div>
+    </div>
+  ) : (
+    <p class="no-data">Schedule pending</p>
+  )}
+
+  {rest.length > 0 && (
+    <div class="sched-list">
+      {rest.map(g => (
+        <div class="sched-row">
+          <span class="sched-wk">{g.week}</span>
+          <span class="sched-ha">{g.home === null ? '—' : g.home ? 'vs' : '@'}</span>
+          <span class="sched-opp">{g.opponent}</span>
+          <span class="sched-dt">{fmtShort(g.date)}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+<style>
+  .module-hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .next-game {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .next-pill {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+  }
+  .next-opp {
+    font-size: 16px;
+    color: var(--text);
+    font-weight: 400;
+    line-height: 1.2;
+  }
+  .next-opp strong { font-weight: 800; }
+  .next-info {
+    font-size: 12px;
+    color: var(--text-2);
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .next-tv { font-weight: 700; color: var(--accent); }
+  .next-venue { font-size: 11px; color: var(--text-3); }
+
+  .sched-list { display: flex; flex-direction: column; }
+  .sched-row {
+    display: grid;
+    grid-template-columns: 28px 24px 1fr auto;
+    gap: 4px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .sched-wk   { font-size: 10px; font-weight: 700; color: var(--text-4); }
+  .sched-ha   { color: var(--text-3); font-size: 11px; }
+  .sched-opp  { color: var(--text); font-weight: 600; }
+  .sched-dt   { color: var(--text-3); text-align: right; white-space: nowrap; }
+  .no-data { font-size: 12px; color: var(--text-3); }
+</style>
