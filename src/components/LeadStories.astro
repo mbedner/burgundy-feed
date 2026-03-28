@@ -61,17 +61,20 @@ function rel(iso: string): string {
       {secondaries.map((item, i) => (
         <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer"
            class={`secondary ${i < secondaries.length - 1 ? 'secondary--border' : ''}`}>
-          {item.imageUrl && (
-            <div class="secondary-img-wrap">
-              <img
-                src={item.imageUrl}
-                alt=""
-                class="secondary-img"
-                loading="lazy"
-                onerror="this.closest('.secondary-img-wrap').style.display='none'"
-              />
+          <div class="secondary-img-wrap">
+            {item.imageUrl
+              ? <img
+                  src={item.imageUrl}
+                  alt=""
+                  class="secondary-img"
+                  loading="lazy"
+                  onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+                />
+              : null}
+            <div class="img-placeholder" style={item.imageUrl ? 'display:none' : ''}>
+              <span class="img-placeholder-cw">CW</span>
             </div>
-          )}
+          </div>
           <div class="secondary-eyebrow">
             <span class="eyebrow-source">{item.sourceName}</span>
             <span class="eyebrow-dot">·</span>
@@ -243,6 +246,7 @@ function rel(iso: string): string {
     border-radius: 3px;
     margin-bottom: 10px;
     background: var(--surface-2);
+    position: relative;
   }
   .secondary-img {
     width: 100%;
@@ -252,6 +256,28 @@ function rel(iso: string): string {
     transition: transform 0.3s ease;
   }
   .secondary:hover .secondary-img { transform: scale(1.02); }
+
+  /* Placeholder card shown when no image is available */
+  .img-placeholder {
+    position: absolute;
+    inset: 0;
+    background: #9b1535;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .img-placeholder-cw {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: #d4900a;
+    line-height: 1;
+    opacity: 0.9;
+    /* Subtle texture via text-shadow */
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .secondary:hover .img-placeholder { background: #7a1028; }
+  .secondary:hover .img-placeholder-cw { opacity: 1; }
 
   .secondary-hed {
     font-size: 19px;

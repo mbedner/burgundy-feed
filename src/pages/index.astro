@@ -436,7 +436,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
       .sticky-subnav {
         display: flex;
         position: fixed;
-        top: 52px;               /* sits flush under the masthead */
+        top: 53px;               /* fallback; JS overwrites with measured value */
         left: 0;
         right: 0;
         z-index: 190;
@@ -567,20 +567,25 @@ const lastUpdated = lastRun?.completedAt ?? null;
     }, refreshMs);
 
     // ── Sticky burgundy subnav ────────────────────────────────────────────────
-    const stickyNav  = document.getElementById('stickySubnav');
-    const inlineNav  = document.querySelector('.anchor-nav');
+    const stickyNav = document.getElementById('stickySubnav');
+    const inlineNav = document.querySelector('.anchor-nav');
+    const masthead  = document.querySelector('.mast');
 
-    if (stickyNav && inlineNav) {
+    if (stickyNav && inlineNav && masthead) {
+      // Measure the total height of sticky chrome above the content
+      // (masthead + breaking ticker if present) and pin the subnav there.
+      function pinSubnav() {
+        const h = masthead.getBoundingClientRect().bottom;
+        stickyNav.style.top = Math.round(h) + 'px';
+      }
+      pinSubnav();
+      window.addEventListener('resize', pinSubnav, { passive: true });
+
       let ticking = false;
-
       function updateStickyNav() {
-        // Show once the inline nav has scrolled off the top of the viewport
+        // Show once the inline nav's bottom edge has scrolled above the viewport
         const bottom = inlineNav.getBoundingClientRect().bottom;
-        if (bottom < 0) {
-          stickyNav.classList.add('is-visible');
-        } else {
-          stickyNav.classList.remove('is-visible');
-        }
+        stickyNav.classList.toggle('is-visible', bottom < 0);
         ticking = false;
       }
 
