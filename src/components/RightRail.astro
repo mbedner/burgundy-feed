@@ -1,12 +1,31 @@
 ---
-import TeamDates from './TeamDates.astro';
-import Schedule  from './Schedule.astro';
-import TeamStats from './TeamStats.astro';
+import TeamDates          from './TeamDates.astro';
+import Schedule           from './Schedule.astro';
+import TeamStats          from './TeamStats.astro';
+import TransactionTracker from './TransactionTracker.astro';
+import type { Article }   from '../lib/types';
 
-const { dates, schedule, lastSeason, stats, players } = Astro.props;
+interface Props {
+  dates:        any;
+  schedule:     any;
+  lastSeason:   any;
+  stats:        any;
+  players:      any;
+  txArticles?:  Article[];
+  txLabel?:     string;
+  showTx?:      boolean;
+}
+
+const { dates, schedule, lastSeason, stats, players,
+        txArticles = [], txLabel = '', showTx = false } = Astro.props;
 ---
 
 <div class="rail">
+  {showTx && txArticles.length > 0 && (
+    <div class="rail-section">
+      <TransactionTracker items={txArticles} label={txLabel} />
+    </div>
+  )}
   <div class="rail-section">
     <Schedule schedule={schedule} lastSeason={lastSeason} />
   </div>

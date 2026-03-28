@@ -13,7 +13,6 @@ import LeadStories         from '../components/LeadStories.astro';
 import NewsStream          from '../components/NewsStream.astro';
 import RightRail           from '../components/RightRail.astro';
 import ReporterVoices      from '../components/ReporterVoices.astro';
-import TransactionTracker  from '../components/TransactionTracker.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
 
@@ -247,7 +246,7 @@ const leads       = articles.slice(0, SITE.leadCount);
 const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
 
 // ── Transaction Tracker ───────────────────────────────────────────────────────
-const TX_TAGS = new Set(['signing', 'trade', 'release', 'suspension']);
+const TX_TAGS = new Set(['signing', 'trade', 'release']);
 const txArticles = articles
   .filter(a => a.tags.some(t => TX_TAGS.has(t)))
   .slice(0, TRANSACTION_SEASON.maxItems);
@@ -559,13 +558,6 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
     <div class="content-grid">
       <div class="news-col">
-        {showTxTracker && (
-          <TransactionTracker
-            items={txArticles}
-            label={TRANSACTION_SEASON.label}
-          />
-        )}
-
         <section id="leads">
           {leads.length > 0
             ? <LeadStories items={leads} />
@@ -594,6 +586,9 @@ const lastUpdated = lastRun?.completedAt ?? null;
           lastSeason={LAST_SEASON}
           stats={stats}
           players={FEATURED_PLAYERS}
+          txArticles={txArticles}
+          txLabel={TRANSACTION_SEASON.label}
+          showTx={showTxTracker}
         />
       </aside>
     </div>

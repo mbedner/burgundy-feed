@@ -4,16 +4,16 @@ main = "workers/ingest-worker.ts"
 compatibility_date = "2024-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-[[triggers.crons]]
-cron = "0 * * * *"   # every hour on the hour
+[triggers]
+crons = ["0 * * * *"]   # every hour on the hour
 
 [[kv_namespaces]]
 binding = "ARTICLES_KV"
-id      = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_YOUR_KV_PREVIEW_NAMESPACE_ID"
+id      = "3a4b4607b132477c968a5fc087fdda36"
+preview_id = "3a4b4607b132477c968a5fc087fdda36"
 
 [vars]
-REFRESH_SECRET = "REPLACE_WITH_A_STRONG_SECRET"
+REFRESH_SECRET = "Commanders"
 REWRITE_MODE   = "witty"   # straight | witty | savage
 
 # ─── Astro Pages site uses the SAME KV namespace ──────────────────────────────
