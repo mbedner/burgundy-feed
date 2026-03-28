@@ -199,8 +199,8 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
 
   // Enforce per-source diversity cap: no single source can dominate the feed.
   // Commanders-focused sources get a slightly higher cap.
-  const SOURCE_CAP_FOCUS    = 10; // Commanders-specific sources
-  const SOURCE_CAP_NATIONAL =  5; // National sources
+  const SOURCE_CAP_FOCUS    = 5; // Commanders-specific sources
+  const SOURCE_CAP_NATIONAL = 5; // National sources
   const sourceCounts = new Map<string, number>();
   const capped: Article[] = [];
   const sourceCapMap = new Map(
