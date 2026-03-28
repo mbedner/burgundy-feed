@@ -2,17 +2,18 @@
 import type { StoredData } from '../lib/types';
 import type { LiveStats } from '../lib/espn';
 import { readAll } from '../lib/kv';
-import { SITE } from '../config/site';
+import { SITE, TRANSACTION_SEASON } from '../config/site';
 import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS, LAST_SEASON } from '../config/schedule';
 import { FEATURED_PLAYERS } from '../config/players';
 import { REPORTER_CONFIG } from '../config/reporters';
 
-import Masthead       from '../components/Masthead.astro';
-import BreakingTicker from '../components/BreakingTicker.astro';
-import LeadStories    from '../components/LeadStories.astro';
-import NewsStream     from '../components/NewsStream.astro';
-import RightRail      from '../components/RightRail.astro';
-import ReporterVoices from '../components/ReporterVoices.astro';
+import Masthead            from '../components/Masthead.astro';
+import BreakingTicker      from '../components/BreakingTicker.astro';
+import LeadStories         from '../components/LeadStories.astro';
+import NewsStream          from '../components/NewsStream.astro';
+import RightRail           from '../components/RightRail.astro';
+import ReporterVoices      from '../components/ReporterVoices.astro';
+import TransactionTracker  from '../components/TransactionTracker.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
 
@@ -244,6 +245,30 @@ if (articles.length === 0) {
 
 const leads       = articles.slice(0, SITE.leadCount);
 const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
+
+// ── Transaction Tracker ───────────────────────────────────────────────────────
+const TX_TAGS = new Set(['signing', 'trade', 'release', 'suspension']);
+const txArticles = articles
+  .filter(a => a.tags.some(t => TX_TAGS.has(t)))
+  .slice(0, TRANSACTION_SEASON.maxItems);
+
+function showTransactionTracker(): boolean {
+  if (TRANSACTION_SEASON.override !== null) return TRANSACTION_SEASON.override;
+  // Check date window
+  const now  = new Date();
+  const inWindow =
+    now >= new Date(TRANSACTION_SEASON.start) &&
+    now <= new Date(TRANSACTION_SEASON.end);
+  if (inWindow) return true;
+  // Outside window: show if there's been a flurry of activity (mid-season trades)
+  const windowMs  = TRANSACTION_SEASON.activityWindowDays * 24 * 60 * 60 * 1000;
+  const recentCount = txArticles.filter(
+    a => Date.now() - new Date(a.publishedAt).getTime() < windowMs
+  ).length;
+  return recentCount >= TRANSACTION_SEASON.activityThreshold;
+}
+
+const showTxTracker = showTransactionTracker() && txArticles.length > 0;
 
 // Only show breaking ticker for items detected within the last 2 hours.
 const BREAKING_TTL_MS = 2 * 60 * 60 * 1000;
@@ -534,6 +559,13 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
     <div class="content-grid">
       <div class="news-col">
+        {showTxTracker && (
+          <TransactionTracker
+            items={txArticles}
+            label={TRANSACTION_SEASON.label}
+          />
+        )}
+
         <section id="leads">
           {leads.length > 0
             ? <LeadStories items={leads} />

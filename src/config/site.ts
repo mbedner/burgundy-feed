@@ -33,3 +33,26 @@ export const BREAKING_THRESHOLD = 72;
 
 // Minimum Commanders relevance score to include a story at all (0–100)
 export const MIN_RELEVANCE_SCORE = 10;
+
+// ── Transaction Tracker ───────────────────────────────────────────────────────
+// Shows a "Transaction Wire" feed of signings, trades, releases, and suspensions.
+// Active during free agency + draft window. Update dates each year.
+export const TRANSACTION_SEASON = {
+  // 2026: legal tampering opens Mar 10, draft ends ~Apr 27
+  start:              '2026-03-10',
+  end:                '2026-04-30',
+
+  // Hard override: true = always show, false = always hide, null = use dates/activity
+  override:           null as boolean | null,
+
+  // Also show outside the date window if this many transaction articles
+  // appeared in the last activityWindowDays (catches mid-season blockbusters)
+  activityThreshold:  3,
+  activityWindowDays: 5,
+
+  // Max items to display in the tracker
+  maxItems: 10,
+
+  // Label shown next to the section heading
+  label: 'Free Agency 2026',
+};
