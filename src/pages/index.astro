@@ -430,51 +430,64 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
     /* ── Sticky subnav (burgundy bar, appears on scroll) ────────────────────── */
     .sticky-subnav {
-      display: none;
+      display: flex;
+      position: fixed;
+      top: 0;                  /* anchored to viewport top; translateY positions it */
+      left: 0;
+      right: 0;
+      z-index: 190;
+      background: #9b1535;
+      align-items: center;
+      gap: 0;
+      padding: 0 16px;
+      height: 36px;
+      /* Hidden: slide fully above the viewport */
+      transform: translateY(-100%);
+      opacity: 0;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      pointer-events: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     }
-    @media (min-width: 960px) {
-      .sticky-subnav {
-        display: flex;
-        position: fixed;
-        top: 53px;               /* fallback; JS overwrites with measured value */
-        left: 0;
-        right: 0;
-        z-index: 190;
-        background: #9b1535;
-        align-items: center;
-        gap: 0;
-        padding: 0 16px;
-        height: 36px;
-        transform: translateY(-100%);
-        opacity: 0;
-        transition: transform 0.22s ease, opacity 0.22s ease;
-        pointer-events: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-      }
-      .sticky-subnav.is-visible {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-      }
-      .sticky-subnav-inner {
-        max-width: 1280px;
-        width: 100%;
-        margin: 0 auto;
-        display: flex;
-        gap: 28px;
-        align-items: center;
-      }
-      .sticky-subnav a {
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: rgba(255,255,255,0.75);
-        text-decoration: none;
-        transition: color 0.15s;
-        white-space: nowrap;
-      }
-      .sticky-subnav a:hover { color: #ffffff; }
+    .sticky-subnav.is-visible {
+      /* Visible: push down by masthead height (52px) so it sits flush below it */
+      transform: translateY(52px);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .sticky-subnav-inner {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: space-around;
+    }
+    @media (min-width: 480px) {
+      .sticky-subnav-inner { gap: 28px; justify-content: flex-start; }
+    }
+    .sticky-subnav a {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      transition: color 0.15s;
+      white-space: nowrap;
+      flex: 1;
+      text-align: center;
+    }
+    @media (min-width: 480px) {
+      .sticky-subnav a { flex: none; text-align: left; }
+    }
+    .sticky-subnav a:hover { color: #ffffff; }
+    /* Short labels on small screens; full labels on wider screens */
+    .subnav-short { display: inline; }
+    .subnav-full  { display: none;   }
+    @media (min-width: 480px) {
+      .subnav-short { display: none;   }
+      .subnav-full  { display: inline; }
     }
 
     /* ── Empty state ─────────────────────────────────────────────────────────── */
@@ -498,10 +511,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
   <nav class="sticky-subnav" id="stickySubnav" aria-label="Quick navigation">
     <div class="sticky-subnav-inner">
-      <a href="#leads">Top Stories</a>
-      <a href="#stream">News Feed</a>
-      <a href="#rail">Schedule &amp; Stats</a>
-      <a href="#voices">Reporter Voices</a>
+      <a href="#leads"><span class="subnav-short">Top</span><span class="subnav-full">Top Stories</span></a>
+      <a href="#stream"><span class="subnav-short">Feed</span><span class="subnav-full">News Feed</span></a>
+      <a href="#rail"><span class="subnav-short">Stats</span><span class="subnav-full">Schedule &amp; Stats</span></a>
+      <a href="#voices"><span class="subnav-short">Reporters</span><span class="subnav-full">Reporter Voices</span></a>
     </div>
   </nav>
 
@@ -569,23 +582,21 @@ const lastUpdated = lastRun?.completedAt ?? null;
     // ── Sticky burgundy subnav ────────────────────────────────────────────────
     const stickyNav = document.getElementById('stickySubnav');
     const inlineNav = document.querySelector('.anchor-nav');
-    const masthead  = document.querySelector('.mast');
 
-    if (stickyNav && inlineNav && masthead) {
-      // Measure the total height of sticky chrome above the content
-      // (masthead + breaking ticker if present) and pin the subnav there.
-      function pinSubnav() {
-        const h = masthead.getBoundingClientRect().bottom;
-        stickyNav.style.top = Math.round(h) + 'px';
-      }
-      pinSubnav();
-      window.addEventListener('resize', pinSubnav, { passive: true });
-
+    if (stickyNav) {
       let ticking = false;
       function updateStickyNav() {
-        // Show once the inline nav's bottom edge has scrolled above the viewport
-        const bottom = inlineNav.getBoundingClientRect().bottom;
-        stickyNav.classList.toggle('is-visible', bottom < 0);
+        let shouldShow;
+        if (inlineNav) {
+          // Desktop: show once the inline nav (anchor-nav) has scrolled fully off-screen
+          const r = inlineNav.getBoundingClientRect();
+          // getBoundingClientRect returns zeros when display:none — fall back to scrollY
+          shouldShow = r.height > 0 ? r.bottom < 0 : window.scrollY > 80;
+        } else {
+          // Fallback: show after scrolling 80px
+          shouldShow = window.scrollY > 80;
+        }
+        stickyNav.classList.toggle('is-visible', shouldShow);
         ticking = false;
       }
 

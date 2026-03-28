@@ -72,7 +72,10 @@ function rel(iso: string): string {
                 />
               : null}
             <div class="img-placeholder" style={item.imageUrl ? 'display:none' : ''}>
-              <span class="img-placeholder-cw">CW</span>
+              <svg class="placeholder-logo" viewBox="0 0 80 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <!-- Commanders W mark — geometric angular W -->
+                <path d="M4 8 L18 44 L28 20 L40 44 L52 20 L62 44 L76 8 L66 8 L56 32 L44 8 L36 8 L28 32 L20 8 Z" fill="#d4900a"/>
+              </svg>
             </div>
           </div>
           <div class="secondary-eyebrow">
@@ -214,7 +217,23 @@ function rel(iso: string): string {
     gap: 0;
   }
   @media (min-width: 560px) {
-    .secondaries { grid-template-columns: 1fr 1fr; }
+    .secondaries {
+      grid-template-columns: 1fr 1fr;
+      column-gap: 40px;
+      position: relative;
+    }
+    /* Vertical divider between the two cards via a centred pseudo-element */
+    .secondaries::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 14px;              /* match card bottom padding */
+      width: 1px;
+      background: var(--border);
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
   }
 
   .secondary {
@@ -222,16 +241,12 @@ function rel(iso: string): string {
     text-decoration: none;
     padding: 0 0 14px;
   }
+  /* No extra padding/margin on border card — gap is handled by column-gap above */
   .secondary--border {
-    padding-right: 20px;
-    border-right: 1px solid var(--border);
-    margin-right: 20px;
+    /* left intentionally empty; kept for backward compat */
   }
   @media (max-width: 559px) {
     .secondary--border {
-      padding-right: 0;
-      border-right: none;
-      margin-right: 0;
       border-bottom: 1px solid var(--border);
       padding-bottom: 14px;
       margin-bottom: 14px;
@@ -265,19 +280,17 @@ function rel(iso: string): string {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background 0.2s;
   }
-  .img-placeholder-cw {
-    font-size: 36px;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    color: #d4900a;
-    line-height: 1;
-    opacity: 0.9;
-    /* Subtle texture via text-shadow */
-    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  .placeholder-logo {
+    width: 52px;
+    height: auto;
+    opacity: 0.85;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+    transition: opacity 0.2s;
   }
   .secondary:hover .img-placeholder { background: #7a1028; }
-  .secondary:hover .img-placeholder-cw { opacity: 1; }
+  .secondary:hover .placeholder-logo { opacity: 1; }
 
   .secondary-hed {
     font-size: 19px;
