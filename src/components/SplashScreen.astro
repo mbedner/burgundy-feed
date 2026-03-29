@@ -1,0 +1,232 @@
+---
+// ─── Splash Screen ────────────────────────────────────────────────────────────
+// Shown on PWA launch (standalone mode). Dismissed by client JS after the page
+// loads and a minimum display time has elapsed.
+// Mode is determined server-side:
+//   'gameday'  → Commanders game days     (most energetic)
+//   'draft'    → NFL Draft window         (slightly higher energy)
+//   'everyday' → Default fallback         (clean, calm)
+// Test via ?splash in the URL to force-show regardless of standalone mode.
+
+export type SplashMode = 'everyday' | 'draft' | 'gameday';
+interface Props { mode: SplashMode; }
+const { mode } = Astro.props;
+
+// W path: 6-segment polyline forming a bold angular W
+// viewBox 200×130, stroke-linecap/join = round, stroke-width = 14
+// Approx path length = 464px → use dasharray 500
+const W_PATH = 'M 10,15 L 48,115 L 75,58 L 100,115 L 125,58 L 152,115 L 190,15';
+---
+
+<div id="splash" class={`splash splash--${mode}`} aria-hidden="true" role="presentation">
+  <div class="splash-inner">
+
+    <!-- Commanders W mark -->
+    <svg class="splash-w" viewBox="0 0 200 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- Soft glow behind the W (Game Day only, fades in with delay) -->
+      {mode === 'gameday' && (
+        <path class="w-glow" d={W_PATH}
+              fill="none" stroke="#9b1535" stroke-width="26"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      )}
+      <!-- The W itself -->
+      <path class="w-path" d={W_PATH}
+            fill="none" stroke="currentColor" stroke-width="14"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+
+    <!-- Mode badge -->
+    {mode === 'draft' && (
+      <div class="splash-badge splash-badge--draft">
+        <span class="badge-dot"/>
+        DRAFT
+      </div>
+    )}
+    {mode === 'gameday' && (
+      <div class="splash-badge splash-badge--gameday">
+        <span class="badge-dot badge-dot--live"/>
+        LIVE
+      </div>
+    )}
+
+  </div>
+</div>
+
+<style>
+  /* ── Base ────────────────────────────────────────────────────────────────── */
+  .splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0d0d;
+    opacity: 1;
+    transition: opacity 0.45s ease;
+    /* Prevent scroll bleed-through during animation */
+    overflow: hidden;
+  }
+  .splash.splash--exit {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Mode-specific backgrounds */
+  .splash--draft   { background: #0e0c08; }
+  .splash--gameday { background: #120404; }
+
+  /* ── Inner layout ────────────────────────────────────────────────────────── */
+  .splash-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* ── W mark ──────────────────────────────────────────────────────────────── */
+  .splash-w {
+    width: clamp(100px, 40vw, 160px);
+    height: auto;
+    color: #ffffff;
+    overflow: visible;
+  }
+
+  /* Draw-in animation via stroke-dashoffset */
+  .w-path {
+    stroke-dasharray: 500;
+    stroke-dashoffset: 500;
+    animation: draw-w var(--draw-dur, 0.95s) cubic-bezier(0.4, 0, 0.2, 1)
+               var(--draw-delay, 0.05s) forwards;
+  }
+  @keyframes draw-w {
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* Everyday: calm pace */
+  .splash--everyday .w-path {
+    --draw-dur:   1.0s;
+    --draw-delay: 0.1s;
+  }
+
+  /* Draft: slightly quicker, precise */
+  .splash--draft .w-path {
+    --draw-dur:   0.8s;
+    --draw-delay: 0.05s;
+    stroke: #f0e8d0;   /* warm off-white */
+  }
+
+  /* Game Day: fast draw then pulse */
+  .splash--gameday .w-path {
+    --draw-dur:   0.55s;
+    --draw-delay: 0.05s;
+  }
+  .splash--gameday .splash-w {
+    /* Pulse after the W finishes drawing (delay ≈ draw-dur + draw-delay) */
+    animation: pulse-w 0.35s ease-in-out 0.7s 2 alternate both;
+    transform-origin: center;
+  }
+  @keyframes pulse-w {
+    to { transform: scale(1.07); }
+  }
+
+  /* Glow behind the W for Game Day */
+  .w-glow {
+    opacity: 0;
+    animation: glow-in 0.5s ease 0.55s forwards;
+    filter: blur(6px);
+  }
+  @keyframes glow-in {
+    to { opacity: 0.45; }
+  }
+
+  /* ── Mode badges ─────────────────────────────────────────────────────────── */
+  .splash-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', 'Arial Black', sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0;
+    animation: badge-in 0.3s ease var(--badge-delay, 0.9s) forwards;
+  }
+  @keyframes badge-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .splash-badge--draft {
+    color: #d4940e;
+    --badge-delay: 0.88s;
+  }
+  .splash-badge--gameday {
+    color: #ff4444;
+    --badge-delay: 0.65s;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  /* Pulsing live indicator */
+  .badge-dot--live {
+    animation: live-pulse 1s ease-in-out 1s infinite alternate;
+  }
+  @keyframes live-pulse {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0.4; transform: scale(0.7); }
+  }
+</style>
+
+<script>
+  (() => {
+    const splash = document.getElementById('splash');
+    if (!splash) return;
+
+    const params      = new URLSearchParams(location.search);
+    const isStandalone = matchMedia('(display-mode: standalone)').matches
+                      || (navigator as any).standalone === true;
+    const forceSplash  = params.has('splash');
+
+    // Skip entirely if not in standalone mode and not forced via ?splash
+    if (!isStandalone && !forceSplash) {
+      splash.remove();
+      return;
+    }
+
+    // In standalone: only show on first launch per session
+    // (sessionStorage clears when the PWA is fully closed and reopened)
+    if (isStandalone && !forceSplash) {
+      if (sessionStorage.getItem('bf-launched')) {
+        splash.remove();
+        return;
+      }
+      sessionStorage.setItem('bf-launched', '1');
+    }
+
+    // Minimum display time keeps the animation from being cut short
+    // if the page loads very fast (e.g. service worker cache hit)
+    const MIN_MS = 1600;
+    const t0 = performance.now();
+
+    function dismiss() {
+      const wait = Math.max(0, MIN_MS - (performance.now() - t0));
+      setTimeout(() => {
+        splash.classList.add('splash--exit');
+        splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+      }, wait);
+    }
+
+    if (document.readyState === 'complete') {
+      dismiss();
+    } else {
+      window.addEventListener('load', dismiss, { once: true });
+    }
+  })();
+</script>

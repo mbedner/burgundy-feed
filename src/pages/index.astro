@@ -12,6 +12,8 @@ import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS, LAST_SEASON } from '../
 import { FEATURED_PLAYERS } from '../config/players';
 import { REPORTER_CONFIG } from '../config/reporters';
 
+import SplashScreen        from '../components/SplashScreen.astro';
+import type { SplashMode } from '../components/SplashScreen.astro';
 import Masthead            from '../components/Masthead.astro';
 import BreakingTicker      from '../components/BreakingTicker.astro';
 import LeadStories         from '../components/LeadStories.astro';
@@ -284,6 +286,9 @@ if (forceDraft && VALID_DRAFT_STATES.has(forceDraft)) {
 const leads       = articles.slice(0, SITE.leadCount);
 const streamItems = articles.slice(SITE.leadCount, SITE.storyCount);
 
+// ── Splash screen mode ────────────────────────────────────────────────────────
+const splashMode: SplashMode = gameDay ? 'gameday' : draftDay ? 'draft' : 'everyday';
+
 // ── Transaction Tracker ───────────────────────────────────────────────────────
 function showTransactionTracker(): boolean {
   if (TRANSACTION_SEASON.override !== null) return TRANSACTION_SEASON.override;
@@ -327,6 +332,14 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400;1,14..32,500&display=swap" rel="stylesheet" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- PWA / Apple home-screen -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Burgundy" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
 
   <!-- Theme init: runs before paint to prevent flash                         -->
   <!-- Approximates sunrise/sunset for Washington DC (38.9°N) using the       -->
@@ -573,6 +586,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
 </head>
 
 <body>
+  <SplashScreen mode={splashMode} />
   <Masthead lastUpdated={lastUpdated} />
 
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
@@ -709,6 +723,32 @@ const lastUpdated = lastRun?.completedAt ?? null;
         window.scrollTo({ top, behavior: 'smooth' });
       });
     });
+
+    // ── PWA: external links stay in-app ──────────────────────────────────────
+    // In standalone mode, intercept external link clicks and open them via
+    // window.open() so Android shows a Custom Chrome Tab (in-app browser)
+    // rather than dropping the user out of the PWA entirely.
+    const isStandalone = matchMedia('(display-mode: standalone)').matches
+                      || (navigator as any).standalone === true;
+    if (isStandalone) {
+      document.addEventListener('click', e => {
+        const a = (e.target as Element).closest('a[href]') as HTMLAnchorElement | null;
+        if (!a || !a.href) return;
+        try {
+          const url = new URL(a.href);
+          if (url.origin === location.origin) return; // internal — navigate normally
+          e.preventDefault();
+          window.open(a.href, '_blank', 'noopener,noreferrer');
+        } catch { /* malformed href — ignore */ }
+      }, true);
+    }
+
+    // ── Service worker registration ───────────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
+        // SW registration failure is non-fatal — site works without it
+      });
+    }
   </script>
 </body>
 </html>

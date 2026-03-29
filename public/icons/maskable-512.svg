@@ -1,0 +1,7 @@
+<!-- Maskable icon: full bleed, safe zone is inner 80% (51px padding each side) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#5a1414"/>
+  <rect x="112" y="0" width="48" height="512" fill="#ffffff"/>
+  <rect x="232" y="0" width="48" height="512" fill="#d4940e"/>
+  <rect x="352" y="0" width="48" height="512" fill="#ffffff"/>
+</svg>
