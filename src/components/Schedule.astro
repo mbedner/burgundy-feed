@@ -6,20 +6,23 @@ interface Props {
 }
 const { schedule, lastSeason } = Astro.props;
 
-const DIVISION_OPPONENTS = new Set([
-  'Dallas Cowboys', 'NY Giants', 'Philadelphia Eagles',
-]);
+const DIVISION_ORDER: Record<string, number> = {
+  'Dallas Cowboys': 0, 'NY Giants': 1, 'Philadelphia Eagles': 2,
+};
 
 function scheduleSort(games: typeof schedule) {
   const scored = games
     .filter(g => g.opponent !== 'TBD' && g.home !== null)
-    .map(g => ({
-      ...g,
-      _group: g.home
-        ? (DIVISION_OPPONENTS.has(g.opponent) ? 0 : 1)   // home div, home non-div
-        : (DIVISION_OPPONENTS.has(g.opponent) ? 2 : 3),  // away div, away non-div
-    }));
-  return scored.sort((a, b) => a._group - b._group);
+    .map(g => {
+      const divRank = DIVISION_ORDER[g.opponent] ?? 99;
+      const group   = g.home
+        ? (divRank < 99 ? 0 : 1)
+        : (divRank < 99 ? 2 : 3);
+      return { ...g, _group: group, _divRank: divRank };
+    });
+  return scored.sort((a, b) =>
+    a._group !== b._group ? a._group - b._group : a._divRank - b._divRank,
+  );
 }
 
 const sortedSchedule = scheduleSort(schedule);
