@@ -1,5 +1,5 @@
 ---
-import type { Article, ArticleTag } from '../lib/types';
+import type { Article } from '../lib/types';
 import StoryItem from './StoryItem.astro';
 interface Props { items: Article[]; }
 const { items } = Astro.props;
@@ -9,26 +9,13 @@ const fresh = items.filter(i => i.score >= 50 && i.score < 75);
 const rest  = items.filter(i => i.score < 50);
 const useGroups = hot.length >= 2 && fresh.length >= 2;
 
-// Tags available for filtering (in preferred display order)
-const FILTER_TAGS: ArticleTag[] = [
-  'injury', 'trade', 'signing', 'draft', 'QB',
-  'rumor', 'release', 'cap', 'analysis', 'coach', 'stadium',
-];
-const availableTags = FILTER_TAGS.filter(tag =>
-  items.some(i => i.tags.includes(tag))
-);
-
 let rank = 1;
 ---
 
-{availableTags.length > 0 && (
-  <div class="tag-bar" id="tag-bar" role="group" aria-label="Filter stories by topic">
-    <button class="tf tf--active" data-tag="all" type="button">All</button>
-    {availableTags.map(tag => (
-      <button class="tf" data-tag={tag} type="button">{tag}</button>
-    ))}
-  </div>
-)}
+<div id="filter-banner" class="filter-banner" hidden>
+  <span class="filter-banner-label">Showing: <strong id="filter-banner-tag"></strong></span>
+  <button class="filter-banner-clear" id="filter-banner-clear" type="button" aria-label="Clear filter">✕ clear</button>
+</div>
 
 <div class="stream" id="news-stream">
   {useGroups ? (
@@ -60,40 +47,47 @@ let rank = 1;
 </div>
 
 <style>
-  /* ── Tag filter bar ──────────────────────────────────────────────────────── */
-  .tag-bar {
+  /* ── Filter banner ───────────────────────────────────────────────────────── */
+  .filter-banner {
     display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    padding: 8px 0 12px;
-  }
-
-  .tf {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-3);
-    cursor: pointer;
-    transition: background 0.12s, color 0.12s, border-color 0.12s;
-    white-space: nowrap;
-    font-family: inherit;
-  }
-  .tf:hover {
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    margin-bottom: 2px;
     background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .filter-banner[hidden] { display: none; }
+  .filter-banner-label {
+    flex: 1;
+    color: var(--text-3);
+  }
+  .filter-banner-label strong {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .filter-banner-clear {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.12s, border-color 0.12s;
+    white-space: nowrap;
+  }
+  .filter-banner-clear:hover {
     color: var(--text);
     border-color: var(--border-strong);
   }
-  .tf--active {
-    background: var(--accent);
-    color: #ffffff;
-    border-color: transparent;
-  }
-  :root[data-theme="light"] .tf--active { color: #ffffff; }
 
   /* ── Stream ──────────────────────────────────────────────────────────────── */
   .stream { padding-bottom: 16px; }
@@ -110,25 +104,30 @@ let rank = 1;
 
 <script>
   (() => {
-    const bar    = document.getElementById('tag-bar');
     const stream = document.getElementById('news-stream');
-    if (!bar || !stream) return;
+    const banner = document.getElementById('filter-banner');
+    const bannerTag = document.getElementById('filter-banner-tag');
+    const bannerClear = document.getElementById('filter-banner-clear');
+    if (!stream || !banner || !bannerTag || !bannerClear) return;
 
-    bar.addEventListener('click', e => {
-      const btn = e.target.closest('[data-tag]');
-      if (!btn) return;
-      const tag = btn.dataset.tag;
+    let activeTag = null;
 
-      // Update active button
-      bar.querySelectorAll('.tf').forEach(b =>
-        b.classList.toggle('tf--active', b === btn)
-      );
+    function applyFilter(tag) {
+      activeTag = tag;
+
+      // Show/hide filter banner
+      if (tag) {
+        bannerTag.textContent = tag;
+        banner.hidden = false;
+      } else {
+        banner.hidden = true;
+      }
 
       // Filter individual articles
       const articles = stream.querySelectorAll('article[data-tags]');
       articles.forEach(art => {
         const tags = art.dataset.tags ? art.dataset.tags.split(',') : [];
-        art.hidden = tag !== 'all' && !tags.includes(tag);
+        art.hidden = !!tag && !tags.includes(tag);
       });
 
       // Hide groups that have no visible articles
@@ -137,6 +136,19 @@ let rank = 1;
           .some(a => !a.hidden);
         group.hidden = !hasVisible;
       });
+    }
+
+    // Clicking a tag pill inside any article activates that filter
+    stream.addEventListener('click', e => {
+      const btn = e.target.closest('[data-filter-tag]');
+      if (!btn) return;
+      e.preventDefault();
+      const tag = btn.dataset.filterTag;
+      // Tapping same tag again clears it
+      applyFilter(activeTag === tag ? null : tag);
     });
+
+    // Clear button resets the filter
+    bannerClear.addEventListener('click', () => applyFilter(null));
   })();
 </script>

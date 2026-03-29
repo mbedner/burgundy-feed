@@ -4,7 +4,7 @@
 import type { RivalItem } from '../lib/types';
 interface Props { items: RivalItem[]; }
 const { items } = Astro.props;
-if (!items.length) return;
+const hasItems = items.length > 0;
 
 function rel(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -22,6 +22,7 @@ const TEAMS = [
 ] as const;
 ---
 
+{hasItems && (
 <div class="nfc">
   <p class="nfc-label">NFC East</p>
   {TEAMS.map(({ key, label, accent }) => {
@@ -40,6 +41,7 @@ const TEAMS = [
     );
   })}
 </div>
+)}
 
 <style>
   .nfc { margin-top: 4px; }

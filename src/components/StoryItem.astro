@@ -36,7 +36,7 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
         <span class="story-src">{item.sourceName}</span>
         {item.author && <span class="story-author">· {item.author}</span>}
         {displayTags.map(tag => (
-          <span class={`tag tag--${tag}`}>{tag}</span>
+          <button class={`tag tag--${tag}`} data-filter-tag={tag} type="button" aria-label={`Filter by ${tag}`}>{tag}</button>
         ))}
         <span class={`story-time story-time--${hotness}`}>{rel(item.publishedAt)}</span>
       </div>
@@ -144,5 +144,14 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
     background: var(--surface-3);
     color: var(--text-3);
     flex-shrink: 0;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: inherit;
+    transition: background 0.12s, color 0.12s;
+  }
+  .tag:hover {
+    background: var(--accent);
+    color: #ffffff;
   }
 </style>

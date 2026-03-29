@@ -591,24 +591,38 @@ const lastUpdated = lastRun?.completedAt ?? null;
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
 
-    /* ── Pull-to-refresh spinner ─────────────────────────────────────────── */
-    #ptr-spinner {
+    /* ── Pull-to-refresh — branded stripe indicator ──────────────────────── */
+    #ptr-indicator {
       position: fixed;
-      top: 8px;
+      top: 0;
       left: 50%;
-      transform: translateX(-50%);
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--accent);
-      border-top-color: transparent;
-      border-radius: 50%;
-      opacity: 0;
-      pointer-events: none;
+      transform: translateX(-50%) translateY(-100%);
       z-index: 9001;
-      animation: ptr-spin 0.7s linear infinite;
-      transition: opacity 0.15s;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+      padding: 10px 16px 9px;
+      background: var(--surface);
+      border-radius: 0 0 14px 14px;
+      box-shadow: 0 3px 18px rgba(0,0,0,0.22);
+      opacity: 0;
+      transition: opacity 0.12s;
     }
-    @keyframes ptr-spin { to { transform: translateX(-50%) rotate(360deg); } }
+    .ptr-bar {
+      width: 7px;
+      border-radius: 2px;
+      transform-origin: bottom center;
+      transition: height 0.1s;
+    }
+    .ptr-bar--l { background: #9b1535; height: 22px; }
+    .ptr-bar--g { background: #d4940e; height: 30px; }
+    .ptr-bar--r { background: #9b1535; height: 22px; }
+    /* When threshold reached, bars pulse to signal "release to refresh" */
+    #ptr-indicator.ptr--ready .ptr-bar--l { animation: ptr-bounce 0.45s ease-in-out infinite alternate 0s; }
+    #ptr-indicator.ptr--ready .ptr-bar--g { animation: ptr-bounce 0.45s ease-in-out infinite alternate 0.1s; }
+    #ptr-indicator.ptr--ready .ptr-bar--r { animation: ptr-bounce 0.45s ease-in-out infinite alternate 0.2s; }
+    @keyframes ptr-bounce { to { transform: scaleY(1.3); } }
 
     /* ── New content toast ───────────────────────────────────────────────── */
     #new-content-toast {
@@ -643,7 +657,11 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
 <body>
   <SplashScreen mode={splashMode} />
-  <div id="ptr-spinner" aria-hidden="true"></div>
+  <div id="ptr-indicator" aria-hidden="true">
+    <div class="ptr-bar ptr-bar--l"></div>
+    <div class="ptr-bar ptr-bar--g"></div>
+    <div class="ptr-bar ptr-bar--r"></div>
+  </div>
   <Masthead lastUpdated={lastUpdated} />
 
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
@@ -847,7 +865,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   // ── Pull-to-refresh (PWA standalone only) ────────────────────────────────
   if (isStandalone) {
-    const ptr = document.getElementById('ptr-spinner');
+    const ptr = document.getElementById('ptr-indicator');
     let startY = 0;
     let isPulling = false;
     const THRESHOLD = 72;
@@ -864,8 +882,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
       const delta = e.touches[0].clientY - startY;
       if (delta > 0) {
         const pct = Math.min(delta / THRESHOLD, 1);
+        const slide = Math.min(delta * 0.45, 44);
         ptr.style.opacity = String(pct);
-        ptr.style.transform = 'translateX(-50%) translateY(' + Math.min(delta * 0.35, 32) + 'px)';
+        ptr.style.transform = 'translateX(-50%) translateY(' + slide + 'px)';
+        ptr.classList.toggle('ptr--ready', delta >= THRESHOLD);
       }
     }, { passive: true });
 
@@ -873,7 +893,11 @@ const lastUpdated = lastRun?.completedAt ?? null;
       if (!isPulling) return;
       isPulling = false;
       const delta = e.changedTouches[0].clientY - startY;
-      if (ptr) { ptr.style.opacity = '0'; ptr.style.transform = 'translateX(-50%)'; }
+      if (ptr) {
+        ptr.style.opacity = '0';
+        ptr.style.transform = 'translateX(-50%) translateY(0)';
+        ptr.classList.remove('ptr--ready');
+      }
       if (delta >= THRESHOLD && window.scrollY === 0) window.location.reload();
     }, { passive: true });
   }
