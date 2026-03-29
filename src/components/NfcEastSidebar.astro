@@ -1,0 +1,99 @@
+---
+// ─── NFC East Rival News ──────────────────────────────────────────────────────
+// Shows 2 recent stories per NFC East rival team in the right rail.
+import type { RivalItem } from '../lib/types';
+interface Props { items: RivalItem[]; }
+const { items } = Astro.props;
+if (!items.length) return;
+
+function rel(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+const TEAMS = [
+  { key: 'cowboys', label: 'Cowboys', accent: '#002A5C' },
+  { key: 'giants',  label: 'Giants',  accent: '#0B2265' },
+  { key: 'eagles',  label: 'Eagles',  accent: '#004C54' },
+] as const;
+---
+
+<div class="nfc">
+  <p class="nfc-label">NFC East</p>
+  {TEAMS.map(({ key, label, accent }) => {
+    const teamItems = items.filter(i => i.team === key);
+    if (!teamItems.length) return null;
+    return (
+      <div class="nfc-team">
+        <span class="nfc-team-name" style={`color: ${accent}; background: ${accent}22;`}>{label}</span>
+        {teamItems.map(item => (
+          <a href={item.url} target="_blank" rel="noopener noreferrer" class="nfc-item">
+            <span class="nfc-hed">{item.headline}</span>
+            <span class="nfc-time">{rel(item.publishedAt)}</span>
+          </a>
+        ))}
+      </div>
+    );
+  })}
+</div>
+
+<style>
+  .nfc { margin-top: 4px; }
+
+  .nfc-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 16px 0 10px;
+  }
+
+  .nfc-team {
+    margin-bottom: 14px;
+  }
+
+  .nfc-team-name {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+  }
+
+  .nfc-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    transition: background 0.1s;
+  }
+  .nfc-item:last-child { border-bottom: none; }
+  .nfc-item:hover .nfc-hed { color: var(--accent); }
+
+  .nfc-hed {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    line-height: 1.4;
+    transition: color 0.12s;
+  }
+
+  .nfc-time {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-4);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>

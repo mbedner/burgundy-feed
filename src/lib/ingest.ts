@@ -12,7 +12,7 @@ import {
 } from './scoring';
 import { rewriteHeadline } from './rewrite';
 import { SOURCES, BLOCKED_DOMAINS } from '../config/sources';
-import { SITE, MIN_RELEVANCE_SCORE } from '../config/site';
+import { SITE, MIN_RELEVANCE_SCORE, MIN_RELEVANCE_SCORE_NATIONAL } from '../config/site';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -47,14 +47,31 @@ function isBlocked(url: string): boolean {
   return BLOCKED_DOMAINS.some(d => lower.includes(d));
 }
 
-function fuzzyTitleKey(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, '')
-    .split(' ')
-    .filter(w => w.length > 3)
-    .slice(0, 6)
-    .join(' ');
+// Words that appear in nearly every NFL/Commanders article and don't discriminate between stories
+const DEDUP_STOP = new Set([
+  'that', 'this', 'with', 'from', 'have', 'will', 'been', 'they', 'their',
+  'would', 'could', 'should', 'about', 'after', 'before', 'into', 'over',
+  'then', 'than', 'when', 'what', 'which', 'were', 'also', 'more', 'just',
+  'said', 'says', 'make', 'made', 'take', 'back', 'down', 'each', 'much',
+  'some', 'does', 'come', 'team', 'game', 'year', 'next', 'last', 'first',
+  'season', 'week', 'time', 'play', 'player', 'league', 'deal', 'news',
+  'nfl', 'report', 'commanders', 'washington',
+]);
+
+function sigWords(title: string): Set<string> {
+  return new Set(
+    title.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/)
+      .filter(w => w.length > 3 && !DEDUP_STOP.has(w))
+  );
+}
+
+function titleSimilarity(a: string, b: string): number {
+  const wa = sigWords(a);
+  const wb = sigWords(b);
+  if (wa.size === 0 || wb.size === 0) return 0;
+  let shared = 0;
+  for (const w of wa) { if (wb.has(w)) shared++; }
+  return shared / Math.min(wa.size, wb.size);
 }
 
 // ─── Ingest a single source ───────────────────────────────────────────────────
@@ -75,7 +92,9 @@ async function ingestSource(
       const summary      = raw.description ?? '';
       const relevance    = scoreRelevance(raw.title, summary);
 
-      if (relevance < MIN_RELEVANCE_SCORE) continue;
+      // National (non-focus) sources need a stronger direct Commanders signal
+      const minScore = source.commandersFocus ? MIN_RELEVANCE_SCORE : MIN_RELEVANCE_SCORE_NATIONAL;
+      if (relevance < minScore) continue;
 
       // Reject articles older than 14 days
       const pubMs = new Date(raw.pubDate).getTime();
@@ -134,25 +153,27 @@ async function ingestSource(
 // ─── Deduplication ────────────────────────────────────────────────────────────
 
 function deduplicate(articles: Article[]): Article[] {
-  const seenUrls   = new Set<string>();
-  const seenTitles = new Set<string>();
-  const result: Article[] = [];
+  const seenUrls = new Set<string>();
+  const accepted: Article[] = [];
 
-  // Sort by score descending so higher-quality versions win dedup races
+  // Highest-scored version wins all dedup races
   const sorted = [...articles].sort((a, b) => b.score - a.score);
 
   for (const article of sorted) {
     if (seenUrls.has(article.canonicalUrl)) continue;
 
-    const titleKey = fuzzyTitleKey(article.originalHeadline);
-    if (seenTitles.has(titleKey)) continue;
+    // Reject if this story is semantically close to an already-accepted one.
+    // 60% overlap of significant words = same story covered by multiple outlets.
+    const isDupe = accepted.some(
+      ex => titleSimilarity(article.originalHeadline, ex.originalHeadline) >= 0.60
+    );
+    if (isDupe) continue;
 
     seenUrls.add(article.canonicalUrl);
-    seenTitles.add(titleKey);
-    result.push(article);
+    accepted.push(article);
   }
 
-  return result;
+  return accepted;
 }
 
 // ─── Full ingest run ──────────────────────────────────────────────────────────
@@ -234,4 +255,41 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
   };
 
   return { articles: topArticles, run };
+}
+
+// ─── NFC East rival ingest ────────────────────────────────────────────────────
+
+import type { RivalItem } from './types';
+
+const NFC_EAST_RIVALS: Array<{ team: RivalItem['team']; teamName: string; rssUrl: string }> = [
+  { team: 'cowboys', teamName: 'Cowboys', rssUrl: 'https://cowboyswire.usatoday.com/feed/' },
+  { team: 'giants',  teamName: 'Giants',  rssUrl: 'https://giantswire.usatoday.com/feed/' },
+  { team: 'eagles',  teamName: 'Eagles',  rssUrl: 'https://eagleswire.usatoday.com/feed/' },
+];
+
+export async function runNfcEastIngest(): Promise<RivalItem[]> {
+  const results: RivalItem[] = [];
+
+  await Promise.all(
+    NFC_EAST_RIVALS.map(async rival => {
+      try {
+        const items = await fetchRssFeed(rival.rssUrl);
+        items.slice(0, 2).forEach(item => {
+          if (!item.link || !item.title) return;
+          results.push({
+            team:        rival.team,
+            teamName:    rival.teamName,
+            headline:    item.title,
+            url:         item.link,
+            sourceName:  `${rival.teamName} Wire`,
+            publishedAt: item.pubDate,
+          });
+        });
+      } catch {
+        // Non-critical — NFC East section degrades gracefully
+      }
+    })
+  );
+
+  return results;
 }

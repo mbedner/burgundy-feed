@@ -1,7 +1,7 @@
 // ─── Cloudflare Worker: Hourly Ingest Cron ───────────────────────────────────
-import { runIngest } from '../src/lib/ingest';
+import { runIngest, runNfcEastIngest } from '../src/lib/ingest';
 import { detectBreakingItems } from '../src/lib/breaking';
-import { writeArticles, writeBreaking, writeLastRun } from '../src/lib/kv';
+import { writeArticles, writeBreaking, writeLastRun, writeNfcEast } from '../src/lib/kv';
 import { fetchLiveStats, fetchTransactions } from '../src/lib/espn';
 import { SITE } from '../src/config/site';
 
@@ -46,10 +46,11 @@ async function doIngest(env: Env) {
   console.log(`[ingest] starting run at ${new Date().toISOString()}`);
 
   // Run articles ingest + live stats + transactions concurrently
-  const [{ articles, run }, liveStats, transactions] = await Promise.all([
+  const [{ articles, run }, liveStats, transactions, nfcEastItems] = await Promise.all([
     runIngest(mode),
     fetchLiveStats(),
     fetchTransactions(),
+    runNfcEastIngest(),
   ]);
 
   const breaking = detectBreakingItems(articles);
@@ -59,6 +60,9 @@ async function doIngest(env: Env) {
     writeBreaking(env.ARTICLES_KV, breaking),
     writeLastRun(env.ARTICLES_KV, run),
   ];
+
+  writes.push(writeNfcEast(env.ARTICLES_KV, nfcEastItems));
+  console.log(`[ingest] ${nfcEastItems.length} NFC East rival items fetched`);
 
   // Cache live stats in KV — expires after 3 hours
   if (liveStats) {

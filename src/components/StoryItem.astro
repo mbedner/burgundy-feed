@@ -16,9 +16,13 @@ const ageMs   = Date.now() - new Date(item.publishedAt).getTime();
 const ageHrs  = ageMs / 3600000;
 const hotness = ageHrs < 1 ? 'hot' : ageHrs < 4 ? 'warm' : ageHrs < 12 ? 'cool' : 'old';
 const showOrig = item.originalHeadline !== item.displayHeadline;
+
+// Only show tags that mean something to a reader; strip internal classifier tags
+const HIDE_TAGS = new Set(['good', 'bad', 'weird', 'national', 'offense', 'defense', 'roster']);
+const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
 ---
 
-<article class={`story ${item.isBreaking ? 'story--breaking' : ''}`}>
+<article class={`story ${item.isBreaking ? 'story--breaking' : ''}`} data-tags={item.tags.join(',')}>
   <div class="story-inner">
     <span class="story-rank">{rank}</span>
     <div class="story-body">
@@ -31,7 +35,7 @@ const showOrig = item.originalHeadline !== item.displayHeadline;
         {item.isBreaking && <span class="brk">BREAKING</span>}
         <span class="story-src">{item.sourceName}</span>
         {item.author && <span class="story-author">· {item.author}</span>}
-        {item.tags.slice(0, 3).map(tag => (
+        {displayTags.map(tag => (
           <span class={`tag tag--${tag}`}>{tag}</span>
         ))}
         <span class={`story-time story-time--${hotness}`}>{rel(item.publishedAt)}</span>

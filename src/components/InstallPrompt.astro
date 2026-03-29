@@ -213,6 +213,11 @@
     height: 15px;
     fill: currentColor;
   }
+
+  /* Hide on desktop — install prompt is only for mobile/tablet */
+  @media (min-width: 1024px) {
+    .ip, .ip-modal { display: none !important; }
+  }
 </style>
 
 <script>
@@ -234,6 +239,10 @@
       return false;
     }
     if (isPwa()) return;
+
+    // Only show on mobile/tablet
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    if (isDesktop) return;
 
     // Check for ?install param to force-show (testing)
     const forceShow = new URLSearchParams(location.search).has('install');

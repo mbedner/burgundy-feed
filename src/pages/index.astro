@@ -25,6 +25,9 @@ import GameDayBanner       from '../components/GameDayBanner.astro';
 import DraftBanner         from '../components/DraftBanner.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
+import NfcEastSidebar from '../components/NfcEastSidebar.astro';
+import type { RivalItem } from '../lib/types';
+import { readNfcEast } from '../lib/kv';
 
 // ── DEV MOCK DATA ─────────────────────────────────────────────────────────────
 // Replace with KV reads once deployed. Remove this block and uncomment the
@@ -226,6 +229,7 @@ const mockBreaking: BreakingItem[] = [
 
 // ── LIVE DATA ────────────────────────────────────────────────────────────────
 let data: StoredData = { articles: [], breaking: [], lastRun: null };
+let nfcEastItems: RivalItem[] = [];
 let liveStats: LiveStats | null = null;
 let espnTransactions: EspnTransaction[] = [];
 try {
@@ -235,14 +239,16 @@ try {
     (Astro.locals as any).ARTICLES_KV;
   console.log('[cw] runtime present:', !!runtime, '| kv bound:', !!kv);
   if (kv) {
-    const [allData, statsRaw, txRaw] = await Promise.all([
+    const [allData, statsRaw, txRaw, nfcEastRaw] = await Promise.all([
       readAll(kv),
       kv.get('stats:snapshot'),
       kv.get('transactions:latest'),
+      kv.get('nfceast:latest'),
     ]);
     data = allData;
     if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
     if (txRaw)    espnTransactions = JSON.parse(txRaw) as EspnTransaction[];
+    nfcEastItems = nfcEastRaw ? JSON.parse(nfcEastRaw) as RivalItem[] : [];
     console.log('[cw] articles loaded from KV:', allData.articles.length);
     console.log('[cw] transactions loaded from KV:', espnTransactions.length);
     // KV cache miss — worker may not have run yet; fetch directly as fallback
@@ -334,6 +340,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400;1,14..32,500&display=swap" rel="stylesheet" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="/manifest.json" />
+  <meta name="bf-version" content={lastRun?.id ?? ''} />
 
   <!-- PWA / Apple home-screen -->
   <meta name="mobile-web-app-capable" content="yes" />
@@ -583,11 +590,60 @@ const lastUpdated = lastRun?.completedAt ?? null;
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+
+    /* ── Pull-to-refresh spinner ─────────────────────────────────────────── */
+    #ptr-spinner {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--accent);
+      border-top-color: transparent;
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9001;
+      animation: ptr-spin 0.7s linear infinite;
+      transition: opacity 0.15s;
+    }
+    @keyframes ptr-spin { to { transform: translateX(-50%) rotate(360deg); } }
+
+    /* ── New content toast ───────────────────────────────────────────────── */
+    #new-content-toast {
+      position: fixed;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9000;
+      animation: toast-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+      pointer-events: auto;
+    }
+    @keyframes toast-up {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    #new-content-toast button {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      letter-spacing: 0.01em;
+    }
   </style>
 </head>
 
 <body>
   <SplashScreen mode={splashMode} />
+  <div id="ptr-spinner" aria-hidden="true"></div>
   <Masthead lastUpdated={lastUpdated} />
 
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
@@ -662,6 +718,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
           txLabel={TRANSACTION_SEASON.label}
           showTx={showTxTracker}
         />
+        <NfcEastSidebar items={nfcEastItems} />
       </aside>
     </div>
 
@@ -674,84 +731,157 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <InstallPrompt />
 
   <script define:vars={{ refreshMs: SITE.refreshIntervalMs }}>
-    // ── Auto-reload ───────────────────────────────────────────────────────────
-    let idle = false;
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && idle) window.location.reload();
-    });
-    setTimeout(() => {
-      idle = true;
-      if (document.visibilityState === 'visible') window.location.reload();
-    }, refreshMs);
+  // ── Auto-reload when idle ─────────────────────────────────────────────────
+  let idle = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && idle) window.location.reload();
+  });
+  setTimeout(() => {
+    idle = true;
+    if (document.visibilityState === 'visible') window.location.reload();
+  }, refreshMs);
 
-    // ── Sticky burgundy subnav ────────────────────────────────────────────────
-    const stickyNav = document.getElementById('stickySubnav');
-    const inlineNav = document.querySelector('.anchor-nav');
+  // ── Sticky burgundy subnav ────────────────────────────────────────────────
+  const stickyNav = document.getElementById('stickySubnav');
 
-    if (stickyNav) {
-      const masthead = document.querySelector('.mast');
-      let ticking = false;
-      function updateStickyNav() {
-        let shouldShow;
-        // Show once the masthead has fully scrolled out of view
-        if (masthead) {
-          shouldShow = masthead.getBoundingClientRect().bottom <= 0;
-        } else {
-          shouldShow = window.scrollY > 80;
-        }
-        stickyNav.classList.toggle('is-visible', shouldShow);
-        ticking = false;
+  if (stickyNav) {
+    const masthead = document.querySelector('.mast');
+    let ticking = false;
+    function updateStickyNav() {
+      let shouldShow;
+      if (masthead) {
+        shouldShow = masthead.getBoundingClientRect().bottom <= 0;
+      } else {
+        shouldShow = window.scrollY > 80;
       }
-
-      window.addEventListener('scroll', () => {
-        if (!ticking) {
-          requestAnimationFrame(updateStickyNav);
-          ticking = true;
-        }
-      }, { passive: true });
+      stickyNav.classList.toggle('is-visible', shouldShow);
+      ticking = false;
     }
+    window.addEventListener('scroll', () => {
+      if (!ticking) { requestAnimationFrame(updateStickyNav); ticking = true; }
+    }, { passive: true });
+  }
 
-    // ── Anchor links — offset for fixed subnav ────────────────────────────────
-    const NAV_H = 36; // sticky subnav height in px
-    const BUFFER = 8;
-    document.querySelectorAll('a[href^="#"]').forEach(link => {
-      link.addEventListener('click', e => {
-        const id = link.getAttribute('href').slice(1);
-        const target = document.getElementById(id);
-        if (!target) return;
-        e.preventDefault();
-        const navVisible = stickyNav?.classList.contains('is-visible');
-        const offset = navVisible ? NAV_H + BUFFER : BUFFER;
-        const top = target.getBoundingClientRect().top + window.scrollY - offset;
-        window.scrollTo({ top, behavior: 'smooth' });
-      });
+  // ── Anchor links — offset for fixed subnav ────────────────────────────────
+  const NAV_H = 36;
+  const BUFFER = 8;
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      const id = link.getAttribute('href').slice(1);
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      const navVisible = stickyNav?.classList.contains('is-visible');
+      const offset = navVisible ? NAV_H + BUFFER : BUFFER;
+      const top = target.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
     });
+  });
 
-    // ── PWA: external links stay in-app ──────────────────────────────────────
-    // In standalone mode, intercept external link clicks and open them via
-    // window.open() so Android shows a Custom Chrome Tab (in-app browser)
-    // rather than dropping the user out of the PWA entirely.
-    const isStandalone = matchMedia('(display-mode: standalone)').matches
-                      || !!navigator.standalone;
-    if (isStandalone) {
-      document.addEventListener('click', e => {
-        const a = e.target.closest('a[href]');
-        if (!a || !a.href) return;
-        try {
-          const url = new URL(a.href);
-          if (url.origin === location.origin) return; // internal — navigate normally
-          e.preventDefault();
-          window.open(a.href, '_blank', 'noopener,noreferrer');
-        } catch (err) { /* malformed href — ignore */ }
-      }, true);
-    }
+  // ── PWA: external links open in Chrome Custom Tab / Safari ───────────────
+  // In standalone mode, intercept external clicks so Android shows a
+  // Custom Chrome Tab rather than exiting the PWA entirely.
+  // Twitter/X links: on iOS these open in Safari (no way to prevent);
+  // on Android the OS may route to the Twitter app if installed.
+  const isStandalone = matchMedia('(display-mode: standalone)').matches
+                    || !!navigator['standalone'];
+  if (isStandalone) {
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a || !a.href) return;
+      try {
+        const url = new URL(a.href);
+        if (url.origin === location.origin) return;
+        e.preventDefault();
+        window.open(a.href, '_blank', 'noopener,noreferrer');
+      } catch {}
+    }, true);
+  }
 
-    // ── Service worker registration ───────────────────────────────────────────
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {
-        // SW registration failure is non-fatal — site works without it
+  // ── New content toast ─────────────────────────────────────────────────────
+  // Periodically checks /api/version for a new ingest run and shows a
+  // "new stories" toast so the user knows to refresh.
+  (function initContentCheck() {
+    const versionMeta = document.querySelector('meta[name="bf-version"]');
+    const currentVer  = versionMeta ? versionMeta.getAttribute('content') : null;
+    if (!currentVer) return;
+
+    let toastShown = false;
+
+    function showNewContentToast() {
+      if (toastShown) return;
+      toastShown = true;
+
+      const toast = document.createElement('div');
+      toast.id = 'new-content-toast';
+      toast.innerHTML = '<button id="nc-btn" type="button">↑ New stories — tap to refresh</button>';
+      document.body.appendChild(toast);
+
+      document.getElementById('nc-btn').addEventListener('click', () => {
+        window.location.reload();
       });
+
+      // Auto-dismiss after 12 seconds if ignored
+      setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+        toastShown = false;
+      }, 12000);
     }
-  </script>
+
+    async function checkVersion() {
+      if (document.hidden || toastShown) return;
+      try {
+        const res  = await fetch('/api/version', { cache: 'no-store' });
+        const data = await res.json();
+        if (data.version && data.version !== currentVer) {
+          showNewContentToast();
+        }
+      } catch {}
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkVersion();
+    });
+    setInterval(checkVersion, 8 * 60 * 1000);
+  })();
+
+  // ── Pull-to-refresh (PWA standalone only) ────────────────────────────────
+  if (isStandalone) {
+    const ptr = document.getElementById('ptr-spinner');
+    let startY = 0;
+    let isPulling = false;
+    const THRESHOLD = 72;
+
+    document.addEventListener('touchstart', e => {
+      if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+        isPulling = true;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (!isPulling || !ptr) return;
+      const delta = e.touches[0].clientY - startY;
+      if (delta > 0) {
+        const pct = Math.min(delta / THRESHOLD, 1);
+        ptr.style.opacity = String(pct);
+        ptr.style.transform = 'translateX(-50%) translateY(' + Math.min(delta * 0.35, 32) + 'px)';
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+      if (!isPulling) return;
+      isPulling = false;
+      const delta = e.changedTouches[0].clientY - startY;
+      if (ptr) { ptr.style.opacity = '0'; ptr.style.transform = 'translateX(-50%)'; }
+      if (delta >= THRESHOLD && window.scrollY === 0) window.location.reload();
+    }, { passive: true });
+  }
+
+  // ── Service worker registration ───────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+  }
+</script>
 </body>
 </html>

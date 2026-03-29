@@ -76,4 +76,14 @@ export interface StoredData {
   articles:  Article[];
   breaking:  BreakingItem[];
   lastRun:   IngestRun | null;
+  nfcEast?:  RivalItem[];
+}
+
+export interface RivalItem {
+  team:        'cowboys' | 'giants' | 'eagles';
+  teamName:    string;
+  headline:    string;
+  url:         string;
+  sourceName:  string;
+  publishedAt: string;
 }

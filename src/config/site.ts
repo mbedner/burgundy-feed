@@ -8,7 +8,7 @@ export const SITE = {
 
   // Tone for display headline rewrites: 'straight' | 'witty' | 'savage'
   // Override via REWRITE_MODE env var in wrangler.toml
-  rewriteMode: 'witty' as 'straight' | 'witty' | 'savage',
+  rewriteMode: 'straight' as 'straight' | 'witty' | 'savage',
 
   // How many stories to show on the page
   storyCount: 28,
@@ -24,6 +24,7 @@ export const SITE = {
     articles:  'articles:latest',
     breaking:  'breaking:latest',
     lastRun:   'ingest:lastrun',
+    nfcEast:   'nfceast:latest',
   },
 };
 
@@ -33,6 +34,9 @@ export const BREAKING_THRESHOLD = 72;
 
 // Minimum Commanders relevance score to include a story at all (0–100)
 export const MIN_RELEVANCE_SCORE = 10;
+
+// Higher bar for national sources — must directly discuss Commanders
+export const MIN_RELEVANCE_SCORE_NATIONAL = 20;
 
 // ── Transaction Tracker ───────────────────────────────────────────────────────
 // Shows a "Transaction Wire" feed of signings, trades, releases, and suspensions.

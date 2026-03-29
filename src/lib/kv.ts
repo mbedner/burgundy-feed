@@ -1,5 +1,5 @@
 // ─── Cloudflare KV helpers ────────────────────────────────────────────────────
-import type { Article, BreakingItem, IngestRun, StoredData } from './types';
+import type { Article, BreakingItem, IngestRun, StoredData, RivalItem } from './types';
 import { SITE } from '../config/site';
 
 export async function readArticles(kv: KVNamespace): Promise<Article[]> {
@@ -57,4 +57,20 @@ export async function readAll(kv: KVNamespace): Promise<StoredData> {
     readLastRun(kv),
   ]);
   return { articles, breaking, lastRun };
+}
+
+export async function readNfcEast(kv: KVNamespace): Promise<RivalItem[]> {
+  try {
+    const raw = await kv.get(SITE.kvKeys.nfcEast);
+    if (!raw) return [];
+    return JSON.parse(raw) as RivalItem[];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeNfcEast(kv: KVNamespace, items: RivalItem[]): Promise<void> {
+  await kv.put(SITE.kvKeys.nfcEast, JSON.stringify(items), {
+    expirationTtl: 60 * 60 * 4,
+  });
 }

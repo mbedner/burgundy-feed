@@ -14,7 +14,7 @@ preview_id = "3a4b4607b132477c968a5fc087fdda36"
 
 [vars]
 REFRESH_SECRET = "Commanders"
-REWRITE_MODE   = "witty"   # straight | witty | savage
+REWRITE_MODE   = "straight"   # straight | witty | savage
 
 # ─── Astro Pages site uses the SAME KV namespace ──────────────────────────────
 # In Cloudflare Pages → Settings → Functions → KV namespace bindings:
