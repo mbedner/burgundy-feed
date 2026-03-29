@@ -1,201 +1,299 @@
 ---
 // ─── PWA Install Prompt ───────────────────────────────────────────────────────
-// Renders a small footer banner prompting users to install the PWA.
-// • Android/Chrome: intercepts BeforeInstallPromptEvent → native install dialog
-// • iOS/Safari:     shows step-by-step share sheet instructions
-// • Already installed (standalone): hidden entirely
-// • Dismissed: hidden for 30 days via localStorage
+// Renders a slim footer banner with two install buttons:
+//   • "Add to Home Screen" (iOS) → opens a modal with step-by-step instructions
+//   • "Install App" (Android)    → triggers BeforeInstallPromptEvent natively
+// Already-installed (standalone) or recently dismissed → hidden
+// Dismissed: hidden for 180 days via localStorage (key: bf-install-v2)
 ---
 
+<!-- ── Banner ──────────────────────────────────────────────────────────────── -->
 <div id="install-prompt" class="ip" aria-live="polite" hidden>
-
-  <!-- Android variant -->
-  <div class="ip-inner ip-android" hidden>
-    <div class="ip-text">
-      <strong class="ip-title">Add to Home Screen</strong>
-      <span class="ip-sub">Install Burgundy Feed for a faster, app-like experience.</span>
-    </div>
-    <div class="ip-actions">
-      <button class="ip-btn ip-btn--install" id="ip-install-btn">Install</button>
-      <button class="ip-btn ip-btn--dismiss" id="ip-dismiss-android" aria-label="Dismiss">✕</button>
-    </div>
+  <span class="ip-label">Get the app</span>
+  <div class="ip-actions">
+    <!-- iOS button — always visible on any platform (user may share link) -->
+    <button class="ip-btn ip-btn--ios" id="ip-ios-btn" type="button">
+      <svg class="ip-btn-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M8 1a1 1 0 0 1 .707.293l3 3a1 1 0 0 1-1.414 1.414L9 4.414V11a1 1 0 1 1-2 0V4.414L5.707 5.707A1 1 0 0 1 4.293 4.293l3-3A1 1 0 0 1 8 1ZM2 13a1 1 0 0 1 1-1h10a1 1 0 0 1 0 2H3a1 1 0 0 1-1-1Z"/>
+      </svg>
+      iPhone / iPad
+    </button>
+    <!-- Android button — shown only when BeforeInstallPromptEvent fires -->
+    <button class="ip-btn ip-btn--android" id="ip-android-btn" type="button" hidden>
+      <svg class="ip-btn-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M2.76 5.116A6.998 6.998 0 0 1 8 2.5c2.108 0 3.993.93 5.24 2.616l.992-.808A8.498 8.498 0 0 0 8 1a8.498 8.498 0 0 0-6.232 3.308l.992.808ZM1 8.5a7 7 0 0 0 14 0H1Zm5.5 4.5a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1h-3Z"/>
+      </svg>
+      Install App
+    </button>
   </div>
+  <button class="ip-dismiss" id="ip-dismiss-btn" type="button" aria-label="Dismiss install prompt">✕</button>
+</div>
 
-  <!-- iOS variant -->
-  <div class="ip-inner ip-ios" hidden>
-    <button class="ip-close" id="ip-dismiss-ios" aria-label="Dismiss">✕</button>
-    <strong class="ip-title">Add to Home Screen</strong>
-    <ol class="ip-steps">
-      <li>Tap the <strong>Share</strong> button&nbsp;<span class="ip-icon-share" aria-label="share icon">⎙</span> in Safari's toolbar</li>
+<!-- ── iOS Modal ──────────────────────────────────────────────────────────── -->
+<div id="ip-modal" class="ip-modal" role="dialog" aria-modal="true" aria-labelledby="ip-modal-title" hidden>
+  <div class="ip-modal-backdrop" id="ip-modal-backdrop"></div>
+  <div class="ip-modal-card">
+    <button class="ip-modal-close" id="ip-modal-close" type="button" aria-label="Close">✕</button>
+    <strong class="ip-modal-title" id="ip-modal-title">Add to Home Screen</strong>
+    <p class="ip-modal-sub">Follow these steps in Safari:</p>
+    <ol class="ip-modal-steps">
+      <li>
+        Tap the <strong>Share</strong> button
+        <span class="ip-share-icon" aria-label="share icon">
+          <svg viewBox="0 0 20 22" aria-hidden="true" focusable="false">
+            <path d="M10 1v13M4 6l6-5 6 5M3 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        at the bottom of your screen
+      </li>
       <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-      <li>Tap <strong>Add</strong> — done!</li>
+      <li>Tap <strong>Add</strong> in the top-right corner — done!</li>
     </ol>
   </div>
-
 </div>
 
 <style>
+  /* ── Banner ──────────────────────────────────────────────────────────────── */
   .ip {
     width: 100%;
     background: #1a1a1a;
-    border-top: 1px solid #2a2a2a;
-    padding: 0;
-  }
-
-  /* ── Android banner ───────────────────────────────────────────────────────── */
-  .ip-inner {
+    border-top: 1px solid #333;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 10px 16px;
+    flex-shrink: 0;
   }
 
-  .ip-text {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .ip-title {
+  .ip-label {
     font-size: 13px;
     font-weight: 700;
-    color: var(--text, #f0f0f0);
-  }
-  .ip-sub {
-    font-size: 11px;
-    color: var(--text-3, #888);
-    line-height: 1.4;
+    color: #e8e8e8;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .ip-actions {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+    flex: 1;
   }
 
   .ip-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     border: none;
     cursor: pointer;
     font-family: inherit;
+    font-size: 12px;
     font-weight: 700;
-    border-radius: 6px;
+    border-radius: 20px;
+    padding: 6px 14px;
     transition: opacity 0.15s;
+    white-space: nowrap;
+    line-height: 1;
   }
-  .ip-btn:hover { opacity: 0.8; }
+  .ip-btn:hover { opacity: 0.85; }
 
-  .ip-btn--install {
+  .ip-btn--ios {
+    background: #f0f0f0;
+    color: #111111;
+  }
+  .ip-btn--android {
     background: #9b1535;
     color: #ffffff;
-    font-size: 13px;
-    padding: 7px 16px;
-  }
-  .ip-btn--dismiss {
-    background: transparent;
-    color: var(--text-3, #888);
-    font-size: 16px;
-    padding: 4px 8px;
   }
 
-  /* ── iOS instruction card ─────────────────────────────────────────────────── */
-  .ip-ios {
-    flex-direction: column;
-    align-items: flex-start;
-    position: relative;
-    padding: 14px 16px 16px;
-    gap: 10px;
+  .ip-btn-icon {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+    flex-shrink: 0;
   }
 
-  .ip-close {
-    position: absolute;
-    top: 10px;
-    right: 12px;
+  .ip-dismiss {
     background: transparent;
     border: none;
-    color: var(--text-3, #888);
+    color: #b0b0b0;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px 6px;
+    line-height: 1;
+    flex-shrink: 0;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .ip-dismiss:hover { color: #e8e8e8; }
+
+  /* ── Modal backdrop ──────────────────────────────────────────────────────── */
+  .ip-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .ip-modal[hidden] { display: none; }
+
+  .ip-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+  }
+
+  /* ── Modal card ──────────────────────────────────────────────────────────── */
+  .ip-modal-card {
+    position: relative;
+    z-index: 1;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 16px 16px 0 0;
+    padding: 24px 20px 32px;
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: ip-slide-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes ip-slide-up {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .ip-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #b0b0b0;
     font-size: 16px;
     cursor: pointer;
     padding: 4px 8px;
     line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .ip-modal-close:hover { color: #e8e8e8; }
+
+  .ip-modal-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f0f0f0;
+    line-height: 1.2;
   }
 
-  .ip-steps {
+  .ip-modal-sub {
     margin: 0;
-    padding-left: 18px;
+    font-size: 13px;
+    color: #b0b0b0;
+  }
+
+  .ip-modal-steps {
+    margin: 4px 0 0;
+    padding-left: 20px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--text-2, #ccc);
+    gap: 10px;
+    font-size: 14px;
+    color: #cccccc;
     line-height: 1.5;
   }
-  .ip-steps strong { color: var(--text, #f0f0f0); }
+  .ip-modal-steps strong { color: #f0f0f0; }
 
-  .ip-icon-share {
-    display: inline-block;
-    font-style: normal;
-    font-size: 15px;
-    color: #3478f6; /* iOS blue */
-    font-weight: 700;
-    vertical-align: -1px;
+  .ip-share-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    color: #3478f6;
+    margin: 0 2px;
+  }
+  .ip-share-icon svg {
+    width: 16px;
+    height: 18px;
   }
 </style>
 
 <script>
   (() => {
-    const STORAGE_KEY = 'bf-install-dismissed';
+    const STORAGE_KEY  = 'bf-install-v2';
     const DISMISS_DAYS = 180;
 
-    const prompt  = document.getElementById('install-prompt');
-    const android = prompt?.querySelector('.ip-android');
-    const ios     = prompt?.querySelector('.ip-ios');
-    if (!prompt || !android || !ios) return;
+    const banner  = document.getElementById('install-prompt');
+    const modal   = document.getElementById('ip-modal');
+    if (!banner || !modal) return;
 
     // Already installed as PWA — never show
     if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
 
-    // Dismissed recently — skip
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (dismissed && Date.now() - parseInt(dismissed, 10) < DISMISS_DAYS * 864e5) return;
+    // Check if URL has ?install param to force-show (for testing)
+    const forceShow = new URLSearchParams(location.search).has('install');
 
-    function dismiss() {
-      localStorage.setItem(STORAGE_KEY, String(Date.now()));
-      prompt.hidden = true;
+    // Dismissed recently — skip (unless forced)
+    if (!forceShow) {
+      const dismissed = localStorage.getItem(STORAGE_KEY);
+      if (dismissed && Date.now() - parseInt(dismissed, 10) < DISMISS_DAYS * 864e5) return;
     }
 
-    document.getElementById('ip-dismiss-ios')?.addEventListener('click', dismiss);
-    document.getElementById('ip-dismiss-android')?.addEventListener('click', dismiss);
+    // ── Dismiss helpers ──────────────────────────────────────────────────────
+    function dismissBanner() {
+      localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      banner.hidden = true;
+    }
 
-    // ── Android: intercept the browser install event ───────────────────────
+    function closeModal() {
+      modal.hidden = true;
+    }
+
+    document.getElementById('ip-dismiss-btn')?.addEventListener('click', dismissBanner);
+    document.getElementById('ip-modal-close')?.addEventListener('click', closeModal);
+    document.getElementById('ip-modal-backdrop')?.addEventListener('click', closeModal);
+
+    // Close modal on Escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+
+    // ── iOS button → open modal ──────────────────────────────────────────────
+    document.getElementById('ip-ios-btn')?.addEventListener('click', () => {
+      modal.hidden = false;
+    });
+
+    // ── Android: intercept BeforeInstallPromptEvent ──────────────────────────
     let deferredPrompt = null;
+    const androidBtn   = document.getElementById('ip-android-btn');
 
     window.addEventListener('beforeinstallprompt', e => {
       e.preventDefault();
       deferredPrompt = e;
-      android.hidden = false;
-      prompt.hidden  = false;
+      if (androidBtn) androidBtn.hidden = false;
+      banner.hidden = false;
     });
 
-    document.getElementById('ip-install-btn')?.addEventListener('click', async () => {
+    androidBtn?.addEventListener('click', async () => {
       if (!deferredPrompt) return;
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       deferredPrompt = null;
       if (outcome === 'accepted') {
-        prompt.hidden = true;
+        banner.hidden = true;
       }
     });
 
-    window.addEventListener('appinstalled', () => { prompt.hidden = true; });
+    window.addEventListener('appinstalled', () => { banner.hidden = true; });
 
-    // ── iOS: detect Safari on iPhone/iPad ─────────────────────────────────
+    // ── iOS Safari detection — show banner (Android button stays hidden) ─────
     const isIos    = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     if (isIos && isSafari) {
-      ios.hidden    = false;
-      prompt.hidden = false;
+      banner.hidden = false;
     }
   })();
 </script>

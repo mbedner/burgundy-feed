@@ -104,8 +104,8 @@ const { mode } = Astro.props;
   .sp--gameday  { --sp-reveal-t: 0.65s; }
 
   @keyframes sp-reveal {
-    from { opacity: 0; transform: scale(0.96); }
-    to   { opacity: 1; transform: scale(1);    }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
   }
 
   .sp-name {
@@ -118,7 +118,7 @@ const { mode } = Astro.props;
     white-space: nowrap;
   }
   .sp-n1 { color: #ffffff; }
-  .sp-n2 { color: #9b1535; }
+  .sp-n2 { color: #d4940e; }
 
   /* ── Mode badges ──────────────────────────────────────────────────────────── */
   .sp-badge {
@@ -218,10 +218,10 @@ const { mode } = Astro.props;
     bottom: 0;
   }
 
-  .sp-st--wl { left: calc(50% - 116px); width: 26px; background: #ffffff; }
-  .sp-st--gl { left: calc(50% - 20px);  width: 20px; background: #d4940e; }
-  .sp-st--gr { left: 50%;               width: 20px; background: #d4940e; }
-  .sp-st--wr { left: calc(50% + 90px);  width: 26px; background: #ffffff; }
+  .sp-st--wl { left: calc(50% - 95px); width: 26px; background: #ffffff; }
+  .sp-st--gl { left: calc(50% - 24px); width: 24px; background: #d4940e; }
+  .sp-st--gr { left: 50%;              width: 24px; background: #d4940e; }
+  .sp-st--wr { left: calc(50% + 69px); width: 26px; background: #ffffff; }
 </style>
 
 <script>
@@ -253,7 +253,7 @@ const { mode } = Astro.props;
 
     // Hold until page is loaded + minimum display time
     // (prevents the animation being cut short on cache-fast loads)
-    const MIN_MS = 1500;
+    const MIN_MS = 2200;
     const t0 = performance.now();
 
     function dismiss() {
