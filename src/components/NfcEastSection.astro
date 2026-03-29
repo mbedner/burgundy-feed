@@ -1,0 +1,129 @@
+---
+// ─── NFC East Rivals section ──────────────────────────────────────────────────
+// Rendered below the Latest News stream in the main column.
+// Shows up to 2 recent stories per rival with image thumbnails where available.
+import type { RivalItem } from '../lib/types';
+interface Props { items: RivalItem[]; }
+const { items } = Astro.props;
+const hasItems = items.length > 0;
+
+function rel(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m  = Math.max(0, Math.floor(ms / 60000));
+  if (m < 60) return m === 0 ? 'now' : `${m}m`;
+  const h  = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+const TEAMS = [
+  { key: 'cowboys', label: 'Cowboys', accent: '#002A5C' },
+  { key: 'giants',  label: 'Giants',  accent: '#0B2265' },
+  { key: 'eagles',  label: 'Eagles',  accent: '#004C54' },
+] as const;
+---
+
+{hasItems && (
+  <section class="rivals">
+    <p class="rivals-label">Around the NFC East</p>
+    {TEAMS.map(({ key, label, accent }) => {
+      const teamItems = items.filter(i => i.team === key);
+      if (!teamItems.length) return null;
+      return (
+        <div class="rivals-team">
+          <span class="rivals-team-badge" style={`color:${accent};background:${accent}1a;`}>{label}</span>
+          {teamItems.map(item => (
+            <a href={item.url} target="_blank" rel="noopener noreferrer" class="rival-card">
+              <div class="rival-card-body">
+                <p class="rival-hed">{item.headline}</p>
+                <span class="rival-time">{rel(item.publishedAt)}</span>
+              </div>
+              {item.imageUrl && (
+                <img class="rival-thumb" src={item.imageUrl} alt="" loading="lazy" decoding="async" />
+              )}
+            </a>
+          ))}
+        </div>
+      );
+    })}
+  </section>
+)}
+
+<style>
+  .rivals {
+    padding-top: 4px;
+    padding-bottom: 16px;
+  }
+
+  .rivals-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    padding: 14px 0 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+
+  .rivals-team {
+    margin-bottom: 14px;
+  }
+
+  .rivals-team-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+  }
+
+  .rival-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    transition: background 0.1s;
+  }
+  .rival-card:last-child { border-bottom: none; }
+  .rival-card:hover .rival-hed { color: var(--accent); }
+
+  .rival-card-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .rival-hed {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-2);
+    line-height: 1.4;
+    margin: 0;
+    word-break: break-word;
+    transition: color 0.12s;
+  }
+
+  .rival-time {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-4);
+    white-space: nowrap;
+  }
+
+  .rival-thumb {
+    width: 88px;
+    height: 62px;
+    object-fit: cover;
+    border-radius: 5px;
+    flex-shrink: 0;
+    background: var(--surface-3);
+  }
+</style>

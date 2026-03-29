@@ -262,10 +262,13 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
 import type { RivalItem } from './types';
 
 const NFC_EAST_RIVALS: Array<{ team: RivalItem['team']; teamName: string; rssUrl: string }> = [
-  { team: 'cowboys', teamName: 'Cowboys', rssUrl: 'https://cowboyswire.usatoday.com/feed/' },
-  { team: 'giants',  teamName: 'Giants',  rssUrl: 'https://giantswire.usatoday.com/feed/' },
-  { team: 'eagles',  teamName: 'Eagles',  rssUrl: 'https://eagleswire.usatoday.com/feed/' },
+  { team: 'cowboys', teamName: 'Cowboys', rssUrl: 'https://www.dallascowboys.com/rss/news' },
+  { team: 'giants',  teamName: 'Giants',  rssUrl: 'https://www.giants.com/rss/news' },
+  { team: 'eagles',  teamName: 'Eagles',  rssUrl: 'https://www.philadelphiaeagles.com/rss/news' },
 ];
+
+const NFC_RECENT_MS  = 7 * 24 * 60 * 60 * 1000; // 7 days
+const SPANISH_RE     = /[áéíóúüñÁÉÍÓÚÜÑ¿¡]/;
 
 export async function runNfcEastIngest(): Promise<RivalItem[]> {
   const results: RivalItem[] = [];
@@ -274,17 +277,27 @@ export async function runNfcEastIngest(): Promise<RivalItem[]> {
     NFC_EAST_RIVALS.map(async rival => {
       try {
         const items = await fetchRssFeed(rival.rssUrl);
-        items.slice(0, 2).forEach(item => {
-          if (!item.link || !item.title) return;
-          results.push({
-            team:        rival.team,
-            teamName:    rival.teamName,
-            headline:    item.title,
-            url:         item.link,
-            sourceName:  `${rival.teamName} Wire`,
-            publishedAt: item.pubDate,
+        items
+          .filter(item => {
+            if (!item.link || !item.title) return false;
+            // Skip non-English content (Spanish diacritics)
+            if (SPANISH_RE.test(item.title)) return false;
+            // Skip stale content older than 7 days
+            const age = Date.now() - new Date(item.pubDate).getTime();
+            return age >= 0 && age < NFC_RECENT_MS;
+          })
+          .slice(0, 2)
+          .forEach(item => {
+            results.push({
+              team:        rival.team,
+              teamName:    rival.teamName,
+              headline:    item.title,
+              url:         item.link,
+              sourceName:  rival.teamName,
+              publishedAt: item.pubDate,
+              imageUrl:    item.imageUrl ?? null,
+            });
           });
-        });
       } catch {
         // Non-critical — NFC East section degrades gracefully
       }

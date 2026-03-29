@@ -86,4 +86,5 @@ export interface RivalItem {
   url:         string;
   sourceName:  string;
   publishedAt: string;
+  imageUrl:    string | null;
 }

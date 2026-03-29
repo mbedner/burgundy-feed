@@ -25,7 +25,7 @@ import GameDayBanner       from '../components/GameDayBanner.astro';
 import DraftBanner         from '../components/DraftBanner.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
-import NfcEastSidebar from '../components/NfcEastSidebar.astro';
+import NfcEastSection from '../components/NfcEastSection.astro';
 import type { RivalItem } from '../lib/types';
 import { readNfcEast } from '../lib/kv';
 
@@ -719,6 +719,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
             ? <NewsStream items={streamItems} />
             : <p class="empty-msg">Waiting for first ingest run…</p>
           }
+          <NfcEastSection items={nfcEastItems} />
         </section>
       </div>
 
@@ -733,7 +734,6 @@ const lastUpdated = lastRun?.completedAt ?? null;
           txLabel={TRANSACTION_SEASON.label}
           showTx={showTxTracker}
         />
-        <NfcEastSidebar items={nfcEastItems} />
       </aside>
     </div>
 
