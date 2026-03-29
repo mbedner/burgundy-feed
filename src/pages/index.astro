@@ -729,17 +729,17 @@ const lastUpdated = lastRun?.completedAt ?? null;
     // window.open() so Android shows a Custom Chrome Tab (in-app browser)
     // rather than dropping the user out of the PWA entirely.
     const isStandalone = matchMedia('(display-mode: standalone)').matches
-                      || (navigator as any).standalone === true;
+                      || !!navigator.standalone;
     if (isStandalone) {
       document.addEventListener('click', e => {
-        const a = (e.target as Element).closest('a[href]') as HTMLAnchorElement | null;
+        const a = e.target.closest('a[href]');
         if (!a || !a.href) return;
         try {
           const url = new URL(a.href);
           if (url.origin === location.origin) return; // internal — navigate normally
           e.preventDefault();
           window.open(a.href, '_blank', 'noopener,noreferrer');
-        } catch { /* malformed href — ignore */ }
+        } catch (err) { /* malformed href — ignore */ }
       }, true);
     }
 

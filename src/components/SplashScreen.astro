@@ -1,187 +1,227 @@
 ---
 // ─── Splash Screen ────────────────────────────────────────────────────────────
-// Shown on PWA launch (standalone mode). Dismissed by client JS after the page
-// loads and a minimum display time has elapsed.
-// Mode is determined server-side:
-//   'gameday'  → Commanders game days     (most energetic)
-//   'draft'    → NFL Draft window         (slightly higher energy)
-//   'everyday' → Default fallback         (clean, calm)
-// Test via ?splash in the URL to force-show regardless of standalone mode.
+// Animation sequence (all CSS-driven, no JS required for timing):
+//
+//  Phase 1 — Stripes drop in from top, staggered:
+//    • Center gold stripe leads (dramatic ease)
+//    • Outer white stripes follow slightly behind
+//
+//  Phase 2 — Pattern splits at center:
+//    • Left group (white-left + gold-left-half) exits left
+//    • Right group (gold-right-half + white-right) exits right
+//    • "BURGUNDY FEED" name fades in as panels depart
+//
+//  Phase 3 — JS fades out the whole splash after MIN_MS
+//
+//  Modes differ in speed and background intensity:
+//    everyday  → calm, deliberate (default)
+//    draft     → slightly faster, warmer
+//    gameday   → fast, aggressive ease with spring overshoot on drop-in
 
 export type SplashMode = 'everyday' | 'draft' | 'gameday';
 interface Props { mode: SplashMode; }
 const { mode } = Astro.props;
-
-// W path: 6-segment polyline forming a bold angular W
-// viewBox 200×130, stroke-linecap/join = round, stroke-width = 14
-// Approx path length = 464px → use dasharray 500
-const W_PATH = 'M 10,15 L 48,115 L 75,58 L 100,115 L 125,58 L 152,115 L 190,15';
 ---
 
-<div id="splash" class={`splash splash--${mode}`} aria-hidden="true" role="presentation">
-  <div class="splash-inner">
+<div id="splash" class={`sp sp--${mode}`} aria-hidden="true" role="presentation">
 
-    <!-- Commanders W mark -->
-    <svg class="splash-w" viewBox="0 0 200 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <!-- Soft glow behind the W (Game Day only, fades in with delay) -->
-      {mode === 'gameday' && (
-        <path class="w-glow" d={W_PATH}
-              fill="none" stroke="#9b1535" stroke-width="26"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      )}
-      <!-- The W itself -->
-      <path class="w-path" d={W_PATH}
-            fill="none" stroke="currentColor" stroke-width="14"
-            stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-
-    <!-- Mode badge -->
+  <!-- Site name revealed after the curtain splits -->
+  <div class="sp-reveal">
+    <p class="sp-name">
+      <span class="sp-n1">BURGUNDY</span><span class="sp-n2">FEED</span>
+    </p>
     {mode === 'draft' && (
-      <div class="splash-badge splash-badge--draft">
-        <span class="badge-dot"/>
-        DRAFT
-      </div>
+      <span class="sp-badge sp-badge--draft">DRAFT COVERAGE</span>
     )}
     {mode === 'gameday' && (
-      <div class="splash-badge splash-badge--gameday">
-        <span class="badge-dot badge-dot--live"/>
-        LIVE
-      </div>
+      <span class="sp-badge sp-badge--gameday">
+        <span class="sp-dot"></span>GAME DAY
+      </span>
     )}
-
   </div>
+
+  <!--
+    Two curtain groups. Each is full-screen (position: absolute; inset: 0)
+    and contains only the stripe elements assigned to its exit direction.
+    The gold stripe is split in half between the two groups so the center
+    seam tears exactly on the screen midline.
+  -->
+
+  <!-- Left group → exits translateX(-100vw) -->
+  <div class="sp-group sp-group--l">
+    <div class="sp-st sp-st--wl"></div>
+    <div class="sp-st sp-st--gl"></div>
+  </div>
+
+  <!-- Right group → exits translateX(+100vw) -->
+  <div class="sp-group sp-group--r">
+    <div class="sp-st sp-st--gr"></div>
+    <div class="sp-st sp-st--wr"></div>
+  </div>
+
 </div>
 
 <style>
-  /* ── Base ────────────────────────────────────────────────────────────────── */
-  .splash {
+  /* ── Splash container ─────────────────────────────────────────────────────── */
+  .sp {
     position: fixed;
     inset: 0;
     z-index: 9999;
+    overflow: hidden;           /* clips stripes sliding from above */
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0d0d0d;
+    background: var(--sp-bg);
     opacity: 1;
-    transition: opacity 0.45s ease;
-    /* Prevent scroll bleed-through during animation */
-    overflow: hidden;
+    transition: opacity 0.4s ease;
   }
-  .splash.splash--exit {
+
+  /* Background per mode — progressively deeper/more intense */
+  .sp--everyday { --sp-bg: #5a1414; }
+  .sp--draft    { --sp-bg: #4a1010; }
+  .sp--gameday  { --sp-bg: #380808; }
+
+  /* JS adds this class to trigger the overall fade-out */
+  .sp.sp--exit {
     opacity: 0;
     pointer-events: none;
   }
 
-  /* Mode-specific backgrounds */
-  .splash--draft   { background: #0e0c08; }
-  .splash--gameday { background: #120404; }
-
-  /* ── Inner layout ────────────────────────────────────────────────────────── */
-  .splash-inner {
+  /* ── Site name (revealed behind the departing curtains) ──────────────────── */
+  .sp-reveal {
+    position: relative;
+    z-index: 1;                 /* below the stripe groups (z-index: 2) */
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
-  }
-
-  /* ── W mark ──────────────────────────────────────────────────────────────── */
-  .splash-w {
-    width: clamp(100px, 40vw, 160px);
-    height: auto;
-    color: #ffffff;
-    overflow: visible;
-  }
-
-  /* Draw-in animation via stroke-dashoffset */
-  .w-path {
-    stroke-dasharray: 500;
-    stroke-dashoffset: 500;
-    animation: draw-w var(--draw-dur, 0.95s) cubic-bezier(0.4, 0, 0.2, 1)
-               var(--draw-delay, 0.05s) forwards;
-  }
-  @keyframes draw-w {
-    to { stroke-dashoffset: 0; }
-  }
-
-  /* Everyday: calm pace */
-  .splash--everyday .w-path {
-    --draw-dur:   1.0s;
-    --draw-delay: 0.1s;
-  }
-
-  /* Draft: slightly quicker, precise */
-  .splash--draft .w-path {
-    --draw-dur:   0.8s;
-    --draw-delay: 0.05s;
-    stroke: #f0e8d0;   /* warm off-white */
-  }
-
-  /* Game Day: fast draw then pulse */
-  .splash--gameday .w-path {
-    --draw-dur:   0.55s;
-    --draw-delay: 0.05s;
-  }
-  .splash--gameday .splash-w {
-    /* Pulse after the W finishes drawing (delay ≈ draw-dur + draw-delay) */
-    animation: pulse-w 0.35s ease-in-out 0.7s 2 alternate both;
-    transform-origin: center;
-  }
-  @keyframes pulse-w {
-    to { transform: scale(1.07); }
-  }
-
-  /* Glow behind the W for Game Day */
-  .w-glow {
+    gap: 10px;
     opacity: 0;
-    animation: glow-in 0.5s ease 0.55s forwards;
-    filter: blur(6px);
-  }
-  @keyframes glow-in {
-    to { opacity: 0.45; }
+    animation: sp-reveal 0.5s ease var(--sp-reveal-t) both;
   }
 
-  /* ── Mode badges ─────────────────────────────────────────────────────────── */
-  .splash-badge {
+  .sp--everyday { --sp-reveal-t: 0.88s; }
+  .sp--draft    { --sp-reveal-t: 0.78s; }
+  .sp--gameday  { --sp-reveal-t: 0.65s; }
+
+  @keyframes sp-reveal {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1);    }
+  }
+
+  .sp-name {
+    margin: 0;
+    font-family: 'Inter', 'Arial Black', sans-serif;
+    font-size: clamp(24px, 6.5vw, 40px);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .sp-n1 { color: #ffffff; }
+  .sp-n2 { color: #9b1535; }
+
+  /* ── Mode badges ──────────────────────────────────────────────────────────── */
+  .sp-badge {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-family: 'Inter', 'Arial Black', sans-serif;
+    gap: 7px;
+    font-family: 'Inter', sans-serif;
     font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.18em;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    opacity: 0;
-    animation: badge-in 0.3s ease var(--badge-delay, 0.9s) forwards;
   }
-  @keyframes badge-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  .sp-badge--draft   { color: #d4940e; }
+  .sp-badge--gameday { color: #ff5555; }
 
-  .splash-badge--draft {
-    color: #d4940e;
-    --badge-delay: 0.88s;
-  }
-  .splash-badge--gameday {
-    color: #ff4444;
-    --badge-delay: 0.65s;
-  }
-
-  .badge-dot {
+  .sp-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: currentColor;
     flex-shrink: 0;
+    animation: dot-pulse 0.85s ease-in-out infinite alternate;
   }
-  /* Pulsing live indicator */
-  .badge-dot--live {
-    animation: live-pulse 1s ease-in-out 1s infinite alternate;
+  @keyframes dot-pulse {
+    to { opacity: 0.25; transform: scale(0.65); }
   }
-  @keyframes live-pulse {
-    from { opacity: 1; transform: scale(1); }
-    to   { opacity: 0.4; transform: scale(0.7); }
+
+  /* ── Stripe groups ────────────────────────────────────────────────────────── */
+  .sp-group {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
   }
+
+  /* ── Phase 1: stripes drop from top ──────────────────────────────────────── */
+  @keyframes sp-drop {
+    from { transform: translateY(-100vh); }
+    to   { transform: translateY(0); }
+  }
+
+  /* Gold (center) leads — both halves animate identically */
+  .sp--everyday .sp-st--gl,
+  .sp--everyday .sp-st--gr {
+    animation: sp-drop 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+  }
+  .sp--everyday .sp-st--wl,
+  .sp--everyday .sp-st--wr {
+    animation: sp-drop 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
+  }
+
+  .sp--draft .sp-st--gl,
+  .sp--draft .sp-st--gr {
+    animation: sp-drop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+  }
+  .sp--draft .sp-st--wl,
+  .sp--draft .sp-st--wr {
+    animation: sp-drop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.19s both;
+  }
+
+  /* Game Day: spring overshoot (cubic-bezier above y=1) for snap/energy */
+  .sp--gameday .sp-st--gl,
+  .sp--gameday .sp-st--gr {
+    animation: sp-drop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) 0.03s both;
+  }
+  .sp--gameday .sp-st--wl,
+  .sp--gameday .sp-st--wr {
+    animation: sp-drop 0.42s cubic-bezier(0.2, 1.5, 0.4, 1) 0.14s both;
+  }
+
+  /* ── Phase 2: curtain split exit ─────────────────────────────────────────── */
+  @keyframes sp-exit-l { to { transform: translateX(-100vw); } }
+  @keyframes sp-exit-r { to { transform: translateX( 100vw); } }
+
+  .sp--everyday .sp-group--l { animation: sp-exit-l 0.52s cubic-bezier(0.4, 0, 1, 1) 0.88s both; }
+  .sp--everyday .sp-group--r { animation: sp-exit-r 0.52s cubic-bezier(0.4, 0, 1, 1) 0.88s both; }
+
+  .sp--draft .sp-group--l    { animation: sp-exit-l 0.46s cubic-bezier(0.4, 0, 1, 1) 0.78s both; }
+  .sp--draft .sp-group--r    { animation: sp-exit-r 0.46s cubic-bezier(0.4, 0, 1, 1) 0.78s both; }
+
+  /* Game Day: aggressive acceleration out */
+  .sp--gameday .sp-group--l  { animation: sp-exit-l 0.38s cubic-bezier(0.6, 0, 1, 0.8) 0.62s both; }
+  .sp--gameday .sp-group--r  { animation: sp-exit-r 0.38s cubic-bezier(0.6, 0, 1, 0.8) 0.62s both; }
+
+  /* ── Individual stripes ───────────────────────────────────────────────────── */
+  /*
+    Stripe positions are relative to the viewport center (50%).
+    Pattern mirrors the favicon: white · gold · white, thin-wide-thin.
+    Gold is split at 50% so each half belongs to its curtain group.
+
+    Widths:  white = 26px each, gold = 20px per half (40px total)
+    Spacing: 70px gap from gold edge to white inner edge
+  */
+  .sp-st {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+  }
+
+  .sp-st--wl { left: calc(50% - 116px); width: 26px; background: #ffffff; }
+  .sp-st--gl { left: calc(50% - 20px);  width: 20px; background: #d4940e; }
+  .sp-st--gr { left: 50%;               width: 20px; background: #d4940e; }
+  .sp-st--wr { left: calc(50% + 90px);  width: 26px; background: #ffffff; }
 </style>
 
 <script>
@@ -194,14 +234,15 @@ const W_PATH = 'M 10,15 L 48,115 L 75,58 L 100,115 L 125,58 L 152,115 L 190,15';
                       || (navigator as any).standalone === true;
     const forceSplash  = params.has('splash');
 
-    // Skip entirely if not in standalone mode and not forced via ?splash
+    // Only show in standalone mode or when forced with ?splash
     if (!isStandalone && !forceSplash) {
       splash.remove();
       return;
     }
 
     // In standalone: only show on first launch per session
-    // (sessionStorage clears when the PWA is fully closed and reopened)
+    // sessionStorage clears when the PWA is fully closed, so this fires on
+    // each fresh app open but not on internal navigations or auto-reloads.
     if (isStandalone && !forceSplash) {
       if (sessionStorage.getItem('bf-launched')) {
         splash.remove();
@@ -210,23 +251,20 @@ const W_PATH = 'M 10,15 L 48,115 L 75,58 L 100,115 L 125,58 L 152,115 L 190,15';
       sessionStorage.setItem('bf-launched', '1');
     }
 
-    // Minimum display time keeps the animation from being cut short
-    // if the page loads very fast (e.g. service worker cache hit)
-    const MIN_MS = 1600;
+    // Hold until page is loaded + minimum display time
+    // (prevents the animation being cut short on cache-fast loads)
+    const MIN_MS = 1500;
     const t0 = performance.now();
 
     function dismiss() {
       const wait = Math.max(0, MIN_MS - (performance.now() - t0));
       setTimeout(() => {
-        splash.classList.add('splash--exit');
+        splash.classList.add('sp--exit');
         splash.addEventListener('transitionend', () => splash.remove(), { once: true });
       }, wait);
     }
 
-    if (document.readyState === 'complete') {
-      dismiss();
-    } else {
-      window.addEventListener('load', dismiss, { once: true });
-    }
+    if (document.readyState === 'complete') dismiss();
+    else window.addEventListener('load', dismiss, { once: true });
   })();
 </script>
