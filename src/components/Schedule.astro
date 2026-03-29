@@ -5,6 +5,24 @@ interface Props {
   lastSeason: typeof LAST_SEASON;
 }
 const { schedule, lastSeason } = Astro.props;
+
+const DIVISION_OPPONENTS = new Set([
+  'Dallas Cowboys', 'NY Giants', 'Philadelphia Eagles',
+]);
+
+function scheduleSort(games: typeof schedule) {
+  const scored = games
+    .filter(g => g.opponent !== 'TBD' && g.home !== null)
+    .map(g => ({
+      ...g,
+      _group: g.home
+        ? (DIVISION_OPPONENTS.has(g.opponent) ? 0 : 1)   // home div, home non-div
+        : (DIVISION_OPPONENTS.has(g.opponent) ? 2 : 3),  // away div, away non-div
+    }));
+  return scored.sort((a, b) => a._group - b._group);
+}
+
+const sortedSchedule = scheduleSort(schedule);
 ---
 
 <div class="module">
@@ -14,12 +32,19 @@ const { schedule, lastSeason } = Astro.props;
   </div>
 
   <div class="sched-list">
-    {schedule.filter(g => g.opponent !== 'TBD').map(g => (
-      <div class="sched-row">
-        <span class="sched-ha">{g.home === null ? '—' : g.home ? 'vs' : '@'}</span>
-        <span class="sched-opp">{g.opponent}</span>
-      </div>
-    ))}
+    {sortedSchedule.map((g, i) => {
+      const prevGroup = i > 0 ? sortedSchedule[i - 1]._group : g._group;
+      const showDivider = i > 0 && g._group !== prevGroup;
+      return (
+        <>
+          {showDivider && <div class="sched-divider"/>}
+          <div class="sched-row">
+            <span class="sched-ha">{g.home ? 'vs' : '@'}</span>
+            <span class="sched-opp">{g.opponent}</span>
+          </div>
+        </>
+      );
+    })}
   </div>
 
   <!-- 2025 Season Results -->
@@ -69,6 +94,7 @@ const { schedule, lastSeason } = Astro.props;
   }
 
   .sched-list { display: flex; flex-direction: column; margin-bottom: 4px; }
+  .sched-divider { height: 0; border-top: 2px solid var(--border); margin: 4px 0; }
   .sched-row {
     display: grid;
     grid-template-columns: 24px 1fr;
