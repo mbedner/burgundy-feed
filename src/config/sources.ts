@@ -19,7 +19,7 @@ export const SOURCES: SourceConfig[] = [
     quality:          8,
     type:             'beat',
     commandersFocus:  true,
-    enabled:          false, // RSS feed only contains archived content, nothing recent
+    enabled:          true,  // re-enabled; date filter in ingest drops articles older than 7d
   },
   {
     id:               'commanders-nation',

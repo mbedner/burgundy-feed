@@ -232,6 +232,41 @@ let data: StoredData = { articles: [], breaking: [], lastRun: null };
 let nfcEastItems: RivalItem[] = [];
 let liveStats: LiveStats | null = null;
 let espnTransactions: EspnTransaction[] = [];
+let divisionStandings: any[] = [];
+
+// Fetch NFC East standings from ESPN (non-critical, fails gracefully)
+async function fetchNfcEastStandings() {
+  try {
+    const res = await fetch(
+      'https://site.api.espn.com/apis/v2/sports/football/nfl/standings',
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!res.ok) return [];
+    const json = await res.json();
+    const NFC_EAST = ['Washington Commanders', 'Dallas Cowboys', 'Philadelphia Eagles', 'New York Giants'];
+    const allEntries: any[] = [];
+    for (const conf of (json.children || [])) {
+      for (const entry of (conf.standings?.entries || [])) {
+        if (NFC_EAST.includes(entry.team?.displayName)) allEntries.push(entry);
+      }
+    }
+    return allEntries
+      .map((e: any) => {
+        const stats = Object.fromEntries((e.stats || []).map((s: any) => [s.name, s.displayValue]));
+        return {
+          name:         e.team.displayName,
+          abbr:         e.team.abbreviation,
+          wins:         Number(stats.wins   ?? 0),
+          losses:       Number(stats.losses ?? 0),
+          ties:         Number(stats.ties   ?? 0),
+          pct:          stats.winPercent ?? '.000',
+          isCommanders: e.team.displayName === 'Washington Commanders',
+        };
+      })
+      .sort((a: any, b: any) => b.wins - a.wins || a.losses - b.losses);
+  } catch { return []; }
+}
+
 try {
   const runtime = (Astro.locals as any).runtime;
   const kv: KVNamespace | undefined =
@@ -260,6 +295,9 @@ try {
 } catch (e) {
   console.error('[cw] KV read error:', e);
 }
+
+// Fetch standings independently (outside KV block — it's a direct ESPN API call)
+divisionStandings = await fetchNfcEastStandings();
 const stats = liveStats ?? { ...TEAM_STATS, source: 'fallback' as const };
 let { articles, breaking, lastRun } = data;
 
@@ -733,6 +771,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
           txItems={espnTransactions}
           txLabel={TRANSACTION_SEASON.label}
           showTx={showTxTracker}
+          standings={divisionStandings}
         />
       </aside>
     </div>

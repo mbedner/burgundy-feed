@@ -218,6 +218,11 @@
   @media (min-width: 1024px) {
     .ip, .ip-modal { display: none !important; }
   }
+
+  /* Hide when already running as an installed PWA — most reliable CSS approach */
+  @media (display-mode: standalone), (display-mode: minimal-ui) {
+    .ip, .ip-modal { display: none !important; }
+  }
 </style>
 
 <script>
@@ -235,7 +240,7 @@
     function isPwa() {
       if (matchMedia('(display-mode: standalone)').matches) return true;
       if (matchMedia('(display-mode: minimal-ui)').matches) return true;
-      if (navigator['standalone'] === true) return true;
+      if (window.navigator.standalone) return true;  // iOS truthy check
       return false;
     }
     if (isPwa()) return;
