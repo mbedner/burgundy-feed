@@ -136,6 +136,16 @@ let rank = 1;
           .some(a => !a.hidden);
         group.hidden = !hasVisible;
       });
+
+      // Scroll to top of Latest News when a filter is applied
+      if (tag) {
+        const section = document.getElementById('stream');
+        if (section) {
+          const navH = document.querySelector('nav, header, .nav, .masthead')?.offsetHeight ?? 56;
+          const top  = section.getBoundingClientRect().top + window.scrollY - navH - 8;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }
+      }
     }
 
     // Clicking a tag pill inside any article activates that filter
