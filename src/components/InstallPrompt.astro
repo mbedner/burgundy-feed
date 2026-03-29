@@ -224,10 +224,16 @@
     const modal  = document.getElementById('ip-modal');
     if (!banner || !modal) return;
 
-    // Never show inside the installed PWA
-    const isStandalone = matchMedia('(display-mode: standalone)').matches
-                      || navigator.standalone === true;
-    if (isStandalone) return;
+    // Never show inside the installed PWA.
+    // Check multiple signals — iOS uses navigator.standalone (non-standard),
+    // Android/Chrome uses the display-mode media query.
+    function isPwa() {
+      if (matchMedia('(display-mode: standalone)').matches) return true;
+      if (matchMedia('(display-mode: minimal-ui)').matches) return true;
+      if (navigator['standalone'] === true) return true;
+      return false;
+    }
+    if (isPwa()) return;
 
     // Check for ?install param to force-show (testing)
     const forceShow = new URLSearchParams(location.search).has('install');
@@ -236,6 +242,12 @@
     if (!forceShow) {
       const dismissed = localStorage.getItem(STORAGE_KEY);
       if (dismissed && Date.now() - parseInt(dismissed, 10) < DISMISS_DAYS * 864e5) return;
+    }
+
+    // Safe show — always re-checks before making banner visible
+    function showBanner() {
+      if (isPwa()) return;
+      banner.hidden = false;
     }
 
     // ── Dismiss helpers ──────────────────────────────────────────────────────
@@ -269,7 +281,7 @@
       e.preventDefault();
       deferredPrompt = e;
       if (androidBtn) androidBtn.hidden = false;
-      banner.hidden = false;
+      showBanner();
     });
 
     androidBtn?.addEventListener('click', async () => {
@@ -287,7 +299,7 @@
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
     if (isIos && isSafari) {
-      banner.hidden = false;
+      showBanner();
     }
   })();
 </script>

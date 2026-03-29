@@ -216,12 +216,19 @@ const { mode } = Astro.props;
     position: absolute;
     top: 0;
     bottom: 0;
+    /* Start off-screen so there is no flash before animation-fill-mode:both
+       applies the `from` keyframe state on the first painted frame. */
+    transform: translateY(-100vh);
   }
 
-  .sp-st--wl { left: calc(50% - 86px); width: 26px; background: #ffffff; }
+  /*
+    Widths:  white = 26px each, gold = 56px total (28px per half)
+    Gap:     24px between gold outer edge and white inner edge
+  */
+  .sp-st--wl { left: calc(50% - 78px); width: 26px; background: #ffffff; }
   .sp-st--gl { left: calc(50% - 28px); width: 28px; background: #d4940e; }
   .sp-st--gr { left: 50%;              width: 28px; background: #d4940e; }
-  .sp-st--wr { left: calc(50% + 60px); width: 26px; background: #ffffff; }
+  .sp-st--wr { left: calc(50% + 52px); width: 26px; background: #ffffff; }
 </style>
 
 <script>

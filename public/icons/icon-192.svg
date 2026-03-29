@@ -5,9 +5,10 @@
     </clipPath>
   </defs>
   <rect width="192" height="192" rx="36" fill="#5a1414"/>
+  <!-- white · gold · white — 24px gap (scaled: 9px), gold 56px (scaled: 21px) -->
   <g clip-path="url(#clip)">
-    <rect x="63.5" y="0" width="10"  height="192" fill="#ffffff"/>
+    <rect x="66.5" y="0" width="10"  height="192" fill="#ffffff"/>
     <rect x="85.5" y="0" width="21"  height="192" fill="#d4940e"/>
-    <rect x="118.5" y="0" width="10" height="192" fill="#ffffff"/>
+    <rect x="115.5" y="0" width="10" height="192" fill="#ffffff"/>
   </g>
 </svg>

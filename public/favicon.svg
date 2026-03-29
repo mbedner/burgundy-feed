@@ -1,11 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <defs><clipPath id="clip"><rect width="32" height="32" rx="5"/></clipPath></defs>
-  <!-- Burgundy background -->
   <rect width="32" height="32" rx="5" fill="#5a1414"/>
-  <!-- Vertical stripe pattern — white · gold (thick) · white, 32px gap -->
+  <!-- white · gold (thick) · white — 24px gap scaled to 32px canvas -->
   <g clip-path="url(#clip)">
-    <rect x="10" y="0" width="2" height="32" fill="#ffffff"/>
-    <rect x="14" y="0" width="4" height="32" fill="#d4940e"/>
-    <rect x="20" y="0" width="2" height="32" fill="#ffffff"/>
+    <rect x="10.5" y="0" width="2" height="32" fill="#ffffff"/>
+    <rect x="14"   y="0" width="4" height="32" fill="#d4940e"/>
+    <rect x="19.5" y="0" width="2" height="32" fill="#ffffff"/>
   </g>
 </svg>
