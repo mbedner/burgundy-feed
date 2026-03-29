@@ -828,9 +828,9 @@ const lastUpdated = lastRun?.completedAt ?? null;
   // "new stories" toast so the user knows to refresh.
   (function initContentCheck() {
     const versionMeta = document.querySelector('meta[name="bf-version"]');
-    const currentVer  = versionMeta ? versionMeta.getAttribute('content') : null;
-    if (!currentVer) return;
-
+    // Use the page's rendered version as the baseline; may be empty if no
+    // ingest has ever run — in that case we establish a baseline on first poll.
+    let knownVer = (versionMeta ? versionMeta.getAttribute('content') : null) || null;
     let toastShown = false;
 
     function showNewContentToast() {
@@ -858,9 +858,13 @@ const lastUpdated = lastRun?.completedAt ?? null;
       try {
         const res  = await fetch('/api/version', { cache: 'no-store' });
         const data = await res.json();
-        if (data.version && data.version !== currentVer) {
-          showNewContentToast();
+        if (!data.version) return;
+        if (knownVer === null) {
+          // No baseline yet — store what we see now and wait for a change
+          knownVer = data.version;
+          return;
         }
+        if (data.version !== knownVer) showNewContentToast();
       } catch {}
     }
 
@@ -868,6 +872,9 @@ const lastUpdated = lastRun?.completedAt ?? null;
       if (!document.hidden) checkVersion();
     });
     setInterval(checkVersion, 8 * 60 * 1000);
+    // Initial check 30 s after load to catch a run that happened just before
+    // the page was opened (e.g. cron fired while the PWA was in background)
+    setTimeout(checkVersion, 30 * 1000);
   })();
 
   // ── Pull-to-refresh (PWA standalone only) ────────────────────────────────
@@ -905,7 +912,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
         ptr.style.transform = 'translateX(-50%) translateY(0)';
         ptr.classList.remove('ptr--ready');
       }
-      if (delta >= THRESHOLD && window.scrollY === 0) window.location.reload();
+      if (delta >= THRESHOLD) window.location.reload();
     }, { passive: true });
   }
 

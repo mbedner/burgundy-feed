@@ -81,6 +81,9 @@ const { mode } = Astro.props;
   .sp--draft    { --sp-bg: #4a1010; }
   .sp--gameday  { --sp-bg: #380808; }
 
+  /* Ensure the hidden attribute wins over display:flex from .sp */
+  .sp[hidden] { display: none !important; }
+
   /* JS adds this class to trigger the overall fade-out */
   .sp.sp--exit {
     opacity: 0;
