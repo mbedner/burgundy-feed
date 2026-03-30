@@ -669,33 +669,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
     :root[data-theme="dark"] .ptr-bar--l,
     :root[data-theme="dark"] .ptr-bar--r { background: #ffffff; }
 
-    /* ── New content toast ───────────────────────────────────────────────── */
-    #new-content-toast {
-      position: fixed;
-      bottom: 72px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9000;
-      animation: toast-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-      pointer-events: auto;
-    }
+    /* toast — keyframe must be global; layout/color applied inline in JS */
     @keyframes toast-up {
       from { opacity: 0; transform: translateX(-50%) translateY(16px); }
       to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-    #new-content-toast button {
-      background: var(--accent);
-      color: #ffffff;
-      border: none;
-      padding: 10px 22px;
-      border-radius: 24px;
-      font-size: 13px;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
-      letter-spacing: 0.01em;
     }
   </style>
 </head>
@@ -890,14 +867,39 @@ const lastUpdated = lastRun?.completedAt ?? null;
       if (toastShown) return;
       toastShown = true;
 
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = '↑ New stories — tap to refresh';
+      Object.assign(btn.style, {
+        background:   'var(--accent)',
+        color:        '#fff',
+        border:       'none',
+        padding:      '10px 22px',
+        borderRadius: '24px',
+        fontSize:     '13px',
+        fontWeight:   '700',
+        fontFamily:   'inherit',
+        cursor:       'pointer',
+        whiteSpace:   'nowrap',
+        boxShadow:    '0 4px 20px rgba(0,0,0,0.35)',
+        letterSpacing:'0.01em',
+        display:      'block',
+      });
+
       const toast = document.createElement('div');
       toast.id = 'new-content-toast';
-      toast.innerHTML = '<button id="nc-btn" type="button">↑ New stories — tap to refresh</button>';
+      Object.assign(toast.style, {
+        position:  'fixed',
+        bottom:    '72px',
+        left:      '50%',
+        transform: 'translateX(-50%)',
+        zIndex:    '9000',
+        animation: 'toast-up 0.28s cubic-bezier(0.16,1,0.3,1) both',
+      });
+      toast.appendChild(btn);
       document.body.appendChild(toast);
 
-      document.getElementById('nc-btn').addEventListener('click', () => {
-        window.location.reload();
-      });
+      btn.addEventListener('click', () => window.location.reload());
 
       // Auto-dismiss after 12 seconds if ignored
       setTimeout(() => {
