@@ -624,6 +624,19 @@ const lastUpdated = lastRun?.completedAt ?? null;
       font-style: italic;
     }
 
+    /* ── Footer ─────────────────────────────────────────────────────────────── */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .site-footer p {
+      font-size: 11px;
+      color: var(--text-4);
+      line-height: 1.6;
+      margin: 0;
+    }
+
     /* ── Scrollbar ───────────────────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -778,6 +791,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
       <ReporterVoices config={REPORTER_CONFIG} />
     </section>
   </main>
+
+  <footer class="site-footer">
+    <p>© {new Date().getFullYear()} Burgundy Feed · All articles © their respective publishers · Not affiliated with the Washington Commanders</p>
+  </footer>
 
   <InstallPrompt />
 
