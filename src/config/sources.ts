@@ -19,7 +19,16 @@ export const SOURCES: SourceConfig[] = [
     quality:          8,
     type:             'beat',
     commandersFocus:  true,
-    enabled:          true,  // re-enabled; date filter in ingest drops articles older than 7d
+    enabled:          false,  // RSS feed stale (newest item ~142d old); team doesn't maintain it
+  },
+  {
+    id:               'espn-commanders',
+    name:             'ESPN',
+    rssUrl:           'https://www.espn.com/espn/rss/nfl/news?teamId=28',
+    quality:          9,
+    type:             'beat',
+    commandersFocus:  true,
+    enabled:          true,  // team-curated ESPN feed, consistently fresh
   },
   {
     id:               'commanders-nation',
@@ -113,7 +122,7 @@ export const SOURCES: SourceConfig[] = [
     quality:          9,
     type:             'national',
     commandersFocus:  false,
-    enabled:          true,
+    enabled:          false,  // replaced by espn-commanders (team-specific, commandersFocus: true)
   },
   {
     id:               'cbs-sports-nfl',
