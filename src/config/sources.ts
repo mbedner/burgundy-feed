@@ -49,6 +49,29 @@ export const SOURCES: SourceConfig[] = [
     enabled:          true,
   },
   {
+    id:               'riggos-rag',
+    name:             "Riggo's Rag",
+    rssUrl:           'https://riggosrag.com/feed',
+    quality:          7,
+    type:             'blog',
+    commandersFocus:  true,
+    enabled:          true,
+  },
+  {
+    // Aggregates Commanders Wire (USA Today), NY Times, WaPo, and anything
+    // else Google News indexes for Washington Commanders. Titles arrive as
+    // "Headline - Publisher Name" so stripTitleSuffix cleans them up.
+    // Quality set low (5) so direct-source dupes win in deduplication.
+    id:               'google-news-commanders',
+    name:             'Google News',
+    rssUrl:           'https://news.google.com/rss/search?q=Washington+Commanders+NFL&hl=en-US&gl=US&ceid=US:en',
+    quality:          5,
+    type:             'national',
+    commandersFocus:  true,
+    stripTitleSuffix: true,
+    enabled:          true,
+  },
+  {
     id:               'dcsportsking',
     name:             'DC Sports King',
     rssUrl:           'https://dcsportsking.com/feed/',
@@ -249,6 +272,11 @@ export const COMMANDERS_KEYWORDS: string[] = [
   'jeremy mcnichols',
   'bobby wagner',
   'brandon aubrey',
+  'dante fowler',
+  'dorance armstrong',
+  'tyler biadasz',
+  'carnell tate',
+  'luke mcafee',
   'washington nfl',
   'washington qb',
   'washington defense',

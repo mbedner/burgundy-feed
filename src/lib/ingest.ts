@@ -87,6 +87,11 @@ async function ingestSource(
     for (const raw of rawItems) {
       if (!raw.link || isBlocked(raw.link)) continue;
 
+      // Google News (and similar aggregators) append " - Publisher" to titles
+      if (source.stripTitleSuffix) {
+        raw.title = raw.title.replace(/\s+[-–]\s+[^-–]+$/, '').trim();
+      }
+
       const canonical    = normalizeUrl(raw.link);
       const id           = sha256Hex(canonical + raw.title);
       const summary      = raw.description ?? '';

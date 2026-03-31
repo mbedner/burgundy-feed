@@ -70,6 +70,7 @@ export interface SourceConfig {
   type:            'beat' | 'national' | 'blog' | 'local';
   commandersFocus: boolean;
   enabled:         boolean;
+  stripTitleSuffix?: boolean; // strip trailing " - Source Name" (e.g. Google News)
 }
 
 export interface StoredData {
