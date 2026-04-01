@@ -72,6 +72,15 @@ export const SOURCES: SourceConfig[] = [
     enabled:          true,
   },
   {
+    id:               'clutchpoints-commanders',
+    name:             'ClutchPoints',
+    rssUrl:           'https://www.clutchpoints.com/nfl/washington-commanders/feed',
+    quality:          6,
+    type:             'blog',
+    commandersFocus:  true,
+    enabled:          true,
+  },
+  {
     id:               'dcsportsking',
     name:             'DC Sports King',
     rssUrl:           'https://dcsportsking.com/feed/',
@@ -220,6 +229,15 @@ export const SOURCES: SourceConfig[] = [
     enabled:          true,
   },
   {
+    id:               'pro-football-network',
+    name:             'Pro Football Network',
+    rssUrl:           'https://www.profootballnetwork.com/feed/',
+    quality:          7,
+    type:             'national',
+    commandersFocus:  false,
+    enabled:          true,
+  },
+  {
     id:               'nfl-dot-com',
     name:             'NFL.com',
     rssUrl:           'https://www.nfl.com/rss/rsslanding?searchString=commanders',
@@ -236,7 +254,7 @@ export const SOURCES: SourceConfig[] = [
 export const BLOCKED_DOMAINS: string[] = [
   'nfltraderumors.co',
   'fansided.com',          // often low quality
-  'clutchpoints.com',
+  // 'clutchpoints.com' unblocked — Commanders-specific feed has solid team content
 ];
 
 // ─── Required Commanders relevance keywords ────────────────────────────────────
