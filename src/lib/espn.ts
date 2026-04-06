@@ -2,6 +2,8 @@
 // Washington Commanders ESPN team ID: 28
 // All endpoints are public and used by ESPN's own web apps.
 
+import { fetchJson, safeNum, safeStr } from './utils';
+
 const TEAM_ID = '28';
 const BASE    = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 
@@ -27,29 +29,6 @@ export interface LiveStats {
   source: 'espn' | 'fallback';
 }
 
-async function fetchJson(url: string, timeoutMs = 6000): Promise<unknown> {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      headers: { 'User-Agent': 'BurgundyFeed/1.0' },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-function safeNum(v: unknown, fallback = 0): number {
-  const n = parseFloat(String(v));
-  return isNaN(n) ? fallback : n;
-}
-
-function safeStr(v: unknown, fallback = 'N/A'): string {
-  return v ? String(v) : fallback;
-}
 
 // ── Transactions ──────────────────────────────────────────────────────────────
 
@@ -136,8 +115,10 @@ export async function fetchLiveStats(): Promise<LiveStats | null> {
       return s ? safeStr(s.displayValue) : 'N/A';
     }
 
-    const ppg  = safeNum(getStat('scoring', 'pointsPerGame').replace(/[^0-9.]/g, ''));
-    const oppg = safeNum(getStat('defensiveScoringAllowed', 'pointsPerGame').replace(/[^0-9.]/g, ''));
+    const ppg     = safeNum(getStat('scoring',  'pointsPerGame').replace(/[^0-9.]/g, ''));
+    const oppg    = safeNum(getStat('defensiveScoringAllowed', 'pointsPerGame').replace(/[^0-9.]/g, ''));
+    const passYpg = safeNum(getStat('passing',  'yardsPerGame').replace(/[^0-9.]/g, ''));
+    const rushYpg = safeNum(getStat('rushing',  'yardsPerGame').replace(/[^0-9.]/g, ''));
 
     // Leader stats — ESPN provides player leaders per team
     const leadersData = await fetchJson(
@@ -173,8 +154,8 @@ export async function fetchLiveStats(): Promise<LiveStats | null> {
       defenseRank:      defenseRank || 16,
       pointsPerGame:    ppg || 0,
       pointsAllowed:    oppg || 0,
-      passYardsPerGame: 0,
-      rushYardsPerGame: 0,
+      passYardsPerGame: passYpg,
+      rushYardsPerGame: rushYpg,
       leaders: {
         passingYards:   topAthleteBy('passingYards'),
         rushingYards:   topAthleteBy('rushingYards'),

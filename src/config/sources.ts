@@ -13,15 +13,6 @@ import type { SourceConfig } from '../lib/types';
 export const SOURCES: SourceConfig[] = [
   // ── Commanders-focused ──────────────────────────────────────────────────────
   {
-    id:               'commanders-official',
-    name:             'Commanders.com',
-    rssUrl:           'https://www.commanders.com/rss/news',
-    quality:          8,
-    type:             'beat',
-    commandersFocus:  true,
-    enabled:          false,  // RSS feed stale (newest item ~142d old); team doesn't maintain it
-  },
-  {
     id:               'espn-commanders',
     name:             'ESPN',
     rssUrl:           'https://www.espn.com/espn/rss/nfl/news?teamId=28',
@@ -29,15 +20,6 @@ export const SOURCES: SourceConfig[] = [
     type:             'beat',
     commandersFocus:  true,
     enabled:          true,  // team-curated ESPN feed, consistently fresh
-  },
-  {
-    id:               'commanders-nation',
-    name:             'Commanders Nation',
-    rssUrl:           'https://www.commandersnation.com/feed/',
-    quality:          7,
-    type:             'blog',
-    commandersFocus:  true,
-    enabled:          false, // last published Nov 2025, inactive blog
   },
   {
     id:               'hogs-haven',
@@ -81,15 +63,6 @@ export const SOURCES: SourceConfig[] = [
     enabled:          true,
   },
   {
-    id:               'dcsportsking',
-    name:             'DC Sports King',
-    rssUrl:           'https://dcsportsking.com/feed/',
-    quality:          6,
-    type:             'blog',
-    commandersFocus:  true,
-    enabled:          false, // covers all DC sports, rarely Commanders-specific
-  },
-  {
     id:               'bleacher-report',
     name:             'Bleacher Report',
     rssUrl:           'https://feeds.bleacherreport.com/articles?tag=washington-commanders',
@@ -108,15 +81,6 @@ export const SOURCES: SourceConfig[] = [
     type:             'beat',
     commandersFocus:  true,
     enabled:          true,
-  },
-  {
-    id:               'washington-post',
-    name:             'Washington Post',
-    rssUrl:           'https://feeds.washingtonpost.com/rss/sports/nfl',
-    quality:          9,
-    type:             'local',
-    commandersFocus:  false,
-    enabled:          false, // blocks all bot requests, always times out
   },
   {
     id:               'nbcs-washington',
@@ -147,15 +111,6 @@ export const SOURCES: SourceConfig[] = [
   },
 
   // ── National NFL ────────────────────────────────────────────────────────────
-  {
-    id:               'espn-nfl',
-    name:             'ESPN',
-    rssUrl:           'https://www.espn.com/espn/rss/nfl/news',
-    quality:          9,
-    type:             'national',
-    commandersFocus:  false,
-    enabled:          false,  // replaced by espn-commanders (team-specific, commandersFocus: true)
-  },
   {
     id:               'cbs-sports-nfl',
     name:             'CBS Sports',
@@ -236,15 +191,6 @@ export const SOURCES: SourceConfig[] = [
     type:             'national',
     commandersFocus:  false,
     enabled:          true,
-  },
-  {
-    id:               'nfl-dot-com',
-    name:             'NFL.com',
-    rssUrl:           'https://www.nfl.com/rss/rsslanding?searchString=commanders',
-    quality:          8,
-    type:             'national',
-    commandersFocus:  true,
-    enabled:          false, // entity expansion errors
   },
 ];
 

@@ -1,6 +1,8 @@
 // ─── NFL Draft Mode — ESPN Public API ────────────────────────────────────────
 // Draft dates and Washington detection for the live pick tracker.
 
+import { fetchJson, safeStr } from './utils';
+
 const WAS_ID   = '28';
 const DRAFT_URL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/draft';
 
@@ -68,25 +70,6 @@ export interface DraftInfo {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function fetchJson(url: string, ms = 8000): Promise<unknown> {
-  const ctrl  = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const res = await fetch(url, {
-      signal:  ctrl.signal,
-      headers: { 'User-Agent': 'BurgundyFeed/1.0' },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function safeStr(v: unknown, fb = ''): string {
-  return v ? String(v) : fb;
-}
 
 function parsePick(p: any, teams: Map<string, { name: string; abbr: string }>): DraftPick {
   const teamId   = safeStr(p?.teamId);

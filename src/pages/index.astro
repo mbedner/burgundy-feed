@@ -30,8 +30,7 @@ import type { RivalItem } from '../lib/types';
 import { readNfcEast } from '../lib/kv';
 
 // ── DEV MOCK DATA ─────────────────────────────────────────────────────────────
-// Replace with KV reads once deployed. Remove this block and uncomment the
-// KV section below when you go live.
+// Shown only when KV is empty (first deploy or local dev before ingest runs).
 function minsAgo(m: number) { return new Date(Date.now() - m * 60000).toISOString(); }
 
 const mockArticles: Article[] = [
@@ -272,7 +271,6 @@ try {
   const kv: KVNamespace | undefined =
     runtime?.env?.ARTICLES_KV ??
     (Astro.locals as any).ARTICLES_KV;
-  console.log('[cw] runtime present:', !!runtime, '| kv bound:', !!kv);
   if (kv) {
     const [allData, statsRaw, txRaw, nfcEastRaw] = await Promise.all([
       readAll(kv),
@@ -284,12 +282,9 @@ try {
     if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
     if (txRaw)    espnTransactions = JSON.parse(txRaw) as EspnTransaction[];
     nfcEastItems = nfcEastRaw ? JSON.parse(nfcEastRaw) as RivalItem[] : [];
-    console.log('[cw] articles loaded from KV:', allData.articles.length);
-    console.log('[cw] transactions loaded from KV:', espnTransactions.length);
     // KV cache miss — worker may not have run yet; fetch directly as fallback
     if (espnTransactions.length === 0) {
       espnTransactions = await fetchTransactions();
-      console.log('[cw] transactions fetched directly from ESPN:', espnTransactions.length);
     }
   }
 } catch (e) {
