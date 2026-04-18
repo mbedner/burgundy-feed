@@ -781,6 +781,82 @@ const lastUpdated = lastRun?.completedAt ?? null;
     .sk-rail-block { height: 180px; border-radius: 6px; }
     .sk-rail-block + .sk-rail-block { height: 220px; }
 
+    /* Mode body visibility */
+    .sk-body[hidden] { display: none; }
+
+    /* Dark shimmer — for always-dark banner areas (game day, draft banners) */
+    .sk-pulse-dark {
+      background: linear-gradient(90deg, #1e1e1e 25%, #282828 50%, #1e1e1e 75%);
+      background-size: 200% 100%;
+      animation: sk-shimmer 1.4s ease-in-out infinite;
+    }
+
+    /* ── Game Day banner skeleton ──────────────────────────────────────── */
+    .sk-gd-banner {
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .sk-gd-header {
+      height: 40px; border-radius: 0;
+      background: #141414; border-bottom: 1px solid #1a1a1a;
+    }
+    .sk-gd-scorebar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #141414;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .sk-gd-team-block { display: flex; align-items: center; gap: 10px; }
+    .sk-gd-team-block:first-child { justify-content: flex-end; }
+    .sk-gd-abbr  { width: 36px; height: 16px; border-radius: 3px; }
+    .sk-gd-score { width: 52px; height: 44px; border-radius: 4px; }
+    .sk-gd-mid   { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .sk-gd-phase { width: 32px; height: 10px; border-radius: 3px; }
+    .sk-gd-clk   { width: 48px; height: 28px; border-radius: 4px; }
+    .sk-gd-sit   { height: 32px; border-radius: 0; background: #1a1a1a; border-top: 1px solid #2a2a2a; }
+    .sk-gd-plays-hd { height: 28px; border-radius: 0; background: #141414; border-top: 1px solid #1e1e1e; }
+    .sk-gd-play {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 10px;
+      padding: 7px 14px;
+      border-bottom: 1px solid #1a1a1a;
+      background: #0f0f0f;
+    }
+    .sk-gd-play:last-child { border-bottom: none; }
+    .sk-gd-pmeta { height: 30px; border-radius: 3px; }
+    .sk-gd-ptext { height: 14px; border-radius: 3px; align-self: center; }
+
+    /* ── Draft banner skeleton ─────────────────────────────────────────── */
+    .sk-dr-banner {
+      background: #0f0f0f;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .sk-dr-header  { height: 40px; border-radius: 0; background: #141414; border-bottom: 1px solid #1a1a1a; }
+    .sk-dr-clock   { height: 72px; border-radius: 0; border-bottom: 1px solid #2a2000; }
+    .sk-dr-body    { display: flex; flex-direction: column; }
+    @media (min-width: 480px) {
+      .sk-dr-body   { flex-direction: row; }
+      .sk-dr-was    { flex: 0 0 48%; border-right: 1px solid #2a2a2a; border-bottom: none; }
+      .sk-dr-recent { flex: 1; }
+    }
+    .sk-dr-was    { border-bottom: 1px solid #2a2a2a; }
+    .sk-dr-sechd  { height: 30px; border-radius: 0; border-bottom: 1px solid #1a1a1a; }
+    .sk-dr-pick   { height: 40px; border-radius: 0; border-bottom: 1px solid #1a1a1a; }
+    .sk-dr-pick:last-child { border-bottom: none; }
+    .sk-dr-pick--dim { opacity: 0.4; }
+    .sk-dr-rpick  { height: 31px; border-radius: 0; border-bottom: 1px solid #1a1a1a; }
+    .sk-dr-rpick:last-child { border-bottom: none; }
+
     /* toast — keyframe must be global; layout/color applied inline in JS */
     @keyframes toast-up {
       from { opacity: 0; transform: translateX(-50%) translateY(16px); }
@@ -803,106 +879,181 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   <!-- Skeleton overlay — shown during PTR ingest wait -->
   <div id="ptr-skeleton" aria-hidden="true" hidden>
-    <div class="sk-wrap">
-      <!-- Main column -->
-      <div class="sk-main">
-        <!-- Lead stories -->
-        <div class="sk-leads">
-          <!-- Large lead -->
-          <div class="sk-lead-lg">
-            <div class="sk-img sk-pulse"></div>
-            <div class="sk-lines">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--70 sk-pulse"></div>
-            </div>
-          </div>
-          <!-- Side leads -->
-          <div class="sk-leads-side">
-            <div class="sk-lead-sm">
+
+    <!-- ── Everyday mode ─────────────────────────────────────────────── -->
+    <div class="sk-body" data-sk-mode="everyday">
+      <div class="sk-wrap">
+        <div class="sk-main">
+          <div class="sk-leads">
+            <div class="sk-lead-lg">
               <div class="sk-img sk-pulse"></div>
               <div class="sk-lines">
                 <div class="sk-line sk-line--xs sk-pulse"></div>
                 <div class="sk-line sk-line--full sk-pulse"></div>
-                <div class="sk-line sk-line--70 sk-pulse"></div>
-              </div>
-            </div>
-            <div class="sk-lead-sm">
-              <div class="sk-img sk-pulse"></div>
-              <div class="sk-lines">
-                <div class="sk-line sk-line--xs sk-pulse"></div>
                 <div class="sk-line sk-line--full sk-pulse"></div>
                 <div class="sk-line sk-line--70 sk-pulse"></div>
               </div>
             </div>
+            <div class="sk-leads-side">
+              <div class="sk-lead-sm">
+                <div class="sk-img sk-pulse"></div>
+                <div class="sk-lines">
+                  <div class="sk-line sk-line--xs sk-pulse"></div>
+                  <div class="sk-line sk-line--full sk-pulse"></div>
+                  <div class="sk-line sk-line--70 sk-pulse"></div>
+                </div>
+              </div>
+              <div class="sk-lead-sm">
+                <div class="sk-img sk-pulse"></div>
+                <div class="sk-lines">
+                  <div class="sk-line sk-line--xs sk-pulse"></div>
+                  <div class="sk-line sk-line--full sk-pulse"></div>
+                  <div class="sk-line sk-line--70 sk-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sk-divider sk-pulse"></div>
+          <div class="sk-label sk-pulse"></div>
+          <div class="sk-stream">
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--50 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--50 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--50 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
           </div>
         </div>
-
-        <!-- Divider + Latest News label -->
-        <div class="sk-divider sk-pulse"></div>
-        <div class="sk-label sk-pulse"></div>
-
-        <!-- Stream rows -->
-        <div class="sk-stream">
-          <div class="sk-row">
-            <div class="sk-row-text">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--70 sk-pulse"></div>
-            </div>
-            <div class="sk-thumb sk-pulse"></div>
-          </div>
-          <div class="sk-row">
-            <div class="sk-row-text">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--50 sk-pulse"></div>
-            </div>
-            <div class="sk-thumb sk-pulse"></div>
-          </div>
-          <div class="sk-row">
-            <div class="sk-row-text">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--70 sk-pulse"></div>
-            </div>
-            <div class="sk-thumb sk-pulse"></div>
-          </div>
-          <div class="sk-row">
-            <div class="sk-row-text">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--50 sk-pulse"></div>
-            </div>
-            <div class="sk-thumb sk-pulse"></div>
-          </div>
-          <div class="sk-row">
-            <div class="sk-row-text">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--70 sk-pulse"></div>
-            </div>
-            <div class="sk-thumb sk-pulse"></div>
-          </div>
-          <div class="sk-row">
-            <div class="sk-row-text">
-              <div class="sk-line sk-line--xs sk-pulse"></div>
-              <div class="sk-line sk-line--full sk-pulse"></div>
-              <div class="sk-line sk-line--50 sk-pulse"></div>
-            </div>
-            <div class="sk-thumb sk-pulse"></div>
-          </div>
+        <div class="sk-rail">
+          <div class="sk-rail-block sk-pulse"></div>
+          <div class="sk-rail-block sk-pulse"></div>
+          <div class="sk-rail-block sk-pulse" style="height:160px"></div>
         </div>
-      </div>
-
-      <!-- Right rail (desktop only) -->
-      <div class="sk-rail">
-        <div class="sk-rail-block sk-pulse"></div>
-        <div class="sk-rail-block sk-pulse"></div>
-        <div class="sk-rail-block sk-pulse" style="height:160px"></div>
       </div>
     </div>
+
+    <!-- ── Game Day mode ─────────────────────────────────────────────── -->
+    <div class="sk-body" data-sk-mode="gameday" hidden>
+      <div class="sk-wrap">
+        <div class="sk-main">
+          <!-- Scoreboard banner -->
+          <div class="sk-gd-banner">
+            <div class="sk-gd-header sk-pulse-dark"></div>
+            <div class="sk-gd-scorebar">
+              <div class="sk-gd-team-block">
+                <div class="sk-gd-abbr sk-pulse-dark"></div>
+                <div class="sk-gd-score sk-pulse-dark"></div>
+              </div>
+              <div class="sk-gd-mid">
+                <div class="sk-gd-phase sk-pulse-dark"></div>
+                <div class="sk-gd-clk sk-pulse-dark"></div>
+              </div>
+              <div class="sk-gd-team-block">
+                <div class="sk-gd-score sk-pulse-dark"></div>
+                <div class="sk-gd-abbr sk-pulse-dark"></div>
+              </div>
+            </div>
+            <div class="sk-gd-sit"></div>
+            <div class="sk-gd-plays-hd"></div>
+            <div class="sk-gd-play"><div class="sk-gd-pmeta sk-pulse-dark"></div><div class="sk-gd-ptext sk-pulse-dark"></div></div>
+            <div class="sk-gd-play"><div class="sk-gd-pmeta sk-pulse-dark"></div><div class="sk-gd-ptext sk-pulse-dark"></div></div>
+            <div class="sk-gd-play"><div class="sk-gd-pmeta sk-pulse-dark"></div><div class="sk-gd-ptext sk-pulse-dark"></div></div>
+            <div class="sk-gd-play"><div class="sk-gd-pmeta sk-pulse-dark"></div><div class="sk-gd-ptext sk-pulse-dark"></div></div>
+          </div>
+          <!-- Lead stories -->
+          <div class="sk-leads">
+            <div class="sk-lead-lg">
+              <div class="sk-img sk-pulse"></div>
+              <div class="sk-lines">
+                <div class="sk-line sk-line--xs sk-pulse"></div>
+                <div class="sk-line sk-line--full sk-pulse"></div>
+                <div class="sk-line sk-line--70 sk-pulse"></div>
+              </div>
+            </div>
+            <div class="sk-leads-side">
+              <div class="sk-lead-sm"><div class="sk-img sk-pulse"></div><div class="sk-lines"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div></div>
+              <div class="sk-lead-sm"><div class="sk-img sk-pulse"></div><div class="sk-lines"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div></div>
+            </div>
+          </div>
+          <div class="sk-divider sk-pulse"></div>
+          <div class="sk-label sk-pulse"></div>
+          <div class="sk-stream">
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--50 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--50 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+          </div>
+        </div>
+        <div class="sk-rail">
+          <div class="sk-rail-block sk-pulse"></div>
+          <div class="sk-rail-block sk-pulse"></div>
+          <div class="sk-rail-block sk-pulse" style="height:160px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Draft Day mode ────────────────────────────────────────────── -->
+    <div class="sk-body" data-sk-mode="draft" hidden>
+      <div class="sk-wrap">
+        <div class="sk-main">
+          <!-- Draft tracker banner -->
+          <div class="sk-dr-banner">
+            <div class="sk-dr-header sk-pulse-dark"></div>
+            <div class="sk-dr-clock sk-pulse-dark"></div>
+            <div class="sk-dr-body">
+              <!-- Washington's picks column -->
+              <div class="sk-dr-was">
+                <div class="sk-dr-sechd sk-pulse-dark"></div>
+                <div class="sk-dr-pick sk-pulse-dark"></div>
+                <div class="sk-dr-pick sk-pulse-dark"></div>
+                <div class="sk-dr-pick sk-pulse-dark"></div>
+                <div class="sk-dr-pick sk-pulse-dark"></div>
+                <div class="sk-dr-pick sk-pulse-dark sk-dr-pick--dim"></div>
+                <div class="sk-dr-pick sk-pulse-dark sk-dr-pick--dim"></div>
+                <div class="sk-dr-pick sk-pulse-dark sk-dr-pick--dim"></div>
+              </div>
+              <!-- Recent picks column -->
+              <div class="sk-dr-recent">
+                <div class="sk-dr-sechd sk-pulse-dark"></div>
+                <div class="sk-dr-rpick sk-pulse-dark"></div>
+                <div class="sk-dr-rpick sk-pulse-dark"></div>
+                <div class="sk-dr-rpick sk-pulse-dark"></div>
+                <div class="sk-dr-rpick sk-pulse-dark"></div>
+                <div class="sk-dr-rpick sk-pulse-dark"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Lead stories -->
+          <div class="sk-leads">
+            <div class="sk-lead-lg">
+              <div class="sk-img sk-pulse"></div>
+              <div class="sk-lines">
+                <div class="sk-line sk-line--xs sk-pulse"></div>
+                <div class="sk-line sk-line--full sk-pulse"></div>
+                <div class="sk-line sk-line--70 sk-pulse"></div>
+              </div>
+            </div>
+            <div class="sk-leads-side">
+              <div class="sk-lead-sm"><div class="sk-img sk-pulse"></div><div class="sk-lines"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div></div></div>
+              <div class="sk-lead-sm"><div class="sk-img sk-pulse"></div><div class="sk-lines"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div></div></div>
+            </div>
+          </div>
+          <div class="sk-divider sk-pulse"></div>
+          <div class="sk-label sk-pulse"></div>
+          <div class="sk-stream">
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--50 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+            <div class="sk-row"><div class="sk-row-text"><div class="sk-line sk-line--xs sk-pulse"></div><div class="sk-line sk-line--full sk-pulse"></div><div class="sk-line sk-line--70 sk-pulse"></div></div><div class="sk-thumb sk-pulse"></div></div>
+          </div>
+        </div>
+        <div class="sk-rail">
+          <div class="sk-rail-block sk-pulse"></div>
+          <div class="sk-rail-block sk-pulse"></div>
+          <div class="sk-rail-block sk-pulse" style="height:160px"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <Masthead lastUpdated={lastUpdated} />
@@ -996,7 +1147,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   <InstallPrompt />
 
-  <script define:vars={{ refreshMs: SITE.refreshIntervalMs }}>
+  <script define:vars={{ refreshMs: SITE.refreshIntervalMs, splashMode }}>
   // ── Auto-reload when idle ─────────────────────────────────────────────────
   let idle = false;
   document.addEventListener('visibilitychange', () => {
@@ -1225,6 +1376,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
         ptr.classList.add('ptr--ready');
       }
       if (skeleton) {
+        // Show the correct mode variant; hide the others
+        skeleton.querySelectorAll('.sk-body').forEach(el => {
+          el.hidden = el.dataset.skMode !== splashMode;
+        });
         // Position below the masthead so it doesn't cover the PTR indicator
         const mastheadEl = document.querySelector('.mast');
         const mastheadH  = mastheadEl ? mastheadEl.offsetHeight : 56;
