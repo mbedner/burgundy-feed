@@ -168,6 +168,17 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
     );
     if (!event) return null;
 
+    // Guard: only show the banner if the game is actually today (ET).
+    // The ESPN scoreboard sometimes returns future scheduled games in the
+    // offseason; without this check a game 2000+ hours away would trigger
+    // pregame mode.
+    const rawEventDate = safeStr(event.competitions?.[0]?.date ?? event.date);
+    if (rawEventDate) {
+      const todayET = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const eventET = new Date(rawEventDate).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      if (eventET !== todayET) return null;
+    }
+
     const gameId  = safeStr(event.id);
     const comp    = event.competitions[0];
     const status  = comp?.status;
