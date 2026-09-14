@@ -237,6 +237,13 @@
     // Close on outside click
     document.addEventListener('click', closePanel);
 
+    // Remap vertical mouse-wheel to horizontal scroll on the track
+    track.addEventListener('wheel', (e: WheelEvent) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // already horizontal (trackpad)
+      e.preventDefault();
+      track.scrollLeft += e.deltaY;
+    }, { passive: false });
+
   } catch { /* silent */ }
 })();
 </script>
