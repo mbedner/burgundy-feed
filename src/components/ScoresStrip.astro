@@ -203,10 +203,13 @@
       weekBtn!.classList.remove('ss-week-btn--open');
     }
     function openPanel() {
+      // Position fixed relative to button so it escapes overflow:hidden on .ss-shell
+      const rect = weekBtn!.getBoundingClientRect();
+      weekPanel.style.top  = `${rect.bottom + 4}px`;
+      weekPanel.style.left = `${rect.left}px`;
       weekPanel.hidden = false;
       weekBtn!.setAttribute('aria-expanded', 'true');
       weekBtn!.classList.add('ss-week-btn--open');
-      // Scroll active item into view
       const active = weekPanel.querySelector('.ss-week-item--active') as HTMLElement | null;
       if (active) active.scrollIntoView({ block: 'nearest' });
     }
@@ -287,9 +290,7 @@
   .ss-week-btn--open .ss-chevron { transform: rotate(180deg); }
 
   .ss-week-panel {
-    position: absolute;
-    top: 100%;
-    left: 0;
+    position: fixed;
     z-index: 500;
     background: var(--surface);
     border: 1px solid var(--border-strong, var(--border));
