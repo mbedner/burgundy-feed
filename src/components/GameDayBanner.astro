@@ -8,29 +8,35 @@ const { phase, washington, opponent, period, periodDisplay, clock,
         situation, recentPlays, scoringPlays, kickoffDisplay,
         network, venue, kickoffIso, gameId, boxScore } = game;
 
-const wasWinning  = washington.score > opponent.score;
-const tied        = washington.score === opponent.score;
-const wasWon      = phase === 'postgame' && washington.winner;
-const wasLost     = phase === 'postgame' && !washington.winner && !tied;
+const wasWon  = phase === 'postgame' && washington.winner;
+const wasLost = phase === 'postgame' && !washington.winner &&
+                washington.score !== opponent.score;
+const oppWon  = phase === 'postgame' && !washington.winner &&
+                washington.score !== opponent.score;
 
-function ordSuffix(n: number) {
-  const s = ['th','st','nd','rd'];
-  const v = n % 100;
-  return n + (s[(v-20)%10] || s[v] || s[0]);
-}
+const wasColor = `#${washington.color || '9b1535'}`;
+const oppColor = `#${opponent.color || '5a5a5a'}`;
+
+const hasBoxScore = phase === 'postgame' && !!boxScore;
+const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postgame';
 ---
 
-<div class="gd-banner" id="gdBanner" data-game-id={gameId} data-phase={phase}>
+<div class="gd-banner" id="gdBanner" data-game-id={gameId} data-phase={phase}
+     style={`--was-color:${wasColor};--opp-color:${oppColor}`}>
 
-  {/* ── Score bar (all phases) ── */}
+  {/* ── Score bar ── */}
   <div class="gd-scorebar">
+
     <div class="gd-team gd-team--was">
       {washington.logo && (
         <img class="gd-logo" src={washington.logo} alt="WAS" loading="eager" />
       )}
       <div class="gd-team-text">
         <span class="gd-abbr">WAS</span>
-        <span class="gd-score" id="gdWasScore">{washington.score}</span>
+        <div class={`gd-score-wrap${wasLost ? ' gd-score-wrap--dim' : ''}`}>
+          {wasWon && <span class="gd-caret" aria-hidden="true">▸</span>}
+          <span class="gd-score" id="gdWasScore">{washington.score}</span>
+        </div>
       </div>
     </div>
 
@@ -57,9 +63,6 @@ function ordSuffix(n: number) {
       {phase === 'postgame' && (
         <div class="gd-final-info">
           <span class="gd-final-label">FINAL</span>
-          <span class={`gd-result gd-result--${wasWon ? 'win' : wasLost ? 'loss' : 'tie'}`}>
-            {wasWon ? 'W' : wasLost ? 'L' : 'T'}
-          </span>
         </div>
       )}
     </div>
@@ -67,12 +70,16 @@ function ordSuffix(n: number) {
     <div class="gd-team gd-team--opp">
       <div class="gd-team-text gd-team-text--opp">
         <span class="gd-abbr">{opponent.abbreviation}</span>
-        <span class="gd-score" id="gdOppScore">{opponent.score}</span>
+        <div class={`gd-score-wrap${wasWon ? ' gd-score-wrap--dim' : ''}`}>
+          {oppWon && <span class="gd-caret" aria-hidden="true">▸</span>}
+          <span class="gd-score" id="gdOppScore">{opponent.score}</span>
+        </div>
       </div>
       {opponent.logo && (
         <img class="gd-logo" src={opponent.logo} alt={opponent.abbreviation} loading="eager" />
       )}
     </div>
+
   </div>
 
   {/* ── Situation bar (live only) ── */}
@@ -92,115 +99,142 @@ function ordSuffix(n: number) {
     </div>
   )}
 
-  {/* ── Play by play (live + postgame) ── */}
-  {(phase === 'live' || phase === 'halftime' || phase === 'postgame') && (
-    <div class="gd-plays">
-      <div class="gd-plays-hd">
-        {phase === 'postgame' ? 'Scoring Summary' : 'Play by Play'}
+  {/* ── Tabs + panels (live / halftime / postgame) ── */}
+  {hasPlays && (
+    <>
+      <div class="gd-tabs" role="tablist">
+        <button class="gd-tab gd-tab--active" role="tab" aria-selected="true"
+                data-target="gdPanelSummary">
+          {phase === 'postgame' ? 'Scoring' : 'Plays'}
+        </button>
+        {hasBoxScore && (
+          <button class="gd-tab" role="tab" aria-selected="false"
+                  data-target="gdPanelStats">
+            Stats
+          </button>
+        )}
       </div>
-      <div class="gd-plays-list" id="gdPlaysList">
-        {(phase === 'postgame' ? scoringPlays : recentPlays).map(play => (
-          <div class={`gd-play ${play.isScoring ? 'gd-play--scoring' : ''}`}>
-            <span class="gd-play-meta">
-              {play.isScoring && play.scoringType && (
-                <span class="gd-play-score-type">{play.scoringType}</span>
-              )}
-              <span class="gd-play-period">Q{play.period}</span>
-              <span class="gd-play-clock">{play.clock}</span>
-            </span>
-            <span class="gd-play-text">{play.text}</span>
-          </div>
-        ))}
+
+      <div class="gd-panel" id="gdPanelSummary" role="tabpanel">
+        <div class="gd-plays-list" id="gdPlaysList">
+          {(phase === 'postgame' ? scoringPlays : recentPlays).map(play => (
+            <div class={`gd-play${play.isScoring ? ' gd-play--scoring' : ''}`}>
+              <span class="gd-play-meta">
+                {play.isScoring && play.scoringType && (
+                  <span class="gd-play-score-type">{play.scoringType}</span>
+                )}
+                <span class="gd-play-period">Q{play.period}</span>
+                <span class="gd-play-clock">{play.clock}</span>
+              </span>
+              <span class="gd-play-text">{play.text}</span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {hasBoxScore && (
+        <div class="gd-panel" id="gdPanelStats" hidden role="tabpanel">
+          {boxScore!.passing.length > 0 && (
+            <div class="gd-bs-group">
+              <div class="gd-bs-cat">Passing</div>
+              {boxScore!.passing.map(p => (
+                <div class="gd-bs-row">
+                  <span class="gd-bs-name">{p.shortName}</span>
+                  <span class="gd-bs-stats">
+                    {p.labels.map((lbl, i) => (
+                      <span class="gd-bs-cell">
+                        <span class="gd-bs-val">{p.stats[i]}</span>
+                        <span class="gd-bs-lbl">{lbl}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {boxScore!.rushing.length > 0 && (
+            <div class="gd-bs-group">
+              <div class="gd-bs-cat">Rushing</div>
+              {boxScore!.rushing.map(p => (
+                <div class="gd-bs-row">
+                  <span class="gd-bs-name">{p.shortName}</span>
+                  <span class="gd-bs-stats">
+                    {p.labels.map((lbl, i) => (
+                      <span class="gd-bs-cell">
+                        <span class="gd-bs-val">{p.stats[i]}</span>
+                        <span class="gd-bs-lbl">{lbl}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {boxScore!.receiving.length > 0 && (
+            <div class="gd-bs-group">
+              <div class="gd-bs-cat">Receiving</div>
+              {boxScore!.receiving.map(p => (
+                <div class="gd-bs-row">
+                  <span class="gd-bs-name">{p.shortName}</span>
+                  <span class="gd-bs-stats">
+                    {p.labels.map((lbl, i) => (
+                      <span class="gd-bs-cell">
+                        <span class="gd-bs-val">{p.stats[i]}</span>
+                        <span class="gd-bs-lbl">{lbl}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {boxScore!.defensive.length > 0 && (
+            <div class="gd-bs-group">
+              <div class="gd-bs-cat">Defense</div>
+              {boxScore!.defensive.slice(0, 3).map(p => (
+                <div class="gd-bs-row">
+                  <span class="gd-bs-name">{p.shortName}</span>
+                  <span class="gd-bs-stats">
+                    {p.labels.map((lbl, i) => (
+                      <span class="gd-bs-cell">
+                        <span class="gd-bs-val">{p.stats[i]}</span>
+                        <span class="gd-bs-lbl">{lbl}</span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   )}
 
-  {/* ── Box score (postgame only) ── */}
-  {phase === 'postgame' && boxScore && (
-    <div class="gd-boxscore">
-      <div class="gd-plays-hd">WAS Stats</div>
-
-      {boxScore.passing.length > 0 && (
-        <div class="gd-bs-group">
-          <div class="gd-bs-cat">Passing</div>
-          {boxScore.passing.map(p => (
-            <div class="gd-bs-row">
-              <span class="gd-bs-name">{p.shortName}</span>
-              <span class="gd-bs-stats">
-                {p.labels.map((lbl, i) => (
-                  <span class="gd-bs-cell">
-                    <span class="gd-bs-val">{p.stats[i]}</span>
-                    <span class="gd-bs-lbl">{lbl}</span>
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {boxScore.rushing.length > 0 && (
-        <div class="gd-bs-group">
-          <div class="gd-bs-cat">Rushing</div>
-          {boxScore.rushing.map(p => (
-            <div class="gd-bs-row">
-              <span class="gd-bs-name">{p.shortName}</span>
-              <span class="gd-bs-stats">
-                {p.labels.map((lbl, i) => (
-                  <span class="gd-bs-cell">
-                    <span class="gd-bs-val">{p.stats[i]}</span>
-                    <span class="gd-bs-lbl">{lbl}</span>
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {boxScore.receiving.length > 0 && (
-        <div class="gd-bs-group">
-          <div class="gd-bs-cat">Receiving</div>
-          {boxScore.receiving.map(p => (
-            <div class="gd-bs-row">
-              <span class="gd-bs-name">{p.shortName}</span>
-              <span class="gd-bs-stats">
-                {p.labels.map((lbl, i) => (
-                  <span class="gd-bs-cell">
-                    <span class="gd-bs-val">{p.stats[i]}</span>
-                    <span class="gd-bs-lbl">{lbl}</span>
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {boxScore.defensive.length > 0 && (
-        <div class="gd-bs-group">
-          <div class="gd-bs-cat">Defense</div>
-          {boxScore.defensive.slice(0, 3).map(p => (
-            <div class="gd-bs-row">
-              <span class="gd-bs-name">{p.shortName}</span>
-              <span class="gd-bs-stats">
-                {p.labels.map((lbl, i) => (
-                  <span class="gd-bs-cell">
-                    <span class="gd-bs-val">{p.stats[i]}</span>
-                    <span class="gd-bs-lbl">{lbl}</span>
-                  </span>
-                ))}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )}
 </div>
 
-{/* ── Client-side live updater ── */}
-{phase === 'live' || phase === 'halftime' ? (
+{/* ── Tab switching ── */}
+<script>
+  function initGdTabs(banner: Element) {
+    banner.querySelectorAll<HTMLButtonElement>('.gd-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-target');
+        banner.querySelectorAll('.gd-tab').forEach(t => {
+          t.classList.toggle('gd-tab--active', t === tab);
+          t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+        });
+        banner.querySelectorAll<HTMLElement>('.gd-panel').forEach(panel => {
+          panel.hidden = panel.id !== target;
+        });
+      });
+    });
+  }
+  const gdBanner = document.getElementById('gdBanner');
+  if (gdBanner) initGdTabs(gdBanner);
+</script>
+
+{/* ── Client-side live updater (SSR-rendered live/halftime games) ── */}
+{(phase === 'live' || phase === 'halftime') ? (
   <script define:vars={{ gameId, POLL_MS: 30000 }}>
     const ESPN_URL = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${gameId}`;
     const WAS_ID = '28';
@@ -215,14 +249,12 @@ function ordSuffix(n: number) {
         const status     = headerComp?.status;
         const state      = status?.type?.state;
 
-        // Update score
         const competitors = headerComp?.competitors ?? [];
         const was = competitors.find(c => c.id === WAS_ID);
         const opp = competitors.find(c => c.id !== WAS_ID);
         if (was) document.getElementById('gdWasScore').textContent = was.score ?? '0';
         if (opp) document.getElementById('gdOppScore').textContent = opp.score ?? '0';
 
-        // Update clock + period
         const period = status?.period ?? 1;
         const clock  = status?.displayClock ?? '0:00';
         const isHalf = status?.type?.description?.toLowerCase().includes('halftime');
@@ -233,7 +265,6 @@ function ordSuffix(n: number) {
         if (periodEl) periodEl.textContent = isHalf ? 'HALF' : period > 4 ? `OT` : `Q${period}`;
         if (clockEl)  clockEl.textContent  = clock;
 
-        // Update situation
         const sit = data?.header?.competitions?.[0]?.situation ?? null;
         const sitEl = document.getElementById('gdSituation');
         if (sitEl && sit) {
@@ -243,7 +274,6 @@ function ordSuffix(n: number) {
           sitEl.querySelector('.gd-down-dist').textContent = sit.downDistanceText ?? '';
         }
 
-        // Update plays
         const drives = data?.drives ?? {};
         const plays = [];
         const curr = [...(drives?.current?.plays ?? [])].reverse();
@@ -259,12 +289,11 @@ function ordSuffix(n: number) {
 
         const listEl = document.getElementById('gdPlaysList');
         if (listEl && plays.length) {
+          const scoreTypeMap = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
           listEl.innerHTML = plays.slice(0, 10).map(p => {
             const isScore = !!p.scoringPlay;
-            const typeId  = p?.type?.id ?? '';
-            const scoreTypeMap = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
-            const sType = scoreTypeMap[typeId] ?? '';
-            return `<div class="gd-play ${isScore ? 'gd-play--scoring' : ''}">
+            const sType = scoreTypeMap[p?.type?.id ?? ''] ?? '';
+            return `<div class="gd-play${isScore ? ' gd-play--scoring' : ''}">
               <span class="gd-play-meta">
                 ${isScore && sType ? `<span class="gd-play-score-type">${sType}</span>` : ''}
                 <span class="gd-play-period">Q${p?.period?.number ?? ''}</span>
@@ -275,13 +304,10 @@ function ordSuffix(n: number) {
           }).join('');
         }
 
-        // If game ended, stop polling and reload for postgame layout
         if (isPost) { window.location.reload(); return; }
-
-      } catch (e) { /* silent — retry next poll */ }
+      } catch { /* silent */ }
     }
 
-    // Start polling
     setInterval(pollGame, POLL_MS);
   </script>
 ) : null}
@@ -297,9 +323,7 @@ function ordSuffix(n: number) {
         if (diff <= 0) { el.textContent = 'Kickoff!'; return; }
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
-        el.textContent = h > 0
-          ? `Kickoff in ${h}h ${m}m`
-          : `Kickoff in ${m}m`;
+        el.textContent = h > 0 ? `Kickoff in ${h}h ${m}m` : `Kickoff in ${m}m`;
       }
       updateCountdown();
       setInterval(updateCountdown, 30000);
@@ -324,20 +348,25 @@ function ordSuffix(n: number) {
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 12px;
-    padding: 20px 20px;
-    background: #141414;
+    padding: 14px 16px;
+    background: linear-gradient(to right,
+      var(--was-color, #5a1414) 0px 5px,
+      #141414 5px calc(100% - 5px),
+      var(--opp-color, #333333) calc(100% - 5px)
+    );
   }
+
   .gd-team {
     display: flex;
     align-items: center;
     gap: 12px;
   }
-  .gd-team--was { justify-content: flex-end; }
-  .gd-team--opp { justify-content: flex-start; }
+  .gd-team--was { justify-content: flex-start; }
+  .gd-team--opp { justify-content: flex-end;   }
 
   .gd-logo {
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     object-fit: contain;
     flex-shrink: 0;
   }
@@ -346,11 +375,9 @@ function ordSuffix(n: number) {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 2px;
+    gap: 1px;
   }
-  .gd-team-text--opp {
-    align-items: flex-start;
-  }
+  .gd-team-text--opp { align-items: flex-start; }
 
   .gd-abbr {
     font-size: 11px;
@@ -362,8 +389,25 @@ function ordSuffix(n: number) {
   }
   .gd-team--was .gd-abbr { color: #e8a820; }
 
+  /* Score with optional caret */
+  .gd-score-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .gd-score-wrap--dim { opacity: 0.38; }
+
+  .gd-caret {
+    font-size: 20px;
+    color: #e8a820;
+    line-height: 1;
+    flex-shrink: 0;
+    position: relative;
+    top: 3px;
+  }
+
   .gd-score {
-    font-size: 40px;
+    font-size: 38px;
     font-weight: 900;
     letter-spacing: -0.03em;
     line-height: 1;
@@ -372,7 +416,10 @@ function ordSuffix(n: number) {
   }
 
   /* ── Middle section ── */
-  .gd-middle { text-align: center; }
+  .gd-middle {
+    text-align: center;
+    min-width: 60px;
+  }
 
   .gd-pregame-info {
     display: flex;
@@ -392,10 +439,8 @@ function ordSuffix(n: number) {
     font-weight: 700;
     color: #f0eeeb;
   }
-  .gd-network, .gd-venue {
-    font-size: 10px;
-    color: #9a9080;
-  }
+  .gd-network,
+  .gd-venue { font-size: 10px; color: #9a9080; }
 
   .gd-live-info {
     display: flex;
@@ -433,21 +478,14 @@ function ordSuffix(n: number) {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
   }
   .gd-final-label {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.14em;
+    text-transform: uppercase;
     color: #9a9080;
   }
-  .gd-result {
-    font-size: 20px;
-    font-weight: 900;
-  }
-  .gd-result--win  { color: #4ade80; }
-  .gd-result--loss { color: #f87171; }
-  .gd-result--tie  { color: #a09890; }
 
   /* ── Situation bar ── */
   .gd-situation {
@@ -476,18 +514,37 @@ function ordSuffix(n: number) {
     color: #a09890;
   }
 
-  /* ── Play by play ── */
-  .gd-plays {
+  /* ── Tabs ── */
+  .gd-tabs {
+    display: flex;
+    background: #0f0f0f;
     border-top: 1px solid #2a2a2a;
   }
-  .gd-plays-hd {
-    font-size: 9px;
+  .gd-tab {
+    padding: 10px 16px;
+    font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #9a9080;
-    padding: 8px 14px 4px;
+    color: #6a6058;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s;
+    line-height: 1;
+    margin-bottom: -1px;
   }
+  .gd-tab--active {
+    color: #e8a820;
+    border-bottom-color: #e8a820;
+  }
+  .gd-tab:hover:not(.gd-tab--active) { color: #c0b8b0; }
+
+  /* ── Panels ── */
+  .gd-panel[hidden] { display: none !important; }
+
+  /* ── Play list ── */
   .gd-plays-list {
     display: flex;
     flex-direction: column;
@@ -501,7 +558,6 @@ function ordSuffix(n: number) {
     align-items: start;
     padding: 6px 14px;
     border-bottom: 1px solid #1e1e1e;
-    transition: background 0.1s;
   }
   .gd-play:last-child { border-bottom: none; }
   .gd-play--scoring {
@@ -526,26 +582,17 @@ function ordSuffix(n: number) {
     border-radius: 2px;
     white-space: nowrap;
   }
-  .gd-play-period {
-    font-size: 9px;
-    color: #9a9080;
-    font-weight: 600;
-  }
-  .gd-play-clock {
+  .gd-play-period { font-size: 9px; color: #9a9080; font-weight: 600; }
+  .gd-play-clock  {
     font-size: 10px;
     color: #9a9080;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
-  .gd-play-text {
-    font-size: 12px;
-    color: #c0b8b0;
-    line-height: 1.4;
-  }
+  .gd-play-text { font-size: 12px; color: #c0b8b0; line-height: 1.4; }
   .gd-play--scoring .gd-play-text { color: #e0d8d0; }
 
   /* ── Box score ── */
-  .gd-boxscore { border-top: 1px solid #2a2a2a; }
   .gd-bs-group { border-bottom: 1px solid #1e1e1e; }
   .gd-bs-cat {
     font-size: 9px;

@@ -110,6 +110,12 @@ export async function gdClientDetect(): Promise<void> {
 
     const isWin  = phase === 'postgame' && wasWinner;
     const isLoss = phase === 'postgame' && !wasWinner && wasScore !== oppScore;
+    const wasDim = isLoss;
+    const oppDim = isWin;
+    const wasCaret = isWin  ? '&#9658;' : '';
+    const oppCaret = isLoss ? '&#9658;' : '';
+    const wasColor = wasC?.team?.color ? `#${wasC.team.color}` : '#9b1535';
+    const oppColorVal = oppC?.team?.color ? `#${oppC.team.color}` : '#555555';
     const periodLabel = phase === 'halftime' ? 'HALF' : period > 4 ? 'OT' : `Q${period}`;
 
     function playHtml(p: any, showScores: boolean): string {
@@ -132,24 +138,27 @@ export async function gdClientDetect(): Promise<void> {
 
     const plays    = phase === 'postgame' ? scoringPlays : recentPlays;
     const playsHtml = (phase === 'live' || phase === 'halftime' || phase === 'postgame')
-      ? `<div class="gd-plays">
-          <div class="gd-plays-hd">${phase === 'postgame' ? 'Scoring Summary' : 'Play by Play'}</div>
-          <div class="gd-plays-list" id="gdPlaysList">
+      ? `<div class="gd-plays-list" id="gdPlaysList">
             ${plays.map((p: any) => playHtml(p, phase === 'postgame')).join('')}
-          </div>
-        </div>`
+          </div>`
       : '';
+
+    const hasPlays = phase === 'live' || phase === 'halftime' || phase === 'postgame';
 
     const section = document.createElement('section');
     section.id = 'gameday';
     section.innerHTML = `
-      <div class="gd-banner" id="gdBanner" data-game-id="${gameId}" data-phase="${phase}">
+      <div class="gd-banner" id="gdBanner" data-game-id="${gameId}" data-phase="${phase}"
+           style="--was-color:${wasColor};--opp-color:${oppColorVal}">
         <div class="gd-scorebar">
           <div class="gd-team gd-team--was">
             ${wasLogo ? `<img class="gd-logo" src="${wasLogo}" alt="${wasAbbr}" loading="eager" />` : ''}
             <div class="gd-team-text">
               <span class="gd-abbr">${wasAbbr}</span>
-              <span class="gd-score" id="gdWasScore">${wasScore}</span>
+              <div class="gd-score-wrap${wasDim ? ' gd-score-wrap--dim' : ''}">
+                ${wasCaret ? `<span class="gd-caret" aria-hidden="true">${wasCaret}</span>` : ''}
+                <span class="gd-score" id="gdWasScore">${wasScore}</span>
+              </div>
             </div>
           </div>
           <div class="gd-middle">
@@ -168,15 +177,15 @@ export async function gdClientDetect(): Promise<void> {
             ${phase === 'postgame' ? `
               <div class="gd-final-info">
                 <span class="gd-final-label">FINAL</span>
-                <span class="gd-result gd-result--${isWin ? 'win' : isLoss ? 'loss' : 'tie'}">
-                  ${isWin ? 'W' : isLoss ? 'L' : 'T'}
-                </span>
               </div>` : ''}
           </div>
           <div class="gd-team gd-team--opp">
             <div class="gd-team-text gd-team-text--opp">
               <span class="gd-abbr">${oppAbbr}</span>
-              <span class="gd-score" id="gdOppScore">${oppScore}</span>
+              <div class="gd-score-wrap${oppDim ? ' gd-score-wrap--dim' : ''}">
+                ${oppCaret ? `<span class="gd-caret" aria-hidden="true">${oppCaret}</span>` : ''}
+                <span class="gd-score" id="gdOppScore">${oppScore}</span>
+              </div>
             </div>
             ${oppLogo ? `<img class="gd-logo" src="${oppLogo}" alt="${oppAbbr}" loading="eager" />` : ''}
           </div>
@@ -186,10 +195,35 @@ export async function gdClientDetect(): Promise<void> {
             <span class="gd-possession">${situation.pos === WAS_ID ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr}</span>
             <span class="gd-down-dist">${situation.text}</span>
           </div>` : ''}
-        ${playsHtml}
+        ${hasPlays ? `
+          <div class="gd-tabs" role="tablist">
+            <button class="gd-tab gd-tab--active" role="tab" aria-selected="true" data-target="gdPanelSummary">
+              ${phase === 'postgame' ? 'Scoring' : 'Plays'}
+            </button>
+          </div>
+          <div class="gd-panel" id="gdPanelSummary" role="tabpanel">
+            ${playsHtml}
+          </div>` : ''}
       </div>`;
 
     mount.replaceWith(section);
+
+    // Tab switching
+    const banner = document.getElementById('gdBanner');
+    if (banner) {
+      banner.querySelectorAll<HTMLButtonElement>('.gd-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const target = tab.getAttribute('data-target');
+          banner.querySelectorAll('.gd-tab').forEach(t => {
+            t.classList.toggle('gd-tab--active', t === tab);
+            t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+          });
+          banner.querySelectorAll<HTMLElement>('.gd-panel').forEach(panel => {
+            panel.hidden = panel.id !== target;
+          });
+        });
+      });
+    }
 
     // Set up live polling (reuses same logic as SSR banner)
     if (phase === 'live' || phase === 'halftime') {
