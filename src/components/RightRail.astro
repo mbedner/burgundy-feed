@@ -66,6 +66,10 @@ const { dates, schedule, stats, players,
     padding-bottom: 32px;
     align-self: start;
   }
+</style>
+
+<style is:global>
+  /* Must be global so client-side injected .rail-section elements also get spacing */
   .rail-section + .rail-section {
     margin-top: 32px;
     padding-top: 32px;

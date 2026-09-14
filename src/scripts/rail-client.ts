@@ -111,7 +111,7 @@ async function renderOpponent(): Promise<void> {
   section.className = 'rail-section';
   section.innerHTML = `
     <div class="module">
-      <div class="module-hd" style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px">Next Opponent</div>
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:12px">Next Opponent</div>
       <div class="opp-card" style="display:flex;align-items:center;gap:10px">
         ${logo ? `<img src="${logo}" alt="${next.opponent}" width="40" height="40" loading="lazy" style="width:40px;height:40px;object-fit:contain;flex-shrink:0" />` : ''}
         <div style="flex:1;min-width:0">
@@ -180,7 +180,7 @@ async function renderInjuries(): Promise<void> {
   section.className = 'rail-section';
   section.innerHTML = `
     <div class="module">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:10px">Injury Report</div>
+      <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:12px">Injury Report</div>
       <div>${rows}</div>
     </div>`;
 
