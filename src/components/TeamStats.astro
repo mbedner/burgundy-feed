@@ -17,26 +17,26 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
   <div class="module-hd">Team Stats — {stats.season}</div>
 
   <div class="record-row">
-    <span class="record">{stats.record}</span>
-    <span class="div-rec">{stats.divisionRecord} DIV</span>
+    <span class="record" id="ts-record">{stats.record}</span>
+    <span class="div-rec" id="ts-div-rec">{stats.divisionRecord} DIV</span>
   </div>
 
   <!-- Rank grid: offense rank, defense rank, PPG, points allowed -->
   <div class="rank-grid">
     <div class="rank-cell">
-      <span class="rank-val rank-val--off">{ordinal(stats.offenseRank)}</span>
+      <span class="rank-val rank-val--off" id="ts-off-rank">{ordinal(stats.offenseRank)}</span>
       <span class="rank-lbl">Off Rank</span>
     </div>
     <div class="rank-cell">
-      <span class="rank-val rank-val--def">{ordinal(stats.defenseRank)}</span>
+      <span class="rank-val rank-val--def" id="ts-def-rank">{ordinal(stats.defenseRank)}</span>
       <span class="rank-lbl">Def Rank</span>
     </div>
     <div class="rank-cell">
-      <span class="rank-val">{stats.pointsPerGame}</span>
+      <span class="rank-val" id="ts-ppg">{stats.pointsPerGame}</span>
       <span class="rank-lbl">PPG</span>
     </div>
     <div class="rank-cell">
-      <span class="rank-val">{stats.pointsAllowed}</span>
+      <span class="rank-val" id="ts-opp-ppg">{stats.pointsAllowed}</span>
       <span class="rank-lbl">Opp PPG</span>
     </div>
   </div>
@@ -44,15 +44,15 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
   <!-- Yards per game breakdown -->
   <div class="yards-grid">
     <div class="yards-cell">
-      <span class="yards-val">{stats.passYardsPerGame}</span>
+      <span class="yards-val" id="ts-pass-ypg">{stats.passYardsPerGame}</span>
       <span class="yards-lbl">Pass Yds/G</span>
     </div>
     <div class="yards-cell">
-      <span class="yards-val">{stats.rushYardsPerGame}</span>
+      <span class="yards-val" id="ts-rush-ypg">{stats.rushYardsPerGame}</span>
       <span class="yards-lbl">Rush Yds/G</span>
     </div>
     <div class="yards-cell yards-cell--total">
-      <span class="yards-val">{totalYards}</span>
+      <span class="yards-val" id="ts-total-ypg">{totalYards}</span>
       <span class="yards-lbl">Total Yds/G</span>
     </div>
   </div>
@@ -87,12 +87,93 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     </div>
   )}
 
-  {'source' in stats && stats.source === 'espn' && (
-    <div class="stats-footer">
-      <span class="live-badge">● Live via ESPN</span>
-    </div>
-  )}
+  <div class="stats-footer" id="ts-footer" style="display:none">
+    <span class="live-badge">● Live via ESPN</span>
+  </div>
 </div>
+
+<script>
+(async () => {
+  const BASE    = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+  const CORE    = 'https://sports.core.api.espn.com/v2/sports/football/leagues/nfl';
+  const TEAM_ID = '28';
+
+  function set(id: string, val: string | number) {
+    const el = document.getElementById(id);
+    if (el && val !== undefined && val !== null) el.textContent = String(val);
+  }
+
+  function ordinal(n: number): string {
+    const s = ['th','st','nd','rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function getStat(categories: any[], catName: string, statName: string): number {
+    const cat = categories.find((c: any) => c.name === catName);
+    const s   = cat?.stats?.find((s: any) => s.name === statName);
+    return s ? parseFloat(s.displayValue) || 0 : 0;
+  }
+
+  try {
+    const now        = new Date();
+    const seasonYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+
+    const [teamRes, statsRes, standRes] = await Promise.all([
+      fetch(`${BASE}/teams/${TEAM_ID}`),
+      fetch(`${CORE}/seasons/${seasonYear}/types/2/teams/${TEAM_ID}/statistics`),
+      fetch(`https://site.api.espn.com/apis/v2/sports/football/nfl/standings?season=${seasonYear}`),
+    ]);
+
+    // ── Record ────────────────────────────────────────────────────────────────
+    if (teamRes.ok) {
+      const td = await teamRes.json() as any;
+      const items: any[] = td?.team?.record?.items ?? [];
+      const overall = items.find((r: any) => !r.name || r.name === 'overall' || items.indexOf(r) === 0);
+      const division = items.find((r: any) => r.name?.toLowerCase().includes('div'));
+      if (overall?.summary)  set('ts-record',  overall.summary);
+      if (division?.summary) set('ts-div-rec', division.summary + ' DIV');
+    }
+
+    // ── Team stats (yards/game, PPG) ──────────────────────────────────────────
+    if (statsRes.ok) {
+      const sd = await statsRes.json() as any;
+      const cats: any[] = sd?.splits?.categories ?? [];
+
+      const passYpg  = getStat(cats, 'passing', 'passingYardsPerGame');
+      const rushYpg  = getStat(cats, 'rushing', 'rushingYardsPerGame');
+      const ppg      = getStat(cats, 'scoring', 'totalPointsPerGame');
+
+      if (passYpg)  set('ts-pass-ypg',  passYpg.toFixed(1));
+      if (rushYpg)  set('ts-rush-ypg',  rushYpg.toFixed(1));
+      if (passYpg || rushYpg) set('ts-total-ypg', (passYpg + rushYpg).toFixed(1));
+      if (ppg)      set('ts-ppg',        ppg.toFixed(1));
+    }
+
+    // ── Standings (ranks + opp PPG) ───────────────────────────────────────────
+    if (standRes.ok) {
+      const standData = await standRes.json() as any;
+      const entries: any[] = standData?.standings?.entries ?? [];
+      const wasEntry = entries.find((e: any) => e?.team?.id === TEAM_ID);
+      if (wasEntry) {
+        let offRank = 0, defRank = 0, oppPpg = 0;
+        for (const s of wasEntry?.stats ?? []) {
+          if (s.name === 'pointsFor')     offRank = s.rank ?? 0;
+          if (s.name === 'pointsAgainst') { defRank = s.rank ?? 0; oppPpg = parseFloat(s.displayValue) || 0; }
+        }
+        if (offRank) set('ts-off-rank', ordinal(offRank));
+        if (defRank) set('ts-def-rank', ordinal(defRank));
+        if (oppPpg)  set('ts-opp-ppg',  oppPpg.toFixed(1));
+      }
+    }
+
+    // Show live badge if any fetch succeeded
+    const footer = document.getElementById('ts-footer');
+    if (footer) footer.style.display = '';
+
+  } catch { /* silent — fallback data stays */ }
+})();
+</script>
 
 <style>
   .module-hd {
