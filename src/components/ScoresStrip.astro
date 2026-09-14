@@ -3,14 +3,23 @@
 ---
 
 <div class="ss-shell" id="ssShell" hidden>
-  <div class="ss-week" id="ssWeek"></div>
+  <div class="ss-nav" id="ssNav">
+    <button class="ss-nav-btn" id="ssPrev" aria-label="Previous week">&#8249;</button>
+    <span class="ss-week-label" id="ssWeek"></span>
+    <button class="ss-nav-btn" id="ssNext" aria-label="Next week">&#8250;</button>
+  </div>
   <div class="ss-track" id="ssTrack"></div>
 </div>
 
 <script>
 (async () => {
-  const BASE  = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+  const BASE   = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
   const WAS_ID = '28';
+  const MAX_WEEK = 18;
+
+  let currentWeek = 1;
+  let currentYear = 2026;
+  let currentSeasonType = 2; // 2 = regular season
 
   function logoImg(url: string, alt: string): string {
     return url
@@ -18,19 +27,9 @@
       : `<span class="ss-logo ss-logo--blank"></span>`;
   }
 
-  try {
-    const res = await fetch(`${BASE}/scoreboard`);
-    if (!res.ok) return;
-    const data = await res.json() as any;
-
-    const events: any[] = data?.events ?? [];
-    if (!events.length) return;
-
-    const weekNum = data?.week?.number;
-    const weekLabel: string = weekNum ? `Week ${weekNum}` : '';
-
+  function buildCards(events: any[]): { html: string; wasIdx: number } {
     let wasIdx = -1;
-    const cards = events.map((ev: any, i: number) => {
+    const html = events.map((ev: any, i: number) => {
       const comp = ev?.competitions?.[0];
       if (!comp) return '';
 
@@ -60,7 +59,6 @@
       const awayAbbr = away.team?.abbreviation ?? '???';
       const homeAbbr = home.team?.abbreviation ?? '???';
 
-      // Status line
       let statusHtml = '';
       if (isPre) {
         const dt = new Date(comp.date || ev.date);
@@ -88,40 +86,119 @@
           ${logoImg(awayLogo, awayAbbr)}
           <span class="ss-abbr">${awayAbbr}</span>
           <span class="ss-score${awayWon ? ' ss-score--win' : ''}">${scoreOrDash(awayScore)}</span>
-          ${awayWon ? '<span class="ss-caret" aria-hidden="true">◀</span>' : '<span class="ss-caret-gap"></span>'}
+          ${awayWon ? '<span class="ss-caret" aria-hidden="true">&#9668;</span>' : '<span class="ss-caret-gap"></span>'}
         </div>
         <div class="ss-team${isPost && !homeWon ? ' ss-team--dim' : ''}">
           ${logoImg(homeLogo, homeAbbr)}
           <span class="ss-abbr">${homeAbbr}</span>
           <span class="ss-score${homeWon ? ' ss-score--win' : ''}">${scoreOrDash(homeScore)}</span>
-          ${homeWon ? '<span class="ss-caret" aria-hidden="true">◀</span>' : '<span class="ss-caret-gap"></span>'}
+          ${homeWon ? '<span class="ss-caret" aria-hidden="true">&#9668;</span>' : '<span class="ss-caret-gap"></span>'}
         </div>
         <div class="ss-status${isLive || isHalf ? ' ss-status--live' : ''}">${statusHtml}</div>
       </a>`;
-    });
+    }).filter(Boolean).join('');
 
-    const track = document.getElementById('ssTrack');
-    const week  = document.getElementById('ssWeek');
+    return { html, wasIdx };
+  }
+
+  async function loadWeek(week: number, year: number, seasonType: number, scrollToWas = false) {
+    const track   = document.getElementById('ssTrack')   as HTMLElement | null;
+    const weekEl  = document.getElementById('ssWeek')    as HTMLElement | null;
+    const prevBtn = document.getElementById('ssPrev')    as HTMLButtonElement | null;
+    const nextBtn = document.getElementById('ssNext')    as HTMLButtonElement | null;
+    if (!track || !weekEl) return;
+
+    track.style.opacity = '0.4';
+
+    try {
+      const url = `${BASE}/scoreboard?seasontype=${seasonType}&week=${week}&year=${year}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json() as any;
+
+      const events: any[] = data?.events ?? [];
+      if (!events.length) {
+        track.style.opacity = '1';
+        return;
+      }
+
+      const { html, wasIdx } = buildCards(events);
+      track.innerHTML = html;
+      track.style.opacity = '1';
+
+      const label = `Week ${week}`;
+      weekEl.textContent = label;
+
+      // Update button states
+      if (prevBtn) prevBtn.disabled = week <= 1;
+      if (nextBtn) nextBtn.disabled = week >= MAX_WEEK;
+
+      if (scrollToWas && wasIdx >= 0) {
+        const wasCard = track.children[wasIdx] as HTMLElement | null;
+        if (wasCard) {
+          requestAnimationFrame(() => {
+            const scrollLeft = wasCard.offsetLeft - track.clientWidth / 2 + wasCard.offsetWidth / 2;
+            track.scrollLeft = Math.max(0, scrollLeft);
+          });
+        }
+      } else {
+        track.scrollLeft = 0;
+      }
+    } catch {
+      track.style.opacity = '1';
+    }
+  }
+
+  // Initial load — use current week from API (no params = current week)
+  try {
+    const res = await fetch(`${BASE}/scoreboard`);
+    if (!res.ok) return;
+    const data = await res.json() as any;
+
+    const events: any[] = data?.events ?? [];
+    if (!events.length) return;
+
+    currentWeek       = data?.week?.number ?? 1;
+    currentYear       = data?.season?.year ?? 2026;
+    currentSeasonType = data?.season?.type ?? 2;
+
     const shell = document.getElementById('ssShell');
-    if (!track || !week || !shell) return;
+    if (shell) shell.hidden = false;
 
-    track.innerHTML = cards.filter(Boolean).join('');
-    if (weekLabel) week.textContent = weekLabel;
+    const { html, wasIdx } = buildCards(events);
+    const track  = document.getElementById('ssTrack')  as HTMLElement | null;
+    const weekEl = document.getElementById('ssWeek')   as HTMLElement | null;
+    const prev   = document.getElementById('ssPrev')   as HTMLButtonElement | null;
+    const next   = document.getElementById('ssNext')   as HTMLButtonElement | null;
+    if (!track || !weekEl) return;
 
-    shell.hidden = false;
+    track.innerHTML = html;
+    weekEl.textContent = `Week ${currentWeek}`;
+    if (prev) prev.disabled = currentWeek <= 1;
+    if (next) next.disabled = currentWeek >= MAX_WEEK;
 
-    // Scroll WAS card into view
     if (wasIdx >= 0) {
       const wasCard = track.children[wasIdx] as HTMLElement | null;
       if (wasCard) {
         requestAnimationFrame(() => {
-          const stripRect  = track.getBoundingClientRect();
-          const cardRect   = wasCard.getBoundingClientRect();
-          const scrollLeft = wasCard.offsetLeft - stripRect.width / 2 + cardRect.width / 2;
+          const scrollLeft = wasCard.offsetLeft - track.clientWidth / 2 + wasCard.offsetWidth / 2;
           track.scrollLeft = Math.max(0, scrollLeft);
         });
       }
     }
+
+    // Wire up prev/next buttons
+    prev?.addEventListener('click', () => {
+      if (currentWeek <= 1) return;
+      currentWeek--;
+      loadWeek(currentWeek, currentYear, currentSeasonType, false);
+    });
+    next?.addEventListener('click', () => {
+      if (currentWeek >= MAX_WEEK) return;
+      currentWeek++;
+      loadWeek(currentWeek, currentYear, currentSeasonType, false);
+    });
+
   } catch { /* silent */ }
 })();
 </script>
@@ -136,19 +213,50 @@
     overflow-y: hidden;
   }
 
-  /* ── Week label ── */
-  .ss-week {
+  /* ── Week nav sidebar ── */
+  .ss-nav {
     flex-shrink: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 0 12px;
-    font-size: 10px;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    padding: 0 4px;
+    gap: 1px;
+  }
+
+  .ss-nav-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    transition: color 0.1s, background 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ss-nav-btn:hover:not(:disabled) {
+    color: var(--accent);
+    background: var(--bg);
+  }
+  .ss-nav-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  .ss-week-label {
+    font-size: 9px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
-    border-right: 1px solid var(--border);
     white-space: nowrap;
+    text-align: center;
+    padding: 0 2px;
   }
 
   /* ── Scrollable track ── */
@@ -158,6 +266,7 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     flex: 1;
+    transition: opacity 0.15s;
   }
   .ss-track::-webkit-scrollbar { display: none; }
 
@@ -177,10 +286,7 @@
   }
   .ss-card:hover { background: var(--surface-2); }
 
-  /* WAS game — accent top stripe + light highlight */
-  .ss-card--was {
-    background: var(--surface-2);
-  }
+  .ss-card--was { background: var(--surface-2); }
   .ss-card--was::before {
     content: '';
     position: absolute;
@@ -204,11 +310,7 @@
     flex-shrink: 0;
     display: block;
   }
-  .ss-logo--blank {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
+  .ss-logo--blank { width: 20px; height: 20px; flex-shrink: 0; }
 
   .ss-abbr {
     font-size: 11px;
@@ -228,7 +330,6 @@
     text-align: right;
     flex-shrink: 0;
   }
-  .ss-score--win { color: var(--text); }
 
   .ss-caret {
     font-size: 8px;
