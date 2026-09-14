@@ -391,19 +391,19 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
 
   /* Score with optional caret */
   .gd-score-wrap {
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
+    position: relative;
   }
   .gd-score-wrap--dim { opacity: 0.38; }
 
+  /* Caret is absolutely positioned so it never shifts the score number */
   .gd-caret {
-    font-size: 20px;
+    position: absolute;
+    right: calc(100% + 2px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
     color: #e8a820;
     line-height: 1;
-    flex-shrink: 0;
-    position: relative;
-    top: 3px;
   }
 
   .gd-score {
