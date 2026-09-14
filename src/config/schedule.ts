@@ -1,17 +1,19 @@
 // ─── Schedule & Important Dates ───────────────────────────────────────────────
 
 export const IMPORTANT_DATES = [
-  { label: 'Offseason Workouts',   date: '2026-04-20', note: 'Phase 1 begins' },
-  { label: 'NFL Draft — Round 1',  date: '2026-04-23', note: 'Pittsburgh, PA — Pick #7' },
-  { label: 'Draft — Rounds 2–3',  date: '2026-04-24', note: 'Pittsburgh, PA' },
-  { label: 'Draft — Rounds 4–7',  date: '2026-04-25', note: 'Pittsburgh, PA' },
-  { label: 'Rookie Minicamp',      date: '2026-05-08', note: '' },
-  { label: 'OTAs Begin',          date: '2026-05-27', note: '' },
-  { label: 'Mandatory Minicamp',  date: '2026-06-16', note: 'June 16–18' },
-  { label: 'Training Camp',       date: '2026-07-22', note: 'Ashburn, VA — est.' },
-  { label: 'Preseason Opens',     date: '2026-08-06', note: 'TBD' },
-  { label: 'Regular Season',      date: '2026-09-13', note: 'Week 1 at PHI' },
-  { label: 'Schedule Release',    date: '2026-05-14', note: 'Released May 14' },
+  // ── Upcoming games (notable / primetime / milestone) ─────────────────────
+  { label: 'Week 1 — at Philadelphia',  date: '2026-09-13', note: '4:25 PM · FOX' },
+  { label: 'Week 2 — at Dallas',        date: '2026-09-20', note: '4:25 PM · FOX' },
+  { label: 'Week 3 — vs. Seattle',      date: '2026-09-27', note: '1:00 PM · FOX' },
+  { label: 'London — vs. Indianapolis', date: '2026-10-04', note: 'Tottenham · 9:30 AM · NFLN' },
+  { label: 'MNF — at San Francisco',    date: '2026-10-19', note: '8:15 PM · ESPN/ABC' },
+  // ── Season milestones ─────────────────────────────────────────────────────
+  { label: 'Bye Week',                  date: '2026-10-26', note: 'Week 7' },
+  { label: 'Trade Deadline',            date: '2026-11-03', note: 'Est. — confirm on NFL.com' },
+  { label: 'SNF — vs. Philadelphia',    date: '2026-11-01', note: '8:20 PM · NBC' },
+  { label: 'TNF — at NY Giants',        date: '2026-11-12', note: '8:15 PM · Prime Video' },
+  { label: 'MNF — vs. Cincinnati',      date: '2026-11-23', note: '8:15 PM · ESPN/ABC' },
+  { label: 'Season Finale',             date: '2027-01-04', note: 'vs. Dallas · W18' },
 ];
 
 // 2026 regular season — schedule released May 14, 2026 (source: Commanders.com / NFL.com)
@@ -65,25 +67,27 @@ export const LAST_SEASON = {
   ],
 };
 
-// ─── Team Stats — 2025 Final Season Stats ─────────────────────────────────────
+// ─── Team Stats — 2026 Season (live data from ESPN via ingest worker) ─────────
+// This object is the fallback shown when the KV cache is cold or ESPN is down.
+// The ingest worker overwrites it with live ESPN data every hour.
 export const TEAM_STATS = {
-  season:            '2025',
-  record:            '5-12',
-  divisionRecord:    '3-3',
-  offenseRank:       22,
-  defenseRank:       27,
-  pointsPerGame:     20.9,
-  pointsAllowed:     26.5,
-  passYardsPerGame:  195.8,
-  rushYardsPerGame:  134.7,
+  season:            '2026',
+  record:            '0-0',
+  divisionRecord:    '0-0',
+  offenseRank:       16,
+  defenseRank:       16,
+  pointsPerGame:     0.0,
+  pointsAllowed:     0.0,
+  passYardsPerGame:  0.0,
+  rushYardsPerGame:  0.0,
   leaders: {
-    passingYards:   { name: 'Marcus Mariota',         stat: '1,695 yds' },
-    rushingYards:   { name: 'Jacory Croskey-Merritt', stat: '805 yds'   },
-    receivingYards: { name: 'Deebo Samuel',            stat: '727 yds'   },
-    sacks:          { name: 'Von Miller',              stat: '9.0'       },
-    interceptions:  { name: 'Mike Sainristil',         stat: '4 INTs'    },
-    tackles:        { name: 'Bobby Wagner',            stat: '162'       },
+    passingYards:   { name: 'Jayden Daniels',          stat: '—' },
+    rushingYards:   { name: 'Jacory Croskey-Merritt',  stat: '—' },
+    receivingYards: { name: 'Terry McLaurin',           stat: '—' },
+    sacks:          { name: 'Odafe Oweh',               stat: '—' },
+    interceptions:  { name: 'Mike Sainristil',          stat: '—' },
+    tackles:        { name: 'Bobby Wagner',             stat: '—' },
   },
-  lastUpdated: '2025 final',
+  lastUpdated: '2026 preseason',
   source: 'fallback' as const,
 };
