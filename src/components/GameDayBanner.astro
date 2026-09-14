@@ -332,14 +332,71 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
 ) : null}
 
 <style is:global>
+  /* ── Theme tokens (light default) ── */
+  .gd-banner {
+    --gd-bg:           #ffffff;
+    --gd-bg2:          #f4f3f1;
+    --gd-bg3:          #eeece9;
+    --gd-score-mid:    #f0efed;
+    --gd-border:       #e0ddd8;
+    --gd-border2:      #eae8e4;
+    --gd-text:         #1a1918;
+    --gd-text2:        #48453f;
+    --gd-text3:        #787470;
+    --gd-text4:        #9a9890;
+    --gd-text5:        #888480;
+    --gd-abbr:         #888078;
+    --gd-name:         #2e2c28;
+    --gd-scoring-bg:   #fffbea;
+    --gd-scoring-bdr:  #fef3c7;
+  }
+
+  /* Dark overrides */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .gd-banner {
+      --gd-bg:          #0f0f0f;
+      --gd-bg2:         #141414;
+      --gd-bg3:         #1a1a1a;
+      --gd-score-mid:   #141414;
+      --gd-border:      #2a2a2a;
+      --gd-border2:     #1e1e1e;
+      --gd-text:        #f0eeeb;
+      --gd-text2:       #c0b8b0;
+      --gd-text3:       #9a9080;
+      --gd-text4:       #7a7068;
+      --gd-text5:       #6a6058;
+      --gd-abbr:        #a09890;
+      --gd-name:        #d0c8c0;
+      --gd-scoring-bg:  #1a1200;
+      --gd-scoring-bdr: #2a2000;
+    }
+  }
+  :root[data-theme="dark"] .gd-banner {
+    --gd-bg:          #0f0f0f;
+    --gd-bg2:         #141414;
+    --gd-bg3:         #1a1a1a;
+    --gd-score-mid:   #141414;
+    --gd-border:      #2a2a2a;
+    --gd-border2:     #1e1e1e;
+    --gd-text:        #f0eeeb;
+    --gd-text2:       #c0b8b0;
+    --gd-text3:       #9a9080;
+    --gd-text4:       #7a7068;
+    --gd-text5:       #6a6058;
+    --gd-abbr:        #a09890;
+    --gd-name:        #d0c8c0;
+    --gd-scoring-bg:  #1a1200;
+    --gd-scoring-bdr: #2a2000;
+  }
+
   /* ── Banner shell ── */
   .gd-banner {
-    background: #0f0f0f;
-    border: 1px solid #2a2a2a;
+    background: var(--gd-bg);
+    border: 1px solid var(--gd-border);
     border-radius: 6px;
     overflow: hidden;
     margin-bottom: 20px;
-    color: #f0eeeb;
+    color: var(--gd-text);
   }
 
   /* ── Score bar ── */
@@ -351,7 +408,7 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     padding: 14px 16px;
     background: linear-gradient(to right,
       var(--was-color, #5a1414) 0px 5px,
-      #141414 5px calc(100% - 5px),
+      var(--gd-score-mid) 5px calc(100% - 5px),
       var(--opp-color, #333333) calc(100% - 5px)
     );
   }
@@ -384,7 +441,7 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #a09890;
+    color: var(--gd-abbr);
     line-height: 1;
   }
   .gd-team--was .gd-abbr { color: #e8a820; }
@@ -412,7 +469,7 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     letter-spacing: -0.03em;
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    color: #f0eeeb;
+    color: var(--gd-text);
   }
 
   /* ── Middle section ── */
@@ -437,10 +494,10 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
   .gd-kickoff {
     font-size: 13px;
     font-weight: 700;
-    color: #f0eeeb;
+    color: var(--gd-text);
   }
   .gd-network,
-  .gd-venue { font-size: 10px; color: #9a9080; }
+  .gd-venue { font-size: 10px; color: var(--gd-text3); }
 
   .gd-live-info {
     display: flex;
@@ -464,13 +521,13 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: #f0eeeb;
+    color: var(--gd-text);
   }
   .gd-clock {
     font-size: 18px;
     font-weight: 900;
     letter-spacing: -0.02em;
-    color: #f0eeeb;
+    color: var(--gd-text);
     font-variant-numeric: tabular-nums;
   }
 
@@ -484,7 +541,7 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     font-weight: 800;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #9a9080;
+    color: var(--gd-text3);
   }
 
   /* ── Situation bar ── */
@@ -494,31 +551,31 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     justify-content: center;
     gap: 16px;
     padding: 6px 20px;
-    background: #1a1a1a;
-    border-top: 1px solid #2a2a2a;
+    background: var(--gd-bg3);
+    border-top: 1px solid var(--gd-border);
     font-size: 12px;
     font-weight: 600;
-    color: #c0b8b0;
+    color: var(--gd-text2);
   }
   .gd-possession { color: #e8a820; }
-  .gd-down-dist  { color: #f0eeeb; }
+  .gd-down-dist  { color: var(--gd-text); }
 
   /* ── Countdown ── */
   .gd-countdown {
     text-align: center;
     padding: 8px 20px;
-    background: #1a1a1a;
-    border-top: 1px solid #2a2a2a;
+    background: var(--gd-bg3);
+    border-top: 1px solid var(--gd-border);
     font-size: 12px;
     font-weight: 600;
-    color: #a09890;
+    color: var(--gd-text3);
   }
 
   /* ── Tabs ── */
   .gd-tabs {
     display: flex;
-    background: #0f0f0f;
-    border-top: 1px solid #2a2a2a;
+    background: var(--gd-bg);
+    border-top: 1px solid var(--gd-border);
   }
   .gd-tab {
     padding: 10px 16px;
@@ -526,7 +583,7 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #6a6058;
+    color: var(--gd-text5);
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
@@ -539,7 +596,7 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     color: #e8a820;
     border-bottom-color: #e8a820;
   }
-  .gd-tab:hover:not(.gd-tab--active) { color: #c0b8b0; }
+  .gd-tab:hover:not(.gd-tab--active) { color: var(--gd-text2); }
 
   /* ── Panels ── */
   .gd-panel[hidden] { display: none !important; }
@@ -557,12 +614,12 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     gap: 10px;
     align-items: start;
     padding: 6px 14px;
-    border-bottom: 1px solid #1e1e1e;
+    border-bottom: 1px solid var(--gd-border2);
   }
   .gd-play:last-child { border-bottom: none; }
   .gd-play--scoring {
-    background: #1a1200;
-    border-bottom-color: #2a2000;
+    background: var(--gd-scoring-bg);
+    border-bottom-color: var(--gd-scoring-bdr);
   }
   .gd-play-meta {
     display: flex;
@@ -582,24 +639,24 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     border-radius: 2px;
     white-space: nowrap;
   }
-  .gd-play-period { font-size: 9px; color: #9a9080; font-weight: 600; }
+  .gd-play-period { font-size: 9px; color: var(--gd-text3); font-weight: 600; }
   .gd-play-clock  {
     font-size: 10px;
-    color: #9a9080;
+    color: var(--gd-text3);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
-  .gd-play-text { font-size: 12px; color: #c0b8b0; line-height: 1.4; }
-  .gd-play--scoring .gd-play-text { color: #e0d8d0; }
+  .gd-play-text { font-size: 12px; color: var(--gd-text2); line-height: 1.4; }
+  .gd-play--scoring .gd-play-text { color: var(--gd-text); }
 
   /* ── Box score ── */
-  .gd-bs-group { border-bottom: 1px solid #1e1e1e; }
+  .gd-bs-group { border-bottom: 1px solid var(--gd-border2); }
   .gd-bs-cat {
     font-size: 9px;
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #9a9080;
+    color: var(--gd-text3);
     padding: 7px 14px 3px;
   }
   .gd-bs-row {
@@ -608,13 +665,13 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     justify-content: space-between;
     gap: 8px;
     padding: 4px 14px 5px;
-    border-bottom: 1px solid #1a1a1a;
+    border-bottom: 1px solid var(--gd-border2);
   }
   .gd-bs-row:last-child { border-bottom: none; }
   .gd-bs-name {
     font-size: 12px;
     font-weight: 600;
-    color: #d0c8c0;
+    color: var(--gd-name);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -633,14 +690,14 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
   .gd-bs-val {
     font-size: 12px;
     font-weight: 700;
-    color: #f0eeeb;
+    color: var(--gd-text);
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
   .gd-bs-lbl {
     font-size: 8px;
     font-weight: 600;
-    color: #7a7068;
+    color: var(--gd-text4);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     line-height: 1;
