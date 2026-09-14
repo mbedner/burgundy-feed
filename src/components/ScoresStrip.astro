@@ -4,7 +4,13 @@
 
 <div class="ss-shell" id="ssShell" hidden>
   <div class="ss-nav" id="ssNav">
-    <select class="ss-select" id="ssWeekSelect" aria-label="Select week"></select>
+    <button class="ss-week-btn" id="ssWeekBtn" aria-haspopup="listbox" aria-expanded="false">
+      <span id="ssWeekLabel">Week 1</span>
+      <svg class="ss-chevron" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
+        <path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="ss-week-panel" id="ssWeekPanel" role="listbox" aria-label="Select week" hidden></div>
   </div>
   <div class="ss-track" id="ssTrack"></div>
 </div>
@@ -119,7 +125,14 @@
       track.innerHTML = html;
       track.style.opacity = '1';
 
-      if (select) select.value = String(week);
+      const lbl = document.getElementById('ssWeekLabel');
+      if (lbl) lbl.textContent = `Week ${week}`;
+      const panel = document.getElementById('ssWeekPanel');
+      if (panel) panel.querySelectorAll('.ss-week-item').forEach(el => {
+        const match = el.getAttribute('data-week') === String(week);
+        el.classList.toggle('ss-week-item--active', match);
+        el.setAttribute('aria-selected', match ? 'true' : 'false');
+      });
 
       if (scrollToWas && wasIdx >= 0) {
         const wasCard = track.children[wasIdx] as HTMLElement | null;
@@ -150,21 +163,25 @@
     currentYear       = data?.season?.year ?? 2026;
     currentSeasonType = data?.season?.type ?? 2;
 
-    const shell  = document.getElementById('ssShell');
-    const select = document.getElementById('ssWeekSelect') as HTMLSelectElement | null;
+    const shell     = document.getElementById('ssShell');
+    const weekBtn   = document.getElementById('ssWeekBtn')   as HTMLButtonElement | null;
+    const weekLabel = document.getElementById('ssWeekLabel') as HTMLElement | null;
+    const weekPanel = document.getElementById('ssWeekPanel') as HTMLElement | null;
     if (shell) shell.hidden = false;
 
     const { html, wasIdx } = buildCards(events);
     const track = document.getElementById('ssTrack') as HTMLElement | null;
-    if (!track || !select) return;
+    if (!track || !weekBtn || !weekLabel || !weekPanel) return;
 
-    // Populate week dropdown
+    // Populate custom dropdown panel
     for (let w = 1; w <= MAX_WEEK; w++) {
-      const opt = document.createElement('option');
-      opt.value = String(w);
-      opt.textContent = `Week ${w}`;
-      if (w === currentWeek) opt.selected = true;
-      select.appendChild(opt);
+      const item = document.createElement('div');
+      item.className = 'ss-week-item' + (w === currentWeek ? ' ss-week-item--active' : '');
+      item.setAttribute('role', 'option');
+      item.setAttribute('aria-selected', w === currentWeek ? 'true' : 'false');
+      item.setAttribute('data-week', String(w));
+      item.textContent = `Week ${w}`;
+      weekPanel.appendChild(item);
     }
 
     track.innerHTML = html;
@@ -179,13 +196,43 @@
       }
     }
 
-    // Wire up select
-    select.addEventListener('change', () => {
-      const w = parseInt(select.value);
+    // Toggle panel open/close
+    function closePanel() {
+      weekPanel.hidden = true;
+      weekBtn!.setAttribute('aria-expanded', 'false');
+      weekBtn!.classList.remove('ss-week-btn--open');
+    }
+    function openPanel() {
+      weekPanel.hidden = false;
+      weekBtn!.setAttribute('aria-expanded', 'true');
+      weekBtn!.classList.add('ss-week-btn--open');
+      // Scroll active item into view
+      const active = weekPanel.querySelector('.ss-week-item--active') as HTMLElement | null;
+      if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+
+    weekBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      weekPanel.hidden ? openPanel() : closePanel();
+    });
+
+    weekPanel.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest('[data-week]') as HTMLElement | null;
+      if (!item) return;
+      const w = parseInt(item.getAttribute('data-week') ?? '');
       if (!w) return;
       currentWeek = w;
+      weekLabel.textContent = `Week ${w}`;
+      weekPanel.querySelectorAll('.ss-week-item').forEach(el => {
+        el.classList.toggle('ss-week-item--active', el === item);
+        el.setAttribute('aria-selected', el === item ? 'true' : 'false');
+      });
+      closePanel();
       loadWeek(currentWeek, currentYear, currentSeasonType, false);
     });
+
+    // Close on outside click
+    document.addEventListener('click', closePanel);
 
   } catch { /* silent */ }
 })();
@@ -209,30 +256,64 @@
     justify-content: center;
     border-right: 1px solid var(--border);
     padding: 0 10px;
+    position: relative;
   }
 
-  .ss-select {
-    appearance: none;
-    -webkit-appearance: none;
+  .ss-week-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     background: none;
     border: none;
     cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
-    padding: 0;
-    outline: none;
     white-space: nowrap;
+    transition: background 0.1s;
   }
-  .ss-select option {
-    font-size: 13px;
+  .ss-week-btn:hover,
+  .ss-week-btn--open { background: var(--bg); }
+
+  .ss-chevron {
+    color: var(--accent);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .ss-week-btn--open .ss-chevron { transform: rotate(180deg); }
+
+  .ss-week-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 500;
+    background: var(--surface);
+    border: 1px solid var(--border-strong, var(--border));
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    overflow-y: auto;
+    max-height: 240px;
+    min-width: 110px;
+    padding: 4px 0;
+  }
+
+  .ss-week-item {
+    padding: 7px 14px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0;
-    text-transform: none;
-    color: initial;
-    background: initial;
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s, color 0.1s;
+  }
+  .ss-week-item:hover { background: var(--bg); }
+  .ss-week-item--active {
+    color: var(--accent);
+    font-weight: 800;
   }
 
   /* ── Scrollable track ── */
