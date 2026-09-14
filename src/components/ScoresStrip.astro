@@ -329,6 +329,7 @@
     flex-shrink: 0;
     width: 28px;
     border: none;
+    border-left: 1px solid var(--border);
     cursor: pointer;
     display: none; /* hidden by default; shown only on pointer devices */
     align-items: center;
@@ -440,6 +441,7 @@
     position: relative;
   }
   .ss-card:hover { background: var(--surface-2); }
+  .ss-card:last-child { border-right: none; }
 
   .ss-card--was { background: var(--surface-2); }
   .ss-card--was::before {
