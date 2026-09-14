@@ -26,7 +26,7 @@ function summarizeForTicker(article: Article): string {
 
 export function detectBreakingItems(articles: Article[]): BreakingItem[] {
   const now = new Date();
-  const cutoff = new Date(now.getTime() - 4 * 60 * 60 * 1000); // last 4 hours only
+  const cutoff = new Date(now.getTime() - 90 * 60 * 1000); // last 90 minutes only
 
   return articles
     .filter(a => {
