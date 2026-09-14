@@ -124,12 +124,14 @@ export function getMockGame(phase: GamePhase): GameDayInfo {
   const washington: GameTeam = {
     id: '28', name: 'Commanders', abbreviation: 'WAS',
     score: phase === 'pregame' ? 0 : phase === 'postgame' ? 24 : 17,
-    isHome: true, winner: phase === 'postgame', logo: '', color: '5a1414',
+    isHome: true, winner: phase === 'postgame',
+    logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/wsh.png', color: '5a1414',
   };
   const opponent: GameTeam = {
     id: '6', name: 'Cowboys', abbreviation: 'DAL',
     score: phase === 'pregame' ? 0 : phase === 'postgame' ? 17 : 10,
-    isHome: false, winner: false, logo: '', color: '003594',
+    isHome: false, winner: false,
+    logo: 'https://a.espncdn.com/i/teamlogos/nfl/500/dal.png', color: '003594',
   };
 
   const mockPlays: GamePlay[] = [

@@ -55,31 +55,33 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
 
   .story-inner {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: flex-start;
-    padding: 11px 10px 11px 0;
+    padding: 13px 8px 13px 0;
   }
   .story--breaking .story-inner { padding-left: 10px; }
 
   .story-rank {
     flex-shrink: 0;
     width: 22px;
-    font-size: 11px;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 15px;
     font-weight: 700;
     color: var(--text-4);
-    padding-top: 3px;
+    padding-top: 2px;
     text-align: right;
   }
   .story-body { flex: 1; min-width: 0; overflow: hidden; }
 
   .story-link { display: block; text-decoration: none; }
   .story-hed {
-    font-size: 18px;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 20px;
     font-weight: 700;
-    line-height: 1.35;
+    line-height: 1.2;
     color: var(--text);
-    letter-spacing: -0.01em;
-    margin-bottom: 4px;
+    letter-spacing: 0.01em;
+    margin-bottom: 5px;
     transition: color 0.12s;
     word-break: break-word;
   }
@@ -98,36 +100,38 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
   .story-meta {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     flex-wrap: wrap;
     min-width: 0;
+    margin-top: 3px;
   }
   .brk {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
     letter-spacing: 0.1em;
     color: #fff;
     background: var(--accent-alert);
-    padding: 1px 5px;
-    border-radius: 2px;
+    padding: 2px 5px;
+    border-radius: 0;
     flex-shrink: 0;
   }
   .story-src {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 800;
     color: var(--text-3);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
   }
   .story-author {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-4);
   }
   .story-time {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     margin-left: auto;
     flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
   }
   .story-time--hot  { color: var(--gold); }
   .story-time--warm { color: var(--gold-bright); }
@@ -135,23 +139,24 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
   .story-time--old  { color: var(--text-4); }
 
   .tag {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background: var(--surface-3);
-    color: var(--text-3);
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--text-4);
+    border: 1px solid var(--border-strong);
     flex-shrink: 0;
-    border: none;
     cursor: pointer;
     font-family: inherit;
     line-height: inherit;
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
   }
   .tag:hover {
     background: var(--accent);
     color: #ffffff;
+    border-color: var(--accent);
   }
 </style>

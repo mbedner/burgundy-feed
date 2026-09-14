@@ -51,11 +51,13 @@ const past   = sorted.filter(d => d.days < 0).slice(-3);
 <style>
   .module-hd {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
   }
   .dates-list { display: flex; flex-direction: column; }
   .date-row {

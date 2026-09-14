@@ -412,7 +412,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400;1,14..32,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400;1,14..32,500&display=swap" rel="stylesheet" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="bf-version" content={lastRun?.id ?? ''} />
@@ -445,14 +445,19 @@ const lastUpdated = lastRun?.completedAt ?? null;
   </script>
 
   <style>
+    /* ── Display typeface ───────────────────────────────────────────────────── */
+    :root {
+      --font-display: 'Barlow Condensed', 'Arial Narrow', Impact, sans-serif;
+    }
+
     /* ── Theme tokens ────────────────────────────────────────────────────────── */
     :root[data-theme="light"] {
-      --bg:            #f5f4f2;
+      --bg:            #f2f0f1;
       --surface:       #ffffff;
-      --surface-2:     #f0eeec;
-      --surface-3:     #e8e5e2;
-      --border:        #e0dbd6;
-      --border-strong: #c8c2bc;
+      --surface-2:     #ebe8e9;
+      --surface-3:     #e0dadb;
+      --border:        #d9d2d4;
+      --border-strong: #c4bcbe;
       --text:          #111111;
       --text-2:        #4a4540;
       --text-3:        #655e58;   /* darkened for 5.4:1 contrast on light bg */
@@ -551,7 +556,9 @@ const lastUpdated = lastRun?.completedAt ?? null;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--accent);
-      padding: 16px 0 8px;
+      padding: 16px 0 8px 8px;
+      border-left: 2px solid var(--accent);
+      display: block;
     }
 
     /* ── Divider ─────────────────────────────────────────────────────────────── */
@@ -1132,7 +1139,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
           }
         </section>
 
-        <hr class="divider" style="margin: 12px 0;" />
+        <hr class="divider" style="margin: 28px 0 0;" />
 
         <section id="stream">
           <p class="section-label">Latest News</p>

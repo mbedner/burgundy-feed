@@ -47,11 +47,13 @@ const STATUS_SHORT: Record<string, string> = {
   }
   .module-hd {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
   }
   .inj-list { display: flex; flex-direction: column; }
   .inj-row {
@@ -59,7 +61,7 @@ const STATUS_SHORT: Record<string, string> = {
     grid-template-columns: 26px 1fr auto 32px;
     gap: 4px;
     align-items: center;
-    padding: 4px 0;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border);
     font-size: 11px;
   }

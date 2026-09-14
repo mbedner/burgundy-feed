@@ -25,8 +25,13 @@ function ordSuffix(n: number) {
   {/* ── Score bar (all phases) ── */}
   <div class="gd-scorebar">
     <div class="gd-team gd-team--was">
-      <span class="gd-abbr">WAS</span>
-      <span class="gd-score" id="gdWasScore">{washington.score}</span>
+      {washington.logo && (
+        <img class="gd-logo" src={washington.logo} alt="WAS" loading="eager" />
+      )}
+      <div class="gd-team-text">
+        <span class="gd-abbr">WAS</span>
+        <span class="gd-score" id="gdWasScore">{washington.score}</span>
+      </div>
     </div>
 
     <div class="gd-middle">
@@ -60,8 +65,13 @@ function ordSuffix(n: number) {
     </div>
 
     <div class="gd-team gd-team--opp">
-      <span class="gd-score" id="gdOppScore">{opponent.score}</span>
-      <span class="gd-abbr">{opponent.abbreviation}</span>
+      <div class="gd-team-text gd-team-text--opp">
+        <span class="gd-score" id="gdOppScore">{opponent.score}</span>
+        <span class="gd-abbr">{opponent.abbreviation}</span>
+      </div>
+      {opponent.logo && (
+        <img class="gd-logo" src={opponent.logo} alt={opponent.abbreviation} loading="eager" />
+      )}
     </div>
   </div>
 
@@ -314,27 +324,46 @@ function ordSuffix(n: number) {
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 12px;
-    padding: 16px 20px;
+    padding: 20px 20px;
     background: #141414;
   }
   .gd-team {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
   .gd-team--was { justify-content: flex-end; }
   .gd-team--opp { justify-content: flex-start; }
 
+  .gd-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .gd-team-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .gd-team-text--opp {
+    align-items: flex-start;
+  }
+
   .gd-abbr {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     color: #a09890;
+    line-height: 1;
   }
   .gd-team--was .gd-abbr { color: #e8a820; }
 
   .gd-score {
-    font-size: 36px;
+    font-size: 40px;
     font-weight: 900;
     letter-spacing: -0.03em;
     line-height: 1;

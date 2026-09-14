@@ -47,7 +47,7 @@ const { lastUpdated } = Astro.props;
     position: relative;
     z-index: 200;
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--accent);
     box-shadow: var(--shadow);
     transition: background 0.2s, border-color 0.2s;
   }
@@ -65,8 +65,8 @@ const { lastUpdated } = Astro.props;
   /* ── Wordmark ── */
   .mast-left {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
     flex-shrink: 0;
   }
   .mast-wordmark {
@@ -76,26 +76,30 @@ const { lastUpdated } = Astro.props;
     text-decoration: none;
   }
   .mast-w1 {
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     color: var(--text);
     line-height: 1;
   }
   .mast-w2 {
-    font-size: 15px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
     color: var(--accent);
     line-height: 1;
   }
   .mast-tagline {
     display: none;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 400;
     color: var(--text-3);
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     white-space: nowrap;
+    padding-left: 12px;
+    border-left: 1px solid var(--border-strong);
   }
   @media (min-width: 500px) { .mast-tagline { display: block; } }
 

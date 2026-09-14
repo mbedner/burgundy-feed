@@ -97,22 +97,25 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
 <style>
   .module-hd {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
   }
   .record-row {
     display: flex;
     align-items: baseline;
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
   }
   .record {
-    font-size: 28px;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 34px;
     font-weight: 900;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.02em;
     color: var(--text);
     line-height: 1;
   }
@@ -129,8 +132,8 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     grid-template-columns: repeat(4, 1fr);
     border: 1px solid var(--border);
     background: var(--surface-2);
-    margin-bottom: 8px;
-    border-radius: 4px;
+    margin-bottom: 10px;
+    border-radius: 0;
     overflow: hidden;
   }
   .rank-cell {
@@ -144,7 +147,8 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
   }
   .rank-cell:last-child { border-right: none; }
   .rank-val {
-    font-size: 14px;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 16px;
     font-weight: 800;
     color: var(--text);
     line-height: 1;
@@ -166,8 +170,8 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     grid-template-columns: repeat(3, 1fr);
     border: 1px solid var(--border);
     background: var(--surface-2);
-    margin-bottom: 12px;
-    border-radius: 4px;
+    margin-bottom: 16px;
+    border-radius: 0;
     overflow: hidden;
   }
   .yards-cell {
@@ -182,7 +186,8 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
   .yards-cell:last-child { border-right: none; }
   .yards-cell--total { background: var(--surface-3); }
   .yards-val {
-    font-size: 13px;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 15px;
     font-weight: 800;
     color: var(--text);
     line-height: 1;
@@ -204,7 +209,7 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 6px 0;
+    padding: 7px 0;
     border-bottom: 1px solid var(--border);
   }
   .leader-cat {

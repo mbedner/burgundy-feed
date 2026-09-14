@@ -51,6 +51,8 @@ export async function gdClientDetect(): Promise<void> {
     const oppScore = parseInt(oppC?.score || '0') || 0;
     const wasAbbr  = wasC?.team?.abbreviation || 'WAS';
     const oppAbbr  = oppC?.team?.abbreviation || 'OPP';
+    const wasLogo  = wasC?.team?.logos?.[0]?.href || '';
+    const oppLogo  = oppC?.team?.logos?.[0]?.href || '';
     const wasWinner  = !!wasC?.winner;
     const wasIsHome  = wasC?.homeAway === 'home';
     const period   = status?.period || 1;
@@ -144,8 +146,11 @@ export async function gdClientDetect(): Promise<void> {
       <div class="gd-banner" id="gdBanner" data-game-id="${gameId}" data-phase="${phase}">
         <div class="gd-scorebar">
           <div class="gd-team gd-team--was">
-            <span class="gd-abbr">${wasAbbr}</span>
-            <span class="gd-score" id="gdWasScore">${wasScore}</span>
+            ${wasLogo ? `<img class="gd-logo" src="${wasLogo}" alt="${wasAbbr}" loading="eager" />` : ''}
+            <div class="gd-team-text">
+              <span class="gd-abbr">${wasAbbr}</span>
+              <span class="gd-score" id="gdWasScore">${wasScore}</span>
+            </div>
           </div>
           <div class="gd-middle">
             ${phase === 'pregame' ? `
@@ -169,8 +174,11 @@ export async function gdClientDetect(): Promise<void> {
               </div>` : ''}
           </div>
           <div class="gd-team gd-team--opp">
-            <span class="gd-score" id="gdOppScore">${oppScore}</span>
-            <span class="gd-abbr">${oppAbbr}</span>
+            <div class="gd-team-text gd-team-text--opp">
+              <span class="gd-score" id="gdOppScore">${oppScore}</span>
+              <span class="gd-abbr">${oppAbbr}</span>
+            </div>
+            ${oppLogo ? `<img class="gd-logo" src="${oppLogo}" alt="${oppAbbr}" loading="eager" />` : ''}
           </div>
         </div>
         ${situation ? `

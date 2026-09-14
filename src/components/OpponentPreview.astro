@@ -21,7 +21,7 @@ const dayLabel = daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In 
   <div class="opp-card">
     <div class="opp-left">
       {logo && (
-        <img class="opp-logo" src={logo} alt={name} width="40" height="40" loading="lazy" />
+        <img class="opp-logo" src={logo} alt={name} width="52" height="52" loading="lazy" />
       )}
     </div>
     <div class="opp-info">
@@ -44,38 +44,44 @@ const dayLabel = daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In 
 <style>
   .module-hd {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
   }
   .opp-card {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
   .opp-logo {
-    width: 40px;
-    height: 40px;
+    width: 52px;
+    height: 52px;
     object-fit: contain;
     flex-shrink: 0;
   }
   .opp-info { flex: 1; min-width: 0; }
   .opp-matchup {
-    font-size: 13px;
+    font-family: var(--font-display, 'Barlow Condensed', 'Arial Narrow', sans-serif);
+    font-size: 16px;
     font-weight: 700;
     color: var(--text);
     display: flex;
     align-items: baseline;
     gap: 4px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
+    letter-spacing: 0.01em;
   }
   .opp-ha {
-    font-size: 10px;
-    font-weight: 500;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-3);
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
   .opp-name {
     overflow: hidden;
@@ -85,7 +91,7 @@ const dayLabel = daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In 
   .opp-record {
     font-size: 11px;
     color: var(--text-3);
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
   .opp-when {
     display: flex;
