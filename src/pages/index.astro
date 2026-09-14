@@ -1442,7 +1442,9 @@ const lastUpdated = lastRun?.completedAt ?? null;
   // Client-side game day detection — runs in the visitor's browser where ESPN
   // API is accessible (Cloudflare Workers IPs are blocked by ESPN's Akamai CDN).
   import { gdClientDetect } from '../scripts/gameday-client';
+  import { railClientInit } from '../scripts/rail-client';
   gdClientDetect();
+  railClientInit();
 </script>
 </body>
 </html>

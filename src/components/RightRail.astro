@@ -34,11 +34,10 @@ const { dates, schedule, stats, players,
       <TransactionTracker items={txItems} label={txLabel} />
     </div>
   )}
-  {opponent && (
-    <div class="rail-section">
-      <OpponentPreview opponent={opponent} />
-    </div>
-  )}
+  {opponent
+    ? <div class="rail-section"><OpponentPreview opponent={opponent} /></div>
+    : <div id="rail-opponent-mount"></div>
+  }
   <div class="rail-section" id="rail-schedule">
     <Schedule schedule={schedule} />
   </div>
@@ -50,11 +49,10 @@ const { dates, schedule, stats, players,
   <div class="rail-section">
     <TeamStats stats={stats} players={players} />
   </div>
-  {injuries.length > 0 && (
-    <div class="rail-section">
-      <InjuryReport players={injuries} />
-    </div>
-  )}
+  {injuries.length > 0
+    ? <div class="rail-section"><InjuryReport players={injuries} /></div>
+    : <div id="rail-injury-mount"></div>
+  }
   <div class="rail-section">
     <TeamDates dates={dates} />
   </div>
