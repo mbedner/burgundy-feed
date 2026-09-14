@@ -30,6 +30,7 @@ import DraftBanner         from '../components/DraftBanner.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
 import NfcEastSection from '../components/NfcEastSection.astro';
+import ScoresStrip    from '../components/ScoresStrip.astro';
 import type { RivalItem } from '../lib/types';
 import { readNfcEast } from '../lib/kv';
 
@@ -1098,6 +1099,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
   </nav>
 
   {hasBreaking && <BreakingTicker items={freshBreaking} />}
+  <ScoresStrip />
 
   <main class="page-wrap">
     <nav class="anchor-nav" aria-label="Page sections">

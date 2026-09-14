@@ -1,0 +1,283 @@
+---
+// Scores strip — fully client-side (ESPN blocks Cloudflare Workers egress)
+---
+
+<div class="ss-shell" id="ssShell" hidden>
+  <div class="ss-week" id="ssWeek"></div>
+  <div class="ss-track" id="ssTrack"></div>
+</div>
+
+<script>
+(async () => {
+  const BASE  = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+  const WAS_ID = '28';
+
+  function logoImg(url: string, alt: string): string {
+    return url
+      ? `<img class="ss-logo" src="${url}" alt="${alt}" loading="lazy" width="20" height="20" />`
+      : `<span class="ss-logo ss-logo--blank"></span>`;
+  }
+
+  try {
+    const res = await fetch(`${BASE}/scoreboard`);
+    if (!res.ok) return;
+    const data = await res.json() as any;
+
+    const events: any[] = data?.events ?? [];
+    if (!events.length) return;
+
+    const weekLabel: string =
+      data?.week?.text ?? data?.season?.type?.week?.text ?? '';
+
+    let wasIdx = -1;
+    const cards = events.map((ev: any, i: number) => {
+      const comp = ev?.competitions?.[0];
+      if (!comp) return '';
+
+      const teams: any[] = comp.competitors ?? [];
+      const away = teams.find((t: any) => t.homeAway === 'away');
+      const home = teams.find((t: any) => t.homeAway === 'home');
+      if (!away || !home) return '';
+
+      const isWas = away.id === WAS_ID || home.id === WAS_ID;
+      if (isWas) wasIdx = i;
+
+      const st    = comp.status;
+      const state = st?.type?.state ?? 'pre';
+      const desc  = (st?.type?.description ?? '').toLowerCase();
+      const isPre  = state === 'pre';
+      const isPost = state === 'post';
+      const isHalf = !isPre && !isPost && desc.includes('halftime');
+      const isLive = !isPre && !isPost;
+
+      const awayScore = parseInt(away.score ?? '0') || 0;
+      const homeScore = parseInt(home.score ?? '0') || 0;
+      const awayWon   = isPost && !!away.winner;
+      const homeWon   = isPost && !!home.winner;
+
+      const awayLogo = away.team?.logos?.[0]?.href ?? '';
+      const homeLogo = home.team?.logos?.[0]?.href ?? '';
+      const awayAbbr = away.team?.abbreviation ?? '???';
+      const homeAbbr = home.team?.abbreviation ?? '???';
+
+      // Status line
+      let statusHtml = '';
+      if (isPre) {
+        const dt = new Date(comp.date || ev.date);
+        const t  = dt.toLocaleTimeString('en-US', {
+          hour: 'numeric', minute: '2-digit', hour12: true,
+          timeZone: 'America/New_York',
+        });
+        const net = comp.broadcasts?.[0]?.names?.[0] ?? '';
+        statusHtml = `<span class="ss-st-time">${t}</span>${net ? `<span class="ss-st-net">${net}</span>` : ''}`;
+      } else if (isHalf) {
+        statusHtml = `<span class="ss-st-live"><span class="ss-dot"></span>HALF</span>`;
+      } else if (isLive) {
+        const period = st?.period ?? 1;
+        const clock  = st?.displayClock ?? '';
+        const ql     = period > 4 ? 'OT' : `Q${period}`;
+        statusHtml = `<span class="ss-st-live"><span class="ss-dot"></span>${ql} ${clock}</span>`;
+      } else {
+        statusHtml = `<span class="ss-st-final">Final</span>`;
+      }
+
+      const scoreOrDash = (s: number) => isPre ? '' : String(s);
+
+      return `<a class="ss-card${isWas ? ' ss-card--was' : ''}" href="${ev.links?.[0]?.href ?? '#'}" target="_blank" rel="noopener noreferrer">
+        <div class="ss-team${isPost && !awayWon ? ' ss-team--dim' : ''}">
+          ${logoImg(awayLogo, awayAbbr)}
+          <span class="ss-abbr">${awayAbbr}</span>
+          <span class="ss-score${awayWon ? ' ss-score--win' : ''}">${scoreOrDash(awayScore)}</span>
+          ${awayWon ? '<span class="ss-caret" aria-hidden="true">◀</span>' : '<span class="ss-caret-gap"></span>'}
+        </div>
+        <div class="ss-team${isPost && !homeWon ? ' ss-team--dim' : ''}">
+          ${logoImg(homeLogo, homeAbbr)}
+          <span class="ss-abbr">${homeAbbr}</span>
+          <span class="ss-score${homeWon ? ' ss-score--win' : ''}">${scoreOrDash(homeScore)}</span>
+          ${homeWon ? '<span class="ss-caret" aria-hidden="true">◀</span>' : '<span class="ss-caret-gap"></span>'}
+        </div>
+        <div class="ss-status${isLive || isHalf ? ' ss-status--live' : ''}">${statusHtml}</div>
+      </a>`;
+    });
+
+    const track = document.getElementById('ssTrack');
+    const week  = document.getElementById('ssWeek');
+    const shell = document.getElementById('ssShell');
+    if (!track || !week || !shell) return;
+
+    track.innerHTML = cards.filter(Boolean).join('');
+    if (weekLabel) week.textContent = weekLabel;
+
+    shell.hidden = false;
+
+    // Scroll WAS card into view
+    if (wasIdx >= 0) {
+      const wasCard = track.children[wasIdx] as HTMLElement | null;
+      if (wasCard) {
+        requestAnimationFrame(() => {
+          const stripRect  = track.getBoundingClientRect();
+          const cardRect   = wasCard.getBoundingClientRect();
+          const scrollLeft = wasCard.offsetLeft - stripRect.width / 2 + cardRect.width / 2;
+          track.scrollLeft = Math.max(0, scrollLeft);
+        });
+      }
+    }
+  } catch { /* silent */ }
+})();
+</script>
+
+<style is:global>
+  /* ── Strip shell ── */
+  .ss-shell {
+    display: flex;
+    align-items: stretch;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  /* ── Week label ── */
+  .ss-week {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  /* ── Scrollable track ── */
+  .ss-track {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex: 1;
+  }
+  .ss-track::-webkit-scrollbar { display: none; }
+
+  /* ── Game card ── */
+  .ss-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 7px 10px 6px;
+    border-right: 1px solid var(--border);
+    text-decoration: none;
+    min-width: 0;
+    flex-shrink: 0;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .ss-card:hover { background: var(--surface-2); }
+
+  /* WAS game — accent top stripe + light highlight */
+  .ss-card--was {
+    background: var(--surface-2);
+  }
+  .ss-card--was::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  /* ── Team row ── */
+  .ss-team {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ss-team--dim { opacity: 0.4; }
+
+  .ss-logo {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+  }
+  .ss-logo--blank {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .ss-abbr {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    width: 28px;
+  }
+
+  .ss-score {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    width: 20px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .ss-score--win { color: var(--text); }
+
+  .ss-caret {
+    font-size: 8px;
+    color: var(--accent);
+    flex-shrink: 0;
+    width: 10px;
+  }
+  .ss-caret-gap { width: 10px; flex-shrink: 0; }
+
+  /* ── Status row ── */
+  .ss-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 3px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .ss-st-final,
+  .ss-st-time,
+  .ss-st-net {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    white-space: nowrap;
+  }
+  .ss-st-live {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .ss-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #ef4444;
+    flex-shrink: 0;
+    animation: ss-blink 1.2s ease-in-out infinite;
+  }
+  @keyframes ss-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+</style>
