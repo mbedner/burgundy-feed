@@ -12,15 +12,15 @@
     </button>
     <div class="ss-week-panel" id="ssWeekPanel" role="listbox" aria-label="Select week" hidden></div>
   </div>
+  <button class="ss-scroll-btn ss-scroll-btn--left" id="ssScrollLeft" aria-label="Scroll left" hidden>
+    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
   <div class="ss-track-wrap">
-    <button class="ss-scroll-btn ss-scroll-btn--left" id="ssScrollLeft" aria-label="Scroll left" hidden>
-      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <button class="ss-scroll-btn ss-scroll-btn--right" id="ssScrollRight" aria-label="Scroll right">
-      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
     <div class="ss-track" id="ssTrack"></div>
   </div>
+  <button class="ss-scroll-btn ss-scroll-btn--right" id="ssScrollRight" aria-label="Scroll right">
+    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
 </div>
 
 <script>
@@ -155,7 +155,7 @@
       }
       requestAnimationFrame(() => {
         const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
-        const wrap = track.parentElement;
+        const wrap = track.closest('.ss-track-wrap') as HTMLElement | null;
         wrap?.classList.toggle('ss-fade-right', !atEnd);
         wrap?.classList.remove('ss-fade-left');
         const btnL = document.getElementById('ssScrollLeft')  as HTMLButtonElement | null;
@@ -267,7 +267,7 @@
     const btnR = document.getElementById('ssScrollRight') as HTMLButtonElement | null;
     const STEP = 280; // scroll distance per click
 
-    const wrap = track.parentElement;
+    const wrap = track.closest('.ss-track-wrap') as HTMLElement | null;
 
     function updateScrollBtns() {
       const atStart = track.scrollLeft <= 4;
@@ -299,12 +299,13 @@
     overflow-y: hidden;
   }
 
-  /* ── Track wrapper (positions buttons + fade gradients) ── */
+  /* ── Track wrapper (fade gradients only) ── */
   .ss-track-wrap {
     position: relative;
     flex: 1;
     min-width: 0;
     display: flex;
+    overflow: hidden;
   }
 
   /* Edge fade gradients */
@@ -313,7 +314,7 @@
     content: '';
     position: absolute;
     top: 0; bottom: 0;
-    width: 48px;
+    width: 32px;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s;
@@ -324,25 +325,27 @@
   .ss-track-wrap.ss-fade-left::before  { opacity: 1; }
   .ss-track-wrap.ss-fade-right::after  { opacity: 1; }
 
-  /* ── Scroll buttons — desktop/pointer only ── */
+  /* ── Scroll buttons — desktop/pointer only, outside the track ── */
   .ss-scroll-btn {
-    position: absolute;
-    top: 0; bottom: 0;
-    z-index: 10;
-    width: 32px;
+    flex-shrink: 0;
+    width: 28px;
     border: none;
+    border-left: 1px solid var(--border);
     cursor: pointer;
     display: none; /* hidden by default; shown only on pointer devices */
     align-items: center;
     justify-content: center;
-    color: var(--text-2);
-    transition: color 0.15s;
-    background: none;
+    color: var(--text-3);
+    transition: color 0.15s, background 0.15s;
+    background: var(--surface);
     padding: 0;
   }
-  .ss-scroll-btn--left  { left: 0; }
-  .ss-scroll-btn--right { right: 0; }
-  .ss-scroll-btn:hover { color: var(--accent); }
+  .ss-scroll-btn--left {
+    border-left: none;
+    border-right: 1px solid var(--border);
+    order: -1;
+  }
+  .ss-scroll-btn:hover { color: var(--accent); background: var(--bg); }
 
   @media (hover: hover) and (pointer: fine) {
     .ss-scroll-btn { display: flex; }
