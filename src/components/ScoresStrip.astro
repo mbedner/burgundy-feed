@@ -3,12 +3,6 @@
 ---
 
 <div class="ss-shell" id="ssShell" hidden>
-  <button class="ss-scroll-btn ss-scroll-btn--left" id="ssScrollLeft" aria-label="Scroll left" hidden>
-    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
-  <button class="ss-scroll-btn ss-scroll-btn--right" id="ssScrollRight" aria-label="Scroll right">
-    <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
   <div class="ss-nav" id="ssNav">
     <button class="ss-week-btn" id="ssWeekBtn" aria-haspopup="listbox" aria-expanded="false">
       <span id="ssWeekLabel">Week 1</span>
@@ -18,7 +12,15 @@
     </button>
     <div class="ss-week-panel" id="ssWeekPanel" role="listbox" aria-label="Select week" hidden></div>
   </div>
-  <div class="ss-track" id="ssTrack"></div>
+  <div class="ss-track-wrap">
+    <button class="ss-scroll-btn ss-scroll-btn--left" id="ssScrollLeft" aria-label="Scroll left" hidden>
+      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="ss-scroll-btn ss-scroll-btn--right" id="ssScrollRight" aria-label="Scroll right">
+      <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="ss-track" id="ssTrack"></div>
+  </div>
 </div>
 
 <script>
@@ -152,14 +154,14 @@
         track.scrollLeft = 0;
       }
       requestAnimationFrame(() => {
-        const shell = document.getElementById('ssShell');
         const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
-        shell?.classList.toggle('ss-fade-right', !atEnd);
-        shell?.classList.remove('ss-fade-left');
+        const wrap = track.parentElement;
+        wrap?.classList.toggle('ss-fade-right', !atEnd);
+        wrap?.classList.remove('ss-fade-left');
         const btnL = document.getElementById('ssScrollLeft')  as HTMLButtonElement | null;
         const btnR = document.getElementById('ssScrollRight') as HTMLButtonElement | null;
         if (btnL) btnL.hidden = true;
-        if (btnR) btnR.hidden = !atEnd ? false : true;
+        if (btnR) btnR.hidden = atEnd;
       });
     } catch {
       track.style.opacity = '1';
@@ -265,16 +267,15 @@
     const btnR = document.getElementById('ssScrollRight') as HTMLButtonElement | null;
     const STEP = 280; // scroll distance per click
 
+    const wrap = track.parentElement;
+
     function updateScrollBtns() {
-      if (!btnL || !btnR) return;
       const atStart = track.scrollLeft <= 4;
       const atEnd   = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
-      btnL.hidden = atStart;
-      btnR.hidden = atEnd;
-      // Also toggle edge-fade classes on the shell
-      const shell = document.getElementById('ssShell');
-      shell?.classList.toggle('ss-fade-left',  !atStart);
-      shell?.classList.toggle('ss-fade-right', !atEnd);
+      if (btnL) btnL.hidden = atStart;
+      if (btnR) btnR.hidden = atEnd;
+      wrap?.classList.toggle('ss-fade-left',  !atStart);
+      wrap?.classList.toggle('ss-fade-right', !atEnd);
     }
 
     track.addEventListener('scroll', updateScrollBtns, { passive: true });
@@ -296,32 +297,19 @@
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     overflow-y: hidden;
+  }
+
+  /* ── Track wrapper (positions buttons + fade gradients) ── */
+  .ss-track-wrap {
     position: relative;
-  }
-
-  /* ── Scroll buttons ── */
-  .ss-scroll-btn {
-    position: absolute;
-    top: 0; bottom: 0;
-    z-index: 10;
-    width: 32px;
-    border: none;
-    cursor: pointer;
+    flex: 1;
+    min-width: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-2);
-    transition: color 0.15s, opacity 0.2s;
-    pointer-events: auto;
-    background: none;
   }
-  .ss-scroll-btn--left  { left: 0; }
-  .ss-scroll-btn--right { right: 0; }
-  .ss-scroll-btn:hover { color: var(--accent); }
 
-  /* Edge fade gradients — only shown when there's content in that direction */
-  .ss-shell::before,
-  .ss-shell::after {
+  /* Edge fade gradients */
+  .ss-track-wrap::before,
+  .ss-track-wrap::after {
     content: '';
     position: absolute;
     top: 0; bottom: 0;
@@ -331,10 +319,34 @@
     transition: opacity 0.2s;
     z-index: 5;
   }
-  .ss-shell::before { left: 0;  background: linear-gradient(to right, var(--surface), transparent); }
-  .ss-shell::after  { right: 0; background: linear-gradient(to left,  var(--surface), transparent); }
-  .ss-shell.ss-fade-left::before  { opacity: 1; }
-  .ss-shell.ss-fade-right::after  { opacity: 1; }
+  .ss-track-wrap::before { left: 0;  background: linear-gradient(to right, var(--surface), transparent); }
+  .ss-track-wrap::after  { right: 0; background: linear-gradient(to left,  var(--surface), transparent); }
+  .ss-track-wrap.ss-fade-left::before  { opacity: 1; }
+  .ss-track-wrap.ss-fade-right::after  { opacity: 1; }
+
+  /* ── Scroll buttons — desktop/pointer only ── */
+  .ss-scroll-btn {
+    position: absolute;
+    top: 0; bottom: 0;
+    z-index: 10;
+    width: 32px;
+    border: none;
+    cursor: pointer;
+    display: none; /* hidden by default; shown only on pointer devices */
+    align-items: center;
+    justify-content: center;
+    color: var(--text-2);
+    transition: color 0.15s;
+    background: none;
+    padding: 0;
+  }
+  .ss-scroll-btn--left  { left: 0; }
+  .ss-scroll-btn--right { right: 0; }
+  .ss-scroll-btn:hover { color: var(--accent); }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ss-scroll-btn { display: flex; }
+  }
 
   /* ── Week nav sidebar ── */
   .ss-nav {
