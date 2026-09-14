@@ -31,7 +31,7 @@ export const IMPORTANT_DATES = [
 // 2026 regular season — schedule released May 14, 2026 (source: Commanders.com / NFL.com)
 // Set ws/os/result after each game is played.
 export const UPCOMING_SCHEDULE: SeasonGame[] = [
-  { week: 'W1',  opponent: 'Philadelphia', date: '2026-09-13', home: false, tv: 'FOX',         time: '4:25 PM ET' },
+  { week: 'W1',  opponent: 'Philadelphia', date: '2026-09-13', home: false, tv: 'FOX',         time: '4:25 PM ET', ws: 22, os: 24, result: 'L' },
   { week: 'W2',  opponent: 'Dallas',       date: '2026-09-20', home: false, tv: 'FOX',         time: '4:25 PM ET' },
   { week: 'W3',  opponent: 'Seattle',      date: '2026-09-27', home: true,  tv: 'FOX',         time: '1:00 PM ET' },
   { week: 'W4',  opponent: 'Indianapolis', date: '2026-10-04', home: true,  tv: 'NFL Network', time: '9:30 AM ET' },  // London
@@ -85,12 +85,12 @@ export const LAST_SEASON = {
 // The ingest worker overwrites it with live ESPN data every hour.
 export const TEAM_STATS = {
   season:            '2026',
-  record:            '0-0',
-  divisionRecord:    '0-0',
+  record:            '0-1',
+  divisionRecord:    '0-1',
   offenseRank:       16,
   defenseRank:       16,
-  pointsPerGame:     0.0,
-  pointsAllowed:     0.0,
+  pointsPerGame:     22.0,
+  pointsAllowed:     24.0,
   passYardsPerGame:  0.0,
   rushYardsPerGame:  0.0,
   leaders: {
