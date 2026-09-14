@@ -118,6 +118,8 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   }
 
+  function fmtNum(n: number): string { return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(1); }
+
   function catStat(categories: any[], catName: string, statName: string): { val: number; display: string } {
     const cat = categories.find((c: any) => c.name === catName);
     const s   = cat?.stats?.find((st: any) => st.name === statName);
@@ -145,11 +147,11 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     const rushYpg = catStat(cats, 'rushing', 'rushingYardsPerGame').val;
     const ppg     = catStat(cats, 'scoring', 'totalPointsPerGame').val;
     if (passYpg || rushYpg) {
-      set('ts-pass-ypg',  passYpg.toFixed(1));
-      set('ts-rush-ypg',  rushYpg.toFixed(1));
-      set('ts-total-ypg', (passYpg + rushYpg).toFixed(1));
+      set('ts-pass-ypg',  fmtNum(passYpg));
+      set('ts-rush-ypg',  fmtNum(rushYpg));
+      set('ts-total-ypg', fmtNum(passYpg + rushYpg));
     }
-    if (ppg) set('ts-ppg', ppg.toFixed(1));
+    if (ppg) set('ts-ppg', fmtNum(ppg));
   }
 
   if (standRes.status === 'fulfilled') {
@@ -163,7 +165,7 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
       }
       if (offRank) set('ts-off-rank', ordinal(offRank));
       if (defRank) set('ts-def-rank', ordinal(defRank));
-      if (oppPpg)  set('ts-opp-ppg',  oppPpg.toFixed(1));
+      if (oppPpg)  set('ts-opp-ppg',  fmtNum(oppPpg));
     }
   }
 
