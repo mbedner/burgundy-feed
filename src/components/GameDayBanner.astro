@@ -82,15 +82,66 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
 
   </div>
 
-  {/* ── Situation bar (live only) ── */}
-  {phase === 'live' && situation && (
-    <div class="gd-situation" id="gdSituation">
-      <span class="gd-possession">
-        {situation.isWashingtonPossession ? '🏈 WAS' : `🏈 ${opponent.abbreviation}`}
-      </span>
-      <span class="gd-down-dist">{situation.downDistanceText}</span>
-    </div>
-  )}
+  {/* ── Field visualization (live only) ── */}
+  {phase === 'live' && situation && (() => {
+    const fp  = situation.fieldPosition;
+    const bx  = Math.round(60 + (fp / 100) * 480);
+    const fdp = situation.isWashingtonPossession
+      ? Math.min(97, fp + situation.distance)
+      : Math.max(3,  fp - situation.distance);
+    const fdx = Math.round(60 + (fdp / 100) * 480);
+    return (
+      <div class="gd-field" id="gdSituation">
+        <svg class="gd-field-svg" viewBox="0 0 600 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+          {/* Alternating stripes */}
+          {[0,1,2,3,4,5,6,7,8,9].map(i => (
+            <rect x={60 + i*48} y="0" width="48" height="56" fill={i%2===0 ? '#195c0a' : '#1d6b0c'}/>
+          ))}
+          {/* Red zone tint */}
+          <rect x="444" y="0" width="96" height="56" fill="rgba(220,38,38,0.12)"/>
+          {/* End zones */}
+          <rect x="0"   y="0" width="60" height="56" fill="var(--was-color,#5a1414)"/>
+          <rect x="540" y="0" width="60" height="56" fill="var(--opp-color,#333)"/>
+          {/* End zone labels */}
+          <text x="30"  y="28" class="gd-ez-label">WAS</text>
+          <text id="gdFieldOpp" x="570" y="28" class="gd-ez-label">{opponent.abbreviation}</text>
+          {/* Goal lines */}
+          <line x1="60"  y1="0" x2="60"  y2="56" stroke="white" stroke-width="2"/>
+          <line x1="540" y1="0" x2="540" y2="56" stroke="white" stroke-width="2"/>
+          {/* 10-yard lines */}
+          {[108,156,204,252,348,396,444,492].map(x => (
+            <line x1={x} y1="0" x2={x} y2="56" stroke="rgba(255,255,255,0.28)" stroke-width="1"/>
+          ))}
+          {/* Midfield brighter */}
+          <line x1="300" y1="0" x2="300" y2="56" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+          {/* Yard numbers */}
+          {([10,20,30,40,50,40,30,20,10] as number[]).map((n,i) => (
+            <text x={108 + i*48} y="13" class="gd-yd-num" opacity={n===50?'0.7':'0.5'}>{n}</text>
+          ))}
+          {/* First-down line */}
+          <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="56" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
+          {/* Ball shadow */}
+          <ellipse id="gdBallShadow" cx={bx} cy="39" rx="7" ry="2.5" fill="rgba(0,0,0,0.35)"/>
+          {/* Ball body */}
+          <ellipse id="gdBall" cx={bx} cy="34" rx="8" ry="5.5" fill="#8B3A0F"/>
+          {/* Ball highlight */}
+          <ellipse cx={bx-2} cy="31" rx="3" ry="2" fill="rgba(255,180,80,0.25)"/>
+          {/* Laces */}
+          <line id="gdLaceV" x1={bx} y1="28.5" x2={bx} y2="39.5" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/>
+          <line id="gdLace1" x1={bx-3} y1="31"   x2={bx+3} y2="31"   stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+          <line id="gdLace2" x1={bx-3} y1="34"   x2={bx+3} y2="34"   stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+          <line id="gdLace3" x1={bx-3} y1="37"   x2={bx+3} y2="37"   stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+        </svg>
+        {/* Info row */}
+        <div class="gd-field-info">
+          <span class="gd-possession" id="gdPossession">
+            {situation.isWashingtonPossession ? '🏈 WAS' : `🏈 ${opponent.abbreviation}`}
+          </span>
+          <span class="gd-down-dist" id="gdDownDist">{situation.downDistanceText}</span>
+        </div>
+      </div>
+    );
+  })()}
 
   {/* ── Countdown (pregame only) ── */}
   {phase === 'pregame' && (
@@ -266,12 +317,45 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
         if (clockEl)  clockEl.textContent  = clock;
 
         const sit = data?.header?.competitions?.[0]?.situation ?? null;
-        const sitEl = document.getElementById('gdSituation');
-        if (sitEl && sit) {
-          sitEl.querySelector('.gd-possession').textContent =
-            sit.possessionTeam?.id === WAS_ID ? '🏈 WAS' :
-            `🏈 ${opp?.team?.abbreviation ?? 'OPP'}`;
-          sitEl.querySelector('.gd-down-dist').textContent = sit.downDistanceText ?? '';
+        if (sit) {
+          // Update text labels
+          const possEl = document.getElementById('gdPossession');
+          const ddEl   = document.getElementById('gdDownDist');
+          if (possEl) possEl.textContent = sit.possessionTeam?.id === WAS_ID
+            ? '🏈 WAS' : `🏈 ${opp?.team?.abbreviation ?? 'OPP'}`;
+          if (ddEl) ddEl.textContent = sit.downDistanceText ?? '';
+
+          // Parse field position (0–100 from WAS end zone)
+          let fp = 50;
+          const rawPoss = sit.possessionText ?? '';
+          const rawDt   = sit.downDistanceText ?? '';
+          const pm = rawPoss.match(/^(\w+)\s+(\d+)$/) ?? rawDt.match(/at\s+(\w+)\s+(\d+)/i);
+          if (pm) {
+            const t = pm[1].toUpperCase();
+            const y = parseInt(pm[2]);
+            fp = (t === 'WSH' || t === 'WAS') ? y : 100 - y;
+          } else if (sit.yardLine) {
+            fp = sit.possessionTeam?.id === WAS_ID ? sit.yardLine : 100 - sit.yardLine;
+          }
+          fp = Math.max(0, Math.min(100, fp));
+
+          const bx  = 60 + (fp / 100) * 480;
+          const isW = sit.possessionTeam?.id === WAS_ID;
+          const fdp = Math.max(3, Math.min(97,
+            isW ? fp + (sit.distance ?? 10) : fp - (sit.distance ?? 10)));
+          const fdx = 60 + (fdp / 100) * 480;
+
+          // Move ball
+          const setA = (id: string, attr: string, val: number) =>
+            document.getElementById(id)?.setAttribute(attr, String(Math.round(val)));
+          setA('gdBall',       'cx', bx);
+          setA('gdBallShadow', 'cx', bx);
+          setA('gdLaceV', 'x1', bx); setA('gdLaceV', 'x2', bx);
+          setA('gdLace1', 'x1', bx-3); setA('gdLace1', 'x2', bx+3);
+          setA('gdLace2', 'x1', bx-3); setA('gdLace2', 'x2', bx+3);
+          setA('gdLace3', 'x1', bx-3); setA('gdLace3', 'x2', bx+3);
+          // Move first-down line
+          setA('gdFDLine', 'x1', fdx); setA('gdFDLine', 'x2', fdx);
         }
 
         const drives = data?.drives ?? {};
@@ -544,14 +628,38 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     color: var(--gd-text3);
   }
 
-  /* ── Situation bar ── */
-  .gd-situation {
+  /* ── Field visualization ── */
+  .gd-field {
+    border-top: 1px solid var(--gd-border);
+  }
+  .gd-field-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .gd-ez-label {
+    fill: rgba(255,255,255,0.75);
+    font-size: 10px;
+    font-weight: 800;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.08em;
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+  .gd-yd-num {
+    fill: white;
+    font-size: 8px;
+    font-weight: 700;
+    font-family: system-ui, sans-serif;
+    text-anchor: middle;
+    dominant-baseline: hanging;
+  }
+  .gd-field-info {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 6px 20px;
-    background: var(--gd-bg3);
+    padding: 5px 20px;
     border-top: 1px solid var(--gd-border);
     font-size: 12px;
     font-weight: 600;

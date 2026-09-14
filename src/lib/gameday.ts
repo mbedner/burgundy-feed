@@ -33,11 +33,12 @@ export interface GamePlay {
 }
 
 export interface GameSituation {
-  down:                  number;
-  distance:              number;
-  yardLine:              number;
-  downDistanceText:      string;  // "2nd & 7"
-  possessionTeamId:      string;
+  down:                   number;
+  distance:               number;
+  yardLine:               number;
+  fieldPosition:          number;  // 0–100, yards from WAS end zone
+  downDistanceText:       string;  // "2nd & 7 at WAS 31"
+  possessionTeamId:       string;
   isWashingtonPossession: boolean;
 }
 
@@ -162,8 +163,8 @@ export function getMockGame(phase: GamePhase): GameDayInfo {
     periodDisplay: phase === 'pregame' ? 'Q1' : phase === 'halftime' ? 'Half' : phase === 'postgame' ? 'Q4' : 'Q3',
     clock:         phase === 'live' ? '8:42' : '0:00',
     situation: phase === 'live' ? {
-      down: 2, distance: 7, yardLine: 31,
-      downDistanceText: '2nd & 7',
+      down: 2, distance: 7, yardLine: 31, fieldPosition: 31,
+      downDistanceText: '2nd & 7 at WAS 31',
       possessionTeamId: '28',
       isWashingtonPossession: true,
     } : null,
@@ -268,13 +269,34 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
     let situation: GameSituation | null = null;
     const sit = comp?.situation ?? summary?.situation;
     if (sit && phase === 'live') {
+      const wasAbbr = washington.abbreviation.toUpperCase();
+      const isWasPoss = safeStr(sit.possession?.id ?? sit.possessionTeam?.id) === TEAM_ID;
+
+      // Parse field position (0–100, yards from WAS end zone) from possessionText
+      // or downDistanceText. ESPN formats: "WSH 31", "DAL 35", "2nd & 7 at WAS 31".
+      let fieldPosition = 50;
+      const rawPoss = safeStr(sit.possessionText ?? '');
+      const rawDt   = safeStr(sit.downDistanceText ?? '');
+      const ptMatch = rawPoss.match(/^(\w+)\s+(\d+)$/);
+      const dtMatch = !ptMatch && rawDt.match(/at\s+(\w+)\s+(\d+)/i);
+      const m = ptMatch ?? dtMatch;
+      if (m) {
+        const team = m[1].toUpperCase();
+        const yd   = parseInt(m[2]);
+        const isWasSide = team === wasAbbr || team === 'WSH' || team === 'WAS';
+        fieldPosition = isWasSide ? yd : 100 - yd;
+      } else {
+        fieldPosition = isWasPoss ? (sit.yardLine ?? 50) : 100 - (sit.yardLine ?? 50);
+      }
+
       situation = {
         down:                   sit.down ?? 0,
         distance:               sit.distance ?? 0,
         yardLine:               sit.yardLine ?? 0,
+        fieldPosition:          Math.max(0, Math.min(100, fieldPosition)),
         downDistanceText:       safeStr(sit.downDistanceText),
         possessionTeamId:       safeStr(sit.possession?.id ?? sit.possessionTeam?.id),
-        isWashingtonPossession: safeStr(sit.possession?.id ?? sit.possessionTeam?.id) === TEAM_ID,
+        isWashingtonPossession: isWasPoss,
       };
     }
 
