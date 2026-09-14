@@ -239,14 +239,20 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
 
   /* ── Spotlight ── */
   /* No border-top here — spacing alone separates it from leaders */
-  .spotlight { margin-top: 16px; }
+  .spotlight {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
   .spotlight-hd {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--text-4);
-    margin-bottom: 6px;
+    color: var(--accent);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
   }
   .player-row {
     display: flex;
