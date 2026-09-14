@@ -265,22 +265,18 @@
   .ss-week-btn {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 4px;
+    padding: 4px 2px;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
     white-space: nowrap;
-    transition: background 0.1s;
   }
-  .ss-week-btn:hover,
-  .ss-week-btn--open { background: var(--bg); }
 
   .ss-chevron {
     color: var(--accent);
@@ -291,27 +287,29 @@
 
   .ss-week-panel {
     position: fixed;
-    z-index: 500;
+    z-index: 9999;
     background: var(--surface);
     border: 1px solid var(--border-strong, var(--border));
     border-radius: 6px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-    overflow-y: auto;
-    max-height: 240px;
-    min-width: 110px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    max-height: 260px;
+    width: 130px;
     padding: 4px 0;
   }
 
   .ss-week-item {
-    padding: 7px 14px;
-    font-size: 12px;
+    padding: 9px 14px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text);
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.1s, color 0.1s;
   }
-  .ss-week-item:hover { background: var(--bg); }
+  .ss-week-item:hover,
+  .ss-week-item:active { background: var(--bg); }
   .ss-week-item--active {
     color: var(--accent);
     font-weight: 800;
