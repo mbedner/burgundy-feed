@@ -628,7 +628,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
       .subnav-short { display: none;   }
       .subnav-full  { display: inline; }
     }
-    /* Reporters hidden on mobile to make room for Transactions */
+    /* Reporters hidden on mobile subnav (too many items at small sizes) */
     .subnav-hide-mobile { display: none; }
     @media (min-width: 480px) { .subnav-hide-mobile { display: block; } }
 
@@ -1066,7 +1066,6 @@ const lastUpdated = lastRun?.completedAt ?? null;
       {draftDay && <a href="#draft"><span class="subnav-short">Draft</span><span class="subnav-full">Draft</span></a>}
       <a href="#leads"><span class="subnav-short">Top</span><span class="subnav-full">Top Stories</span></a>
       <a href="#stream"><span class="subnav-short">Feed</span><span class="subnav-full">News Feed</span></a>
-      <a href="#transactions"><span class="subnav-short">Moves</span><span class="subnav-full">Transactions</span></a>
       <a href="#rail-schedule"><span class="subnav-short">Schedule</span><span class="subnav-full">Schedule &amp; Stats</span></a>
       <a href="#voices" class="subnav-hide-mobile"><span class="subnav-full">Reporter Voices</span></a>
     </div>

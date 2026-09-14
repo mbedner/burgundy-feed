@@ -159,8 +159,12 @@ export function getMockGame(phase: GamePhase): GameDayInfo {
 
 export async function detectGameDay(): Promise<GameDayInfo | null> {
   try {
-    // 1. Check today's scoreboard for a Washington game
-    const board = await fetchJson(`${BASE}/scoreboard`) as any;
+    // 1. Check today's scoreboard for a Washington game.
+    // Pass ?dates=YYYYMMDD so we always get exactly today's games regardless
+    // of where we fall in the NFL week (avoids relying on the default "current
+    // week" window which can return wrong days near week boundaries).
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).replace(/-/g, '');
+    const board = await fetchJson(`${BASE}/scoreboard?dates=${today}`) as any;
     const events: any[] = board?.events ?? [];
 
     const event = events.find(e =>

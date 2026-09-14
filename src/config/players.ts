@@ -36,6 +36,6 @@ export const FEATURED_PLAYERS = [
     name:     'Odafe Oweh',
     number:   99,
     position: 'EDGE',
-    note:     'Pass-rush upgrade from Baltimore.',
+    note:     'Pass-rush upgrade from the Chargers.',
   },
 ];
