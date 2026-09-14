@@ -4,9 +4,7 @@
 
 <div class="ss-shell" id="ssShell" hidden>
   <div class="ss-nav" id="ssNav">
-    <button class="ss-nav-btn" id="ssPrev" aria-label="Previous week">&#8249;</button>
-    <span class="ss-week-label" id="ssWeek"></span>
-    <button class="ss-nav-btn" id="ssNext" aria-label="Next week">&#8250;</button>
+    <select class="ss-select" id="ssWeekSelect" aria-label="Select week"></select>
   </div>
   <div class="ss-track" id="ssTrack"></div>
 </div>
@@ -102,36 +100,26 @@
   }
 
   async function loadWeek(week: number, year: number, seasonType: number, scrollToWas = false) {
-    const track   = document.getElementById('ssTrack')   as HTMLElement | null;
-    const weekEl  = document.getElementById('ssWeek')    as HTMLElement | null;
-    const prevBtn = document.getElementById('ssPrev')    as HTMLButtonElement | null;
-    const nextBtn = document.getElementById('ssNext')    as HTMLButtonElement | null;
-    if (!track || !weekEl) return;
+    const track  = document.getElementById('ssTrack')      as HTMLElement | null;
+    const select = document.getElementById('ssWeekSelect') as HTMLSelectElement | null;
+    if (!track) return;
 
     track.style.opacity = '0.4';
 
     try {
       const url = `${BASE}/scoreboard?seasontype=${seasonType}&week=${week}&year=${year}`;
       const res = await fetch(url);
-      if (!res.ok) return;
+      if (!res.ok) { track.style.opacity = '1'; return; }
       const data = await res.json() as any;
 
       const events: any[] = data?.events ?? [];
-      if (!events.length) {
-        track.style.opacity = '1';
-        return;
-      }
+      if (!events.length) { track.style.opacity = '1'; return; }
 
       const { html, wasIdx } = buildCards(events);
       track.innerHTML = html;
       track.style.opacity = '1';
 
-      const label = `Week ${week}`;
-      weekEl.textContent = label;
-
-      // Update button states
-      if (prevBtn) prevBtn.disabled = week <= 1;
-      if (nextBtn) nextBtn.disabled = week >= MAX_WEEK;
+      if (select) select.value = String(week);
 
       if (scrollToWas && wasIdx >= 0) {
         const wasCard = track.children[wasIdx] as HTMLElement | null;
@@ -162,20 +150,24 @@
     currentYear       = data?.season?.year ?? 2026;
     currentSeasonType = data?.season?.type ?? 2;
 
-    const shell = document.getElementById('ssShell');
+    const shell  = document.getElementById('ssShell');
+    const select = document.getElementById('ssWeekSelect') as HTMLSelectElement | null;
     if (shell) shell.hidden = false;
 
     const { html, wasIdx } = buildCards(events);
-    const track  = document.getElementById('ssTrack')  as HTMLElement | null;
-    const weekEl = document.getElementById('ssWeek')   as HTMLElement | null;
-    const prev   = document.getElementById('ssPrev')   as HTMLButtonElement | null;
-    const next   = document.getElementById('ssNext')   as HTMLButtonElement | null;
-    if (!track || !weekEl) return;
+    const track = document.getElementById('ssTrack') as HTMLElement | null;
+    if (!track || !select) return;
+
+    // Populate week dropdown
+    for (let w = 1; w <= MAX_WEEK; w++) {
+      const opt = document.createElement('option');
+      opt.value = String(w);
+      opt.textContent = `Week ${w}`;
+      if (w === currentWeek) opt.selected = true;
+      select.appendChild(opt);
+    }
 
     track.innerHTML = html;
-    weekEl.textContent = `Week ${currentWeek}`;
-    if (prev) prev.disabled = currentWeek <= 1;
-    if (next) next.disabled = currentWeek >= MAX_WEEK;
 
     if (wasIdx >= 0) {
       const wasCard = track.children[wasIdx] as HTMLElement | null;
@@ -187,15 +179,11 @@
       }
     }
 
-    // Wire up prev/next buttons
-    prev?.addEventListener('click', () => {
-      if (currentWeek <= 1) return;
-      currentWeek--;
-      loadWeek(currentWeek, currentYear, currentSeasonType, false);
-    });
-    next?.addEventListener('click', () => {
-      if (currentWeek >= MAX_WEEK) return;
-      currentWeek++;
+    // Wire up select
+    select.addEventListener('change', () => {
+      const w = parseInt(select.value);
+      if (!w) return;
+      currentWeek = w;
       loadWeek(currentWeek, currentYear, currentSeasonType, false);
     });
 
@@ -217,46 +205,34 @@
   .ss-nav {
     flex-shrink: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     border-right: 1px solid var(--border);
-    padding: 0 4px;
-    gap: 1px;
+    padding: 0 10px;
   }
 
-  .ss-nav-btn {
+  .ss-select {
+    appearance: none;
+    -webkit-appearance: none;
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--text-3);
-    font-size: 16px;
-    line-height: 1;
-    padding: 2px 6px;
-    border-radius: 3px;
-    transition: color 0.1s, background 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .ss-nav-btn:hover:not(:disabled) {
-    color: var(--accent);
-    background: var(--bg);
-  }
-  .ss-nav-btn:disabled {
-    opacity: 0.25;
-    cursor: default;
-  }
-
-  .ss-week-label {
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
+    padding: 0;
+    outline: none;
     white-space: nowrap;
-    text-align: center;
-    padding: 0 2px;
+  }
+  .ss-select option {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: initial;
+    background: initial;
   }
 
   /* ── Scrollable track ── */
