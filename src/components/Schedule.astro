@@ -1,75 +1,60 @@
 ---
-import type { UPCOMING_SCHEDULE, LAST_SEASON } from '../config/schedule';
-interface Props {
-  schedule:   typeof UPCOMING_SCHEDULE;
-  lastSeason: typeof LAST_SEASON;
+import type { SeasonGame } from '../config/schedule';
+interface Props { schedule: SeasonGame[]; }
+const { schedule } = Astro.props;
+
+const wins   = schedule.filter(g => g.result === 'W').length;
+const losses = schedule.filter(g => g.result === 'L').length;
+const ties   = schedule.filter(g => g.result === 'T').length;
+const played = wins + losses + ties;
+
+function shortDate(d: string) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
-const { schedule, lastSeason } = Astro.props;
-
-const DIVISION_ORDER: Record<string, number> = {
-  'Dallas Cowboys': 0, 'NY Giants': 1, 'Philadelphia Eagles': 2,
-};
-
-function scheduleSort(games: typeof schedule) {
-  const scored = games
-    .filter(g => g.opponent !== 'TBD' && g.home !== null)
-    .map(g => {
-      const divRank = DIVISION_ORDER[g.opponent] ?? 99;
-      const group   = g.home
-        ? (divRank < 99 ? 0 : 1)
-        : (divRank < 99 ? 2 : 3);
-      return { ...g, _group: group, _divRank: divRank };
-    });
-  return scored.sort((a, b) =>
-    a._group !== b._group ? a._group - b._group : a._divRank - b._divRank,
-  );
-}
-
-const sortedSchedule = scheduleSort(schedule);
 ---
 
 <div class="module">
   <div class="module-hd">
-    2026 Opponents
-    <span class="sched-pending">Schedule releases May 2026</span>
-  </div>
-
-  <div class="sched-list">
-    {sortedSchedule.map((g, i) => {
-      const prevGroup = i > 0 ? sortedSchedule[i - 1]._group : g._group;
-      const showDivider = i > 0 && g._group !== prevGroup;
-      return (
-        <>
-          {showDivider && <div class="sched-divider"/>}
-          <div class="sched-row">
-            <span class="sched-ha">{g.home ? 'vs' : '@'}</span>
-            <span class="sched-opp">{g.opponent}</span>
-          </div>
-        </>
-      );
-    })}
-  </div>
-
-  <!-- 2025 Season Results -->
-  <div class="season-hd">
-    <span class="season-yr">{lastSeason.year} Season</span>
-    <span class="season-rec">{lastSeason.record}</span>
+    2026 Season
+    {played > 0 && (
+      <span class="season-rec-inline">
+        {wins}-{losses}{ties > 0 ? `-${ties}` : ''}
+      </span>
+    )}
   </div>
 
   <div class="results-list">
-    {lastSeason.games.map(g => (
-      <div class="result-row">
-        <span class="res-wk">{g.week}</span>
-        <span class="res-ha">{g.home === null ? '' : g.home ? 'vs' : '@'}</span>
-        <span class="res-opp">{g.opponent}</span>
-        {g.result !== '—' ? (
-          <span class="res-score">{g.ws}–{g.os}</span>
-        ) : (
-          <span class="res-score res-bye">BYE</span>
-        )}
-        <span class={`res-tag res-tag--${g.result.toLowerCase()}`}>{g.result}</span>
-      </div>
-    ))}
+    {schedule.map(g => {
+      const isBye    = g.opponent === 'BYE';
+      const isPlayed = !isBye && g.result !== undefined;
+      return (
+        <div class={`result-row ${isPlayed ? '' : isBye ? 'result-row--bye' : 'result-row--upcoming'}`}>
+          <span class="res-wk">{g.week}</span>
+          {isBye ? (
+            <>
+              <span class="res-ha"></span>
+              <span class="res-opp res-opp--bye">BYE</span>
+              <span class="res-right"></span>
+              <span class="res-tag"></span>
+            </>
+          ) : isPlayed ? (
+            <>
+              <span class="res-ha">{g.home ? 'vs' : '@'}</span>
+              <span class="res-opp">{g.opponent}</span>
+              <span class="res-right res-score">{g.ws}–{g.os}</span>
+              <span class={`res-tag res-tag--${g.result!.toLowerCase()}`}>{g.result}</span>
+            </>
+          ) : (
+            <>
+              <span class="res-ha">{g.home === null ? '' : g.home ? 'vs' : '@'}</span>
+              <span class="res-opp">{g.opponent}</span>
+              <span class="res-right res-upcoming">{shortDate(g.date)}</span>
+              <span class="res-tv">{g.tv !== 'TBD' && g.tv !== '' ? g.tv : ''}</span>
+            </>
+          )}
+        </div>
+      );
+    })}
   </div>
 </div>
 
@@ -84,70 +69,47 @@ const sortedSchedule = scheduleSort(schedule);
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 6px;
-    flex-wrap: wrap;
   }
-  .sched-pending {
-    font-size: 9px;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--text-4);
-    font-style: italic;
-  }
-
-  .sched-list { display: flex; flex-direction: column; margin-bottom: 4px; }
-  .sched-divider { height: 4px; }
-  .sched-row {
-    display: grid;
-    grid-template-columns: 24px 1fr;
-    gap: 6px;
-    align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-  }
-  .sched-ha  { color: var(--text-3); font-size: 11px; }
-  .sched-opp { color: var(--text); font-weight: 600; }
-
-  /* ── 2025 Results ──────────────────────────────────────────────────────── */
-  .season-hd {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    padding: 6px 0;
-    margin-top: 16px;
-  }
-  .season-yr {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-  }
-  .season-rec {
+  .season-rec-inline {
     font-size: 13px;
     font-weight: 800;
     color: var(--text);
     letter-spacing: -0.02em;
+    text-transform: none;
   }
 
   .results-list { display: flex; flex-direction: column; }
+
   .result-row {
     display: grid;
-    grid-template-columns: 28px 18px 1fr auto 20px;
+    grid-template-columns: 28px 18px 1fr auto 28px;
     gap: 3px;
     align-items: center;
     padding: 5px 0;
     border-bottom: 1px solid var(--border);
     font-size: 11px;
   }
-  .res-wk    { font-size: 10px; font-weight: 700; color: var(--text-4); }
-  .res-ha    { color: var(--text-3); font-size: 10px; }
-  .res-opp   { color: var(--text-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .res-score { color: var(--text-3); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .res-bye   { color: var(--text-4); font-style: italic; }
+  .result-row--bye     { opacity: 0.45; }
+  .result-row--upcoming .res-opp { color: var(--text-3); }
 
+  .res-wk  { font-size: 10px; font-weight: 700; color: var(--text-4); }
+  .res-ha  { color: var(--text-3); font-size: 10px; }
+  .res-opp {
+    color: var(--text-2);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .res-opp--bye { color: var(--text-4); font-style: italic; }
+
+  /* Played games */
+  .res-score {
+    color: var(--text-3);
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
   .res-tag {
     font-size: 9px;
     font-weight: 800;
@@ -158,5 +120,21 @@ const sortedSchedule = scheduleSort(schedule);
   }
   .res-tag--w { color: #22c55e; }
   .res-tag--l { color: var(--text-4); }
-  .res-tag--— { color: var(--text-4); }
+  .res-tag--t { color: var(--text-4); }
+
+  /* Upcoming games */
+  .res-right { text-align: right; white-space: nowrap; }
+  .res-upcoming {
+    font-size: 10px;
+    color: var(--text-4);
+    font-variant-numeric: tabular-nums;
+  }
+  .res-tv {
+    font-size: 9px;
+    color: var(--text-4);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 </style>

@@ -7,18 +7,17 @@ import DivisionStandings  from './DivisionStandings.astro';
 import type { EspnTransaction } from '../lib/espn';
 
 interface Props {
-  dates:       any;
-  schedule:    any;
-  lastSeason:  any;
-  stats:       any;
-  players:     any;
-  txItems?:    EspnTransaction[];
-  txLabel?:    string;
-  showTx?:     boolean;
-  standings?:  any[];
+  dates:      any;
+  schedule:   any;
+  stats:      any;
+  players:    any;
+  txItems?:   EspnTransaction[];
+  txLabel?:   string;
+  showTx?:    boolean;
+  standings?: any[];
 }
 
-const { dates, schedule, lastSeason, stats, players,
+const { dates, schedule, stats, players,
         txItems = [], txLabel = '', showTx = false,
         standings = [] } = Astro.props;
 ---
@@ -30,7 +29,7 @@ const { dates, schedule, lastSeason, stats, players,
     </div>
   )}
   <div class="rail-section" id="rail-schedule">
-    <Schedule schedule={schedule} lastSeason={lastSeason} />
+    <Schedule schedule={schedule} />
   </div>
   {standings.length > 0 && (
     <div class="rail-section">

@@ -1,5 +1,17 @@
 // ─── Schedule & Important Dates ───────────────────────────────────────────────
 
+export interface SeasonGame {
+  week:     string;
+  opponent: string;
+  date:     string;
+  home:     boolean | null;
+  tv:       string;
+  time:     string;
+  ws?:      number;   // Washington score (set after game)
+  os?:      number;   // Opponent score   (set after game)
+  result?:  'W' | 'L' | 'T';
+}
+
 export const IMPORTANT_DATES = [
   // ── Upcoming games (notable / primetime / milestone) ─────────────────────
   { label: 'Week 1 — at Philadelphia',  date: '2026-09-13', note: '4:25 PM · FOX' },
@@ -17,25 +29,26 @@ export const IMPORTANT_DATES = [
 ];
 
 // 2026 regular season — schedule released May 14, 2026 (source: Commanders.com / NFL.com)
-export const UPCOMING_SCHEDULE = [
-  { week: 'W1',  opponent: 'Philadelphia Eagles',  date: '2026-09-13', home: false, tv: 'FOX',          time: '4:25 PM ET' },
-  { week: 'W2',  opponent: 'Dallas Cowboys',        date: '2026-09-20', home: false, tv: 'FOX',          time: '4:25 PM ET' },
-  { week: 'W3',  opponent: 'Seattle Seahawks',      date: '2026-09-27', home: true,  tv: 'FOX',          time: '1:00 PM ET' },
-  { week: 'W4',  opponent: 'Indianapolis Colts ✈', date: '2026-10-04', home: true,  tv: 'NFL Network',  time: '9:30 AM ET' },  // London — Tottenham Hotspur Stadium
-  { week: 'W5',  opponent: 'New York Giants',       date: '2026-10-11', home: true,  tv: 'FOX',          time: '1:00 PM ET' },
-  { week: 'W6',  opponent: 'San Francisco 49ers',   date: '2026-10-19', home: false, tv: 'ESPN/ABC',     time: '8:15 PM ET' },
-  { week: 'W7',  opponent: 'BYE',                   date: '2026-10-26', home: null,  tv: '',             time: '' },
-  { week: 'W8',  opponent: 'Philadelphia Eagles',   date: '2026-11-01', home: true,  tv: 'NBC',          time: '8:20 PM ET' },
-  { week: 'W9',  opponent: 'Los Angeles Rams',      date: '2026-11-08', home: true,  tv: 'FOX',          time: '1:00 PM ET' },
-  { week: 'W10', opponent: 'New York Giants',       date: '2026-11-12', home: false, tv: 'Prime Video',  time: '8:15 PM ET' },
-  { week: 'W11', opponent: 'Cincinnati Bengals',    date: '2026-11-23', home: true,  tv: 'ESPN/ABC',     time: '8:15 PM ET' },
-  { week: 'W12', opponent: 'Arizona Cardinals',     date: '2026-11-29', home: false, tv: 'FOX',          time: '4:25 PM ET' },
-  { week: 'W13', opponent: 'Tennessee Titans',      date: '2026-12-06', home: false, tv: 'CBS',          time: '1:00 PM ET' },
-  { week: 'W14', opponent: 'Houston Texans',        date: '2026-12-13', home: true,  tv: 'CBS',          time: '1:00 PM ET' },
-  { week: 'W15', opponent: 'Atlanta Falcons',       date: '2026-12-20', home: true,  tv: 'CBS',          time: '1:00 PM ET' },
-  { week: 'W16', opponent: 'Minnesota Vikings',     date: '2026-12-26', home: false, tv: 'TBD',          time: 'TBD' },
-  { week: 'W17', opponent: 'Jacksonville Jaguars',  date: '2027-01-02', home: false, tv: 'TBD',          time: 'TBD' },
-  { week: 'W18', opponent: 'Dallas Cowboys',        date: '2027-01-04', home: true,  tv: 'TBD',          time: 'TBD' },
+// Set ws/os/result after each game is played.
+export const UPCOMING_SCHEDULE: SeasonGame[] = [
+  { week: 'W1',  opponent: 'Philadelphia', date: '2026-09-13', home: false, tv: 'FOX',         time: '4:25 PM ET' },
+  { week: 'W2',  opponent: 'Dallas',       date: '2026-09-20', home: false, tv: 'FOX',         time: '4:25 PM ET' },
+  { week: 'W3',  opponent: 'Seattle',      date: '2026-09-27', home: true,  tv: 'FOX',         time: '1:00 PM ET' },
+  { week: 'W4',  opponent: 'Indianapolis', date: '2026-10-04', home: true,  tv: 'NFL Network', time: '9:30 AM ET' },  // London
+  { week: 'W5',  opponent: 'NY Giants',    date: '2026-10-11', home: true,  tv: 'FOX',         time: '1:00 PM ET' },
+  { week: 'W6',  opponent: 'SF 49ers',     date: '2026-10-19', home: false, tv: 'ESPN/ABC',    time: '8:15 PM ET' },
+  { week: 'W7',  opponent: 'BYE',          date: '2026-10-26', home: null,  tv: '',            time: '' },
+  { week: 'W8',  opponent: 'Philadelphia', date: '2026-11-01', home: true,  tv: 'NBC',         time: '8:20 PM ET' },
+  { week: 'W9',  opponent: 'LA Rams',      date: '2026-11-08', home: true,  tv: 'FOX',         time: '1:00 PM ET' },
+  { week: 'W10', opponent: 'NY Giants',    date: '2026-11-12', home: false, tv: 'Prime',       time: '8:15 PM ET' },
+  { week: 'W11', opponent: 'Cincinnati',   date: '2026-11-23', home: true,  tv: 'ESPN/ABC',    time: '8:15 PM ET' },
+  { week: 'W12', opponent: 'Arizona',      date: '2026-11-29', home: false, tv: 'FOX',         time: '4:25 PM ET' },
+  { week: 'W13', opponent: 'Tennessee',    date: '2026-12-06', home: false, tv: 'CBS',         time: '1:00 PM ET' },
+  { week: 'W14', opponent: 'Houston',      date: '2026-12-13', home: true,  tv: 'CBS',         time: '1:00 PM ET' },
+  { week: 'W15', opponent: 'Atlanta',      date: '2026-12-20', home: true,  tv: 'CBS',         time: '1:00 PM ET' },
+  { week: 'W16', opponent: 'Minnesota',    date: '2026-12-26', home: false, tv: 'TBD',         time: 'TBD' },
+  { week: 'W17', opponent: 'Jacksonville', date: '2027-01-02', home: false, tv: 'TBD',         time: 'TBD' },
+  { week: 'W18', opponent: 'Dallas',       date: '2027-01-04', home: true,  tv: 'TBD',         time: 'TBD' },
 ];
 
 // ─── 2025 Season Results (final) ──────────────────────────────────────────────
