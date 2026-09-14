@@ -26,8 +26,8 @@
     const events: any[] = data?.events ?? [];
     if (!events.length) return;
 
-    const weekLabel: string =
-      data?.week?.text ?? data?.season?.type?.week?.text ?? '';
+    const weekNum = data?.week?.number;
+    const weekLabel: string = weekNum ? `Week ${weekNum}` : '';
 
     let wasIdx = -1;
     const cards = events.map((ev: any, i: number) => {
@@ -55,8 +55,8 @@
       const awayWon   = isPost && !!away.winner;
       const homeWon   = isPost && !!home.winner;
 
-      const awayLogo = away.team?.logos?.[0]?.href ?? '';
-      const homeLogo = home.team?.logos?.[0]?.href ?? '';
+      const awayLogo = away.team?.logo ?? '';
+      const homeLogo = home.team?.logo ?? '';
       const awayAbbr = away.team?.abbreviation ?? '???';
       const homeAbbr = home.team?.abbreviation ?? '???';
 
