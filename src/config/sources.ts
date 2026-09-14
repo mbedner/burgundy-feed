@@ -13,6 +13,24 @@ import type { SourceConfig } from '../lib/types';
 export const SOURCES: SourceConfig[] = [
   // ── Commanders-focused ──────────────────────────────────────────────────────
   {
+    id:               'commanders-official',
+    name:             'Commanders.com',
+    rssUrl:           'https://www.commanders.com/rss/news.xml',
+    quality:          9,
+    type:             'beat',
+    commandersFocus:  true,
+    enabled:          true,  // official team site — injury reports, roster moves, press releases
+  },
+  {
+    id:               'commanders-wire',
+    name:             'Commanders Wire',
+    rssUrl:           'https://commanderswire.usatoday.com/feed',
+    quality:          8,
+    type:             'beat',
+    commandersFocus:  true,
+    enabled:          true,  // USA Today Commanders-specific team wire
+  },
+  {
     id:               'espn-commanders',
     name:             'ESPN',
     rssUrl:           'https://www.espn.com/espn/rss/nfl/news?teamId=28',
@@ -168,7 +186,7 @@ export const SOURCES: SourceConfig[] = [
   {
     id:               'pft',
     name:             'Pro Football Talk',
-    rssUrl:           'https://www.nbcsports.com/profootballtalk.rss',
+    rssUrl:           'https://profootballtalk.nbcsports.com/feed/',
     quality:          8,
     type:             'national',
     commandersFocus:  false,
@@ -192,6 +210,15 @@ export const SOURCES: SourceConfig[] = [
     commandersFocus:  false,
     enabled:          true,
   },
+  {
+    id:               'the-ringer-nfl',
+    name:             'The Ringer',
+    rssUrl:           'https://www.theringer.com/rss/nfl/index.xml',
+    quality:          8,
+    type:             'national',
+    commandersFocus:  false,
+    enabled:          true,
+  },
 ];
 
 // ─── Blocklist ─────────────────────────────────────────────────────────────────
@@ -210,37 +237,41 @@ export const COMMANDERS_KEYWORDS: string[] = [
   'commanders',
   'washington commanders',
   'washington football',
-  'jayden daniels',
+  // coaching / front office
   'dan quinn',
   'adam peters',
   'josh harris',
   'bobby mclaughlin',
   'kliff kingsbury',
+  // offense
+  'jayden daniels',
+  'marcus mariota',
   'terry mclaurin',
+  'deebo samuel',
+  'dyami brown',
+  'noah brown',
+  'carnell tate',
+  'jacory croskey-merritt',
+  'rachaad white',
   'brian robinson',
-  'austin ekeler',
-  'sam howell',
-  'casey toohill',
+  'tyler biadasz',
+  // defense
   'daron payne',
+  'bobby wagner',
+  'mike sainristil',
+  'odafe oweh',
+  'von miller',
   'jamin davis',
   'jeremy chinn',
-  'nick bellore',
+  'casey toohill',
+  'dorance armstrong',
+  'dante fowler',
+  // stadium / site
   'commanders wire',
   'hogs haven',
   'fedexfield',
   'rfk stadium',
-  'noah brown',
-  'dyami brown',
-  'zach ertz',
-  'leo chenal',
-  'jeremy mcnichols',
-  'bobby wagner',
-  'brandon aubrey',
-  'dante fowler',
-  'dorance armstrong',
-  'tyler biadasz',
-  'carnell tate',
-  'luke mcafee',
+  // generic WAS context
   'washington nfl',
   'washington qb',
   'washington defense',
