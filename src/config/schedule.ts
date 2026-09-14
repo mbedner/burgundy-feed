@@ -99,7 +99,7 @@ export const TEAM_STATS = {
     receivingYards: { name: 'Terry McLaurin',           stat: '—' },
     sacks:          { name: 'Odafe Oweh',               stat: '—' },
     interceptions:  { name: 'Mike Sainristil',          stat: '—' },
-    tackles:        { name: 'Bobby Wagner',             stat: '—' },
+    tackles:        { name: 'Bobby Del Rio-Wilson',      stat: '—' },
   },
   lastUpdated: '2026 preseason',
   source: 'fallback' as const,

@@ -173,7 +173,7 @@ export function getMockGame(phase: GamePhase): GameDayInfo {
       passing:   [{ name: 'Jayden Daniels', shortName: 'J. Daniels', stats: ['18/34','164','4.8','2','0'], labels: ['C/ATT','YDS','AVG','TD','INT'] }],
       rushing:   [{ name: 'Rachaad White',  shortName: 'R. White',   stats: ['16','63','3.9','1'],         labels: ['CAR','YDS','AVG','TD'] }],
       receiving: [{ name: 'Terry McLaurin', shortName: 'T. McLaurin',stats: ['4','64','16.0','1'],         labels: ['REC','YDS','AVG','TD'] }],
-      defensive: [{ name: 'Bobby Wagner',   shortName: 'B. Wagner',  stats: ['8','5','0'],                 labels: ['TOT','SOLO','SACKS'] }],
+      defensive: [{ name: 'Frankie Luvu',    shortName: 'F. Luvu',    stats: ['8','5','0'],                 labels: ['TOT','SOLO','SACKS'] }],
     } : null,
   };
 }
