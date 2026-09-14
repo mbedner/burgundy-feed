@@ -6,6 +6,10 @@ import { detectGameDay, getMockGame } from '../lib/gameday';
 import type { GameDayInfo, GamePhase } from '../lib/gameday';
 import { isDraftDay, fetchDraftData, getMockDraft } from '../lib/draft';
 import type { DraftInfo, DraftState } from '../lib/draft';
+import { fetchInjuryReport } from '../lib/injuries';
+import type { InjuredPlayer } from '../lib/injuries';
+import { fetchOpponentPreview } from '../lib/opponent';
+import type { OpponentInfo } from '../lib/opponent';
 import { readAll } from '../lib/kv';
 import { SITE, TRANSACTION_SEASON } from '../config/site';
 import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS } from '../config/schedule';
@@ -337,6 +341,18 @@ if (forceDraft && VALID_DRAFT_STATES.has(forceDraft)) {
   draftDay = getMockDraft(forceDraft);
 } else if (isDraftDay()) {
   try { draftDay = await fetchDraftData(); } catch {}
+}
+
+// ── Injury Report + Opponent Preview ─────────────────────────────────────────
+let injuries: InjuredPlayer[] = [];
+let opponent: OpponentInfo | null = null;
+try {
+  [injuries, opponent] = await Promise.all([
+    fetchInjuryReport(),
+    fetchOpponentPreview(UPCOMING_SCHEDULE),
+  ]);
+} catch (e) {
+  console.warn('[cw] rail data fetch error:', (e as Error).message);
 }
 
 const leads = articles.slice(0, SITE.leadCount);
@@ -1138,6 +1154,8 @@ const lastUpdated = lastRun?.completedAt ?? null;
           txLabel={TRANSACTION_SEASON.label}
           showTx={showTxTracker}
           standings={divisionStandings}
+          injuries={injuries}
+          opponent={opponent}
         />
       </aside>
     </div>

@@ -4,7 +4,11 @@ import Schedule           from './Schedule.astro';
 import TeamStats          from './TeamStats.astro';
 import TransactionTracker from './TransactionTracker.astro';
 import DivisionStandings  from './DivisionStandings.astro';
+import InjuryReport       from './InjuryReport.astro';
+import OpponentPreview    from './OpponentPreview.astro';
 import type { EspnTransaction } from '../lib/espn';
+import type { InjuredPlayer }   from '../lib/injuries';
+import type { OpponentInfo }    from '../lib/opponent';
 
 interface Props {
   dates:      any;
@@ -15,17 +19,24 @@ interface Props {
   txLabel?:   string;
   showTx?:    boolean;
   standings?: any[];
+  injuries?:  InjuredPlayer[];
+  opponent?:  OpponentInfo | null;
 }
 
 const { dates, schedule, stats, players,
         txItems = [], txLabel = '', showTx = false,
-        standings = [] } = Astro.props;
+        standings = [], injuries = [], opponent = null } = Astro.props;
 ---
 
 <div class="rail">
   {showTx && txItems.length > 0 && (
     <div class="rail-section" id="transactions">
       <TransactionTracker items={txItems} label={txLabel} />
+    </div>
+  )}
+  {opponent && (
+    <div class="rail-section">
+      <OpponentPreview opponent={opponent} />
     </div>
   )}
   <div class="rail-section" id="rail-schedule">
@@ -39,6 +50,11 @@ const { dates, schedule, stats, players,
   <div class="rail-section">
     <TeamStats stats={stats} players={players} />
   </div>
+  {injuries.length > 0 && (
+    <div class="rail-section">
+      <InjuryReport players={injuries} />
+    </div>
+  )}
   <div class="rail-section">
     <TeamDates dates={dates} />
   </div>
