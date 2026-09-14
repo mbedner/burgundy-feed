@@ -1,0 +1,91 @@
+---
+import type { InjuredPlayer } from '../lib/injuries';
+
+interface Props { players: InjuredPlayer[]; }
+const { players } = Astro.props;
+if (players.length === 0) return;
+
+const STATUS_COLOR: Record<string, string> = {
+  out:             'var(--inj-out)',
+  injured_reserve: 'var(--inj-out)',
+  doubtful:        'var(--inj-doubt)',
+  questionable:    'var(--inj-q)',
+  'day-to-day':    'var(--inj-dtd)',
+};
+
+const STATUS_SHORT: Record<string, string> = {
+  out:             'OUT',
+  injured_reserve: 'IR',
+  doubtful:        'D',
+  questionable:    'Q',
+  'day-to-day':    'DTD',
+};
+---
+
+<div class="module">
+  <div class="module-hd">Injury Report</div>
+  <div class="inj-list">
+    {players.map(p => (
+      <div class="inj-row">
+        <span class="inj-pos">{p.position}</span>
+        <span class="inj-name">{p.shortName}</span>
+        <span class="inj-type">{p.injuryType || '—'}</span>
+        <span class="inj-tag" style={`color: ${STATUS_COLOR[p.statusType] ?? 'var(--text-4)'}`}>
+          {STATUS_SHORT[p.statusType] ?? p.status}
+        </span>
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  :root {
+    --inj-out:  #ef4444;
+    --inj-doubt:#f97316;
+    --inj-q:    #eab308;
+    --inj-dtd:  var(--text-3);
+  }
+  .module-hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .inj-list { display: flex; flex-direction: column; }
+  .inj-row {
+    display: grid;
+    grid-template-columns: 26px 1fr auto 32px;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+  }
+  .inj-pos {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-4);
+    text-transform: uppercase;
+  }
+  .inj-name {
+    font-weight: 500;
+    color: var(--text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .inj-type {
+    font-size: 10px;
+    color: var(--text-4);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .inj-tag {
+    font-size: 9px;
+    font-weight: 800;
+    text-align: right;
+    letter-spacing: 0.04em;
+  }
+</style>

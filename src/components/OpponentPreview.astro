@@ -1,0 +1,110 @@
+---
+import type { OpponentInfo } from '../lib/opponent';
+import type { SeasonGame } from '../config/schedule';
+
+interface Props { opponent: OpponentInfo; }
+const { opponent } = Astro.props;
+
+const { nextGame, daysUntil, name, abbreviation, record, standing, color, logo } = opponent;
+
+function shortDate(d: string) {
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+}
+
+const homeAway = nextGame.home ? 'vs.' : 'at';
+const dayLabel = daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`;
+---
+
+<div class="module">
+  <div class="module-hd">Next Opponent</div>
+
+  <div class="opp-card">
+    <div class="opp-left">
+      {logo && (
+        <img class="opp-logo" src={logo} alt={name} width="40" height="40" loading="lazy" />
+      )}
+    </div>
+    <div class="opp-info">
+      <div class="opp-matchup">
+        <span class="opp-ha">{homeAway}</span>
+        <span class="opp-name">{name}</span>
+      </div>
+      <div class="opp-record">{record} · {standing}</div>
+      <div class="opp-when">
+        <span class="opp-countdown">{dayLabel}</span>
+        <span class="opp-date">{shortDate(nextGame.date)}</span>
+        {nextGame.tv && nextGame.tv !== 'TBD' && (
+          <span class="opp-tv">{nextGame.tv}</span>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .module-hd {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .opp-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .opp-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .opp-info { flex: 1; min-width: 0; }
+  .opp-matchup {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 2px;
+  }
+  .opp-ha {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+  }
+  .opp-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .opp-record {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .opp-when {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    flex-wrap: wrap;
+  }
+  .opp-countdown {
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .opp-date { color: var(--text-3); }
+  .opp-tv {
+    color: var(--text-4);
+    padding: 1px 4px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+</style>

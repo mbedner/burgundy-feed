@@ -41,6 +41,20 @@ export interface GameSituation {
   isWashingtonPossession: boolean;
 }
 
+export interface BoxScoreStat {
+  name:     string;
+  shortName: string;
+  stats:    string[];
+  labels:   string[];
+}
+
+export interface BoxScoreTeam {
+  passing:   BoxScoreStat[];
+  rushing:   BoxScoreStat[];
+  receiving: BoxScoreStat[];
+  defensive: BoxScoreStat[];
+}
+
 export interface GameDayInfo {
   gameId:         string;
   phase:          GamePhase;
@@ -56,6 +70,7 @@ export interface GameDayInfo {
   situation:      GameSituation | null;
   recentPlays:    GamePlay[];     // last 10, newest first
   scoringPlays:   GamePlay[];     // all scoring plays
+  boxScore:       BoxScoreTeam | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -152,6 +167,12 @@ export function getMockGame(phase: GamePhase): GameDayInfo {
     } : null,
     recentPlays:  mockPlays,
     scoringPlays,
+    boxScore: phase === 'postgame' ? {
+      passing:   [{ name: 'Jayden Daniels', shortName: 'J. Daniels', stats: ['18/34','164','4.8','2','0'], labels: ['C/ATT','YDS','AVG','TD','INT'] }],
+      rushing:   [{ name: 'Rachaad White',  shortName: 'R. White',   stats: ['16','63','3.9','1'],         labels: ['CAR','YDS','AVG','TD'] }],
+      receiving: [{ name: 'Terry McLaurin', shortName: 'T. McLaurin',stats: ['4','64','16.0','1'],         labels: ['REC','YDS','AVG','TD'] }],
+      defensive: [{ name: 'Bobby Wagner',   shortName: 'B. Wagner',  stats: ['8','5','0'],                 labels: ['TOT','SOLO','SACKS'] }],
+    } : null,
   };
 }
 
@@ -277,11 +298,43 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
 
     // 7. Scoring plays (from summary, already in order)
     const rawScoring: any[] = summary?.scoringPlays ?? [];
+    // ESPN scoringPlays use homeScore/awayScore — map to was/opp correctly
+    const wasIsHome = washington.isHome;
     const scoringPlays: GamePlay[] = rawScoring.map(p => ({
       ...buildPlay(p, TEAM_ID),
-      wasScore: p?.homeScore ?? 0,   // ESPN uses home/away keys
-      oppScore: p?.awayScore ?? 0,
+      wasScore: wasIsHome ? (p?.homeScore ?? 0) : (p?.awayScore ?? 0),
+      oppScore: wasIsHome ? (p?.awayScore ?? 0) : (p?.homeScore ?? 0),
     }));
+
+    // 8. Box score (postgame only — skip the extra fetch during live games)
+    let boxScore: BoxScoreTeam | null = null;
+    if (phase === 'postgame') {
+      try {
+        const bsPlayers: any[] = summary?.boxscore?.players ?? [];
+        const wasPlayers = bsPlayers.find((t: any) => t?.team?.id === TEAM_ID);
+        if (wasPlayers) {
+          function parseCategory(name: string, keepLabels: string[]): BoxScoreStat[] {
+            const cat = wasPlayers.statistics?.find((s: any) => s.name === name);
+            if (!cat) return [];
+            const allLabels: string[] = cat.labels ?? [];
+            const idxs = keepLabels.map(l => allLabels.indexOf(l)).filter(i => i >= 0);
+            const usedLabels = idxs.map(i => allLabels[i]);
+            return (cat.athletes ?? []).slice(0, 3).map((a: any) => ({
+              name:      a.athlete?.displayName ?? '?',
+              shortName: a.athlete?.shortName ?? a.athlete?.displayName ?? '?',
+              stats:     idxs.map(i => a.stats?.[i] ?? '—'),
+              labels:    usedLabels,
+            }));
+          }
+          boxScore = {
+            passing:   parseCategory('passing',   ['C/ATT', 'YDS', 'TD', 'INT']),
+            rushing:   parseCategory('rushing',   ['CAR', 'YDS', 'TD']),
+            receiving: parseCategory('receiving', ['REC', 'YDS', 'TD', 'TGTS']),
+            defensive: parseCategory('defensive', ['TOT', 'SOLO', 'SACKS', 'TFL']),
+          };
+        }
+      } catch { /* box score is non-critical */ }
+    }
 
     return {
       gameId,
@@ -298,6 +351,7 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
       situation,
       recentPlays,
       scoringPlays,
+      boxScore,
     };
   } catch (err) {
     console.warn('[gameday] detection failed:', err instanceof Error ? err.message : err);

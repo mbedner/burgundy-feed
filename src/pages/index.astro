@@ -1062,7 +1062,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
   <nav class="sticky-subnav" id="stickySubnav" aria-label="Quick navigation">
     <div class="sticky-subnav-inner">
-      {gameDay && <a href="#gameday"><span class="subnav-short">Game</span><span class="subnav-full">Game Day</span></a>}
+      {gameDay
+        ? <a href="#gameday"><span class="subnav-short">Game</span><span class="subnav-full">Game Day</span></a>
+        : <a id="gd-subnav-link" href="#gameday" hidden><span class="subnav-short">Game</span><span class="subnav-full">Game Day</span></a>
+      }
       {draftDay && <a href="#draft"><span class="subnav-short">Draft</span><span class="subnav-full">Draft</span></a>}
       <a href="#leads"><span class="subnav-short">Top</span><span class="subnav-full">Top Stories</span></a>
       <a href="#stream"><span class="subnav-short">Feed</span><span class="subnav-full">News Feed</span></a>
@@ -1075,7 +1078,10 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   <main class="page-wrap">
     <nav class="anchor-nav" aria-label="Page sections">
-      {gameDay && <a href="#gameday">Game Day</a>}
+      {gameDay
+        ? <a href="#gameday">Game Day</a>
+        : <a id="gd-anchor-link" href="#gameday" hidden>Game Day</a>
+      }
       {draftDay && <a href="#draft">Draft</a>}
       <a href="#leads">Top Stories</a>
       <a href="#stream">News Feed</a>
@@ -1091,6 +1097,8 @@ const lastUpdated = lastRun?.completedAt ?? null;
             <GameDayBanner game={gameDay} />
           </section>
         )}
+        {/* Client-side game day mounts here when SSR detection fails (Cloudflare IP blocked by ESPN) */}
+        <div id="gd-mount"></div>
 
         {draftDay && (
           <section id="draft">
@@ -1410,6 +1418,13 @@ const lastUpdated = lastRun?.completedAt ?? null;
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
   }
+</script>
+
+<script>
+  // Client-side game day detection — runs in the visitor's browser where ESPN
+  // API is accessible (Cloudflare Workers IPs are blocked by ESPN's Akamai CDN).
+  import { gdClientDetect } from '../scripts/gameday-client';
+  gdClientDetect();
 </script>
 </body>
 </html>

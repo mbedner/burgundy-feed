@@ -6,7 +6,7 @@ const { game } = Astro.props;
 
 const { phase, washington, opponent, period, periodDisplay, clock,
         situation, recentPlays, scoringPlays, kickoffDisplay,
-        network, venue, kickoffIso, gameId } = game;
+        network, venue, kickoffIso, gameId, boxScore } = game;
 
 const wasWinning  = washington.score > opponent.score;
 const tied        = washington.score === opponent.score;
@@ -102,6 +102,89 @@ function ordSuffix(n: number) {
           </div>
         ))}
       </div>
+    </div>
+  )}
+
+  {/* ── Box score (postgame only) ── */}
+  {phase === 'postgame' && boxScore && (
+    <div class="gd-boxscore">
+      <div class="gd-plays-hd">WAS Stats</div>
+
+      {boxScore.passing.length > 0 && (
+        <div class="gd-bs-group">
+          <div class="gd-bs-cat">Passing</div>
+          {boxScore.passing.map(p => (
+            <div class="gd-bs-row">
+              <span class="gd-bs-name">{p.shortName}</span>
+              <span class="gd-bs-stats">
+                {p.labels.map((lbl, i) => (
+                  <span class="gd-bs-cell">
+                    <span class="gd-bs-val">{p.stats[i]}</span>
+                    <span class="gd-bs-lbl">{lbl}</span>
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {boxScore.rushing.length > 0 && (
+        <div class="gd-bs-group">
+          <div class="gd-bs-cat">Rushing</div>
+          {boxScore.rushing.map(p => (
+            <div class="gd-bs-row">
+              <span class="gd-bs-name">{p.shortName}</span>
+              <span class="gd-bs-stats">
+                {p.labels.map((lbl, i) => (
+                  <span class="gd-bs-cell">
+                    <span class="gd-bs-val">{p.stats[i]}</span>
+                    <span class="gd-bs-lbl">{lbl}</span>
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {boxScore.receiving.length > 0 && (
+        <div class="gd-bs-group">
+          <div class="gd-bs-cat">Receiving</div>
+          {boxScore.receiving.map(p => (
+            <div class="gd-bs-row">
+              <span class="gd-bs-name">{p.shortName}</span>
+              <span class="gd-bs-stats">
+                {p.labels.map((lbl, i) => (
+                  <span class="gd-bs-cell">
+                    <span class="gd-bs-val">{p.stats[i]}</span>
+                    <span class="gd-bs-lbl">{lbl}</span>
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {boxScore.defensive.length > 0 && (
+        <div class="gd-bs-group">
+          <div class="gd-bs-cat">Defense</div>
+          {boxScore.defensive.slice(0, 3).map(p => (
+            <div class="gd-bs-row">
+              <span class="gd-bs-name">{p.shortName}</span>
+              <span class="gd-bs-stats">
+                {p.labels.map((lbl, i) => (
+                  <span class="gd-bs-cell">
+                    <span class="gd-bs-val">{p.stats[i]}</span>
+                    <span class="gd-bs-lbl">{lbl}</span>
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )}
 </div>
