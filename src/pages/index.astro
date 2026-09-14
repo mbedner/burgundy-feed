@@ -552,13 +552,12 @@ const lastUpdated = lastRun?.completedAt ?? null;
     /* ── Section labels ──────────────────────────────────────────────────────── */
     .section-label {
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--accent);
-      padding: 16px 0 8px 8px;
-      border-left: 2px solid var(--accent);
       display: block;
+      margin-bottom: 16px;
     }
 
     /* ── Divider ─────────────────────────────────────────────────────────────── */
@@ -575,18 +574,19 @@ const lastUpdated = lastRun?.completedAt ?? null;
     @media (min-width: 960px) {
       .anchor-nav {
         display: flex;
-        gap: 24px;
-        padding: 10px 0;
+        gap: 28px;
+        padding: 12px 0;
         border-bottom: 1px solid var(--border);
-        margin-bottom: 4px;
+        margin-bottom: 20px;
       }
       .anchor-nav a {
         font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
+        font-weight: 700;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--text-3);
+        color: var(--text-4);
         transition: color 0.15s;
+        white-space: nowrap;
       }
       .anchor-nav a:hover { color: var(--accent); }
     }
@@ -1139,9 +1139,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
           }
         </section>
 
-        <hr class="divider" style="margin: 28px 0 0;" />
-
-        <section id="stream">
+        <section id="stream" style="margin-top: 36px;">
           <p class="section-label">Latest News</p>
           {streamItems.length > 0
             ? <NewsStream items={streamItems} />
@@ -1167,8 +1165,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
       </aside>
     </div>
 
-    <section id="voices" style="padding-bottom: 48px;">
-      <hr class="divider" />
+    <section id="voices" style="padding-bottom: 48px; margin-top: 36px;">
       <ReporterVoices config={REPORTER_CONFIG} />
     </section>
   </main>
@@ -1194,12 +1191,15 @@ const lastUpdated = lastRun?.completedAt ?? null;
   const stickyNav = document.getElementById('stickySubnav');
 
   if (stickyNav) {
-    const masthead = document.querySelector('.mast');
+    const masthead  = document.querySelector('.mast');
+    const anchorNav = document.querySelector('.anchor-nav');
     let ticking = false;
     function updateStickyNav() {
       let shouldShow;
       if (masthead) {
-        shouldShow = masthead.getBoundingClientRect().bottom <= 0;
+        const mastheadGone = masthead.getBoundingClientRect().bottom <= 0;
+        const anchorGone   = anchorNav ? anchorNav.getBoundingClientRect().bottom <= 0 : true;
+        shouldShow = mastheadGone && anchorGone;
       } else {
         shouldShow = window.scrollY > 80;
       }

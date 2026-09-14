@@ -66,8 +66,8 @@ function ordSuffix(n: number) {
 
     <div class="gd-team gd-team--opp">
       <div class="gd-team-text gd-team-text--opp">
-        <span class="gd-score" id="gdOppScore">{opponent.score}</span>
         <span class="gd-abbr">{opponent.abbreviation}</span>
+        <span class="gd-score" id="gdOppScore">{opponent.score}</span>
       </div>
       {opponent.logo && (
         <img class="gd-logo" src={opponent.logo} alt={opponent.abbreviation} loading="eager" />
@@ -543,4 +543,59 @@ function ordSuffix(n: number) {
     line-height: 1.4;
   }
   .gd-play--scoring .gd-play-text { color: #e0d8d0; }
+
+  /* ── Box score ── */
+  .gd-boxscore { border-top: 1px solid #2a2a2a; }
+  .gd-bs-group { border-bottom: 1px solid #1e1e1e; }
+  .gd-bs-cat {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9a9080;
+    padding: 7px 14px 3px;
+  }
+  .gd-bs-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 14px 5px;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .gd-bs-row:last-child { border-bottom: none; }
+  .gd-bs-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #d0c8c0;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .gd-bs-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .gd-bs-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+  .gd-bs-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f0eeeb;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .gd-bs-lbl {
+    font-size: 8px;
+    font-weight: 600;
+    color: #7a7068;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
 </style>

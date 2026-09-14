@@ -175,8 +175,8 @@ export async function gdClientDetect(): Promise<void> {
           </div>
           <div class="gd-team gd-team--opp">
             <div class="gd-team-text gd-team-text--opp">
-              <span class="gd-score" id="gdOppScore">${oppScore}</span>
               <span class="gd-abbr">${oppAbbr}</span>
+              <span class="gd-score" id="gdOppScore">${oppScore}</span>
             </div>
             ${oppLogo ? `<img class="gd-logo" src="${oppLogo}" alt="${oppAbbr}" loading="eager" />` : ''}
           </div>
