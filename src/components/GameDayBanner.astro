@@ -92,34 +92,34 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     const fdx = Math.round(60 + (fdp / 100) * 480);
     return (
       <div class="gd-field" id="gdSituation">
-        <svg class="gd-field-svg" viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+        <svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
           {/* Alternating stripes */}
           {[0,1,2,3,4,5,6,7,8,9].map(i => (
-            <rect x={60 + i*48} y="0" width="48" height="120" fill={i%2===0 ? '#2e7a14' : '#1a4e08'}/>
+            <rect x={60 + i*48} y="0" width="48" height="72" fill={i%2===0 ? '#2e7a14' : '#1a4e08'}/>
           ))}
           {/* End zones */}
-          <rect x="0"   y="0" width="60" height="120" fill="var(--was-color,#5a1414)"/>
-          <rect x="540" y="0" width="60" height="120" fill="var(--opp-color,#333)"/>
+          <rect x="0"   y="0" width="60" height="72" fill="var(--was-color,#5a1414)"/>
+          <rect x="540" y="0" width="60" height="72" fill="var(--opp-color,#333)"/>
           {/* End zone labels */}
-          <text id="gdFieldHome" x="30"  y="60" class="gd-ez-label">WAS</text>
-          <text id="gdFieldOpp" x="570" y="60" class="gd-ez-label">{opponent.abbreviation}</text>
+          <text id="gdFieldHome" x="30"  y="36" class="gd-ez-label">WAS</text>
+          <text id="gdFieldOpp" x="570" y="36" class="gd-ez-label">{opponent.abbreviation}</text>
           {/* Goal lines */}
-          <line x1="60"  y1="0" x2="60"  y2="120" stroke="white" stroke-width="2"/>
-          <line x1="540" y1="0" x2="540" y2="120" stroke="white" stroke-width="2"/>
+          <line x1="60"  y1="0" x2="60"  y2="72" stroke="white" stroke-width="2"/>
+          <line x1="540" y1="0" x2="540" y2="72" stroke="white" stroke-width="2"/>
           {/* 10-yard lines */}
           {[108,156,204,252,348,396,444,492].map(x => (
-            <line x1={x} y1="0" x2={x} y2="120" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+            <line x1={x} y1="0" x2={x} y2="72" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
           ))}
           {/* Midfield brighter */}
-          <line x1="300" y1="0" x2="300" y2="120" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+          <line x1="300" y1="0" x2="300" y2="72" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
           {/* Yard numbers */}
           {([10,20,30,40,50,40,30,20,10] as number[]).map((n,i) => (
-            <text x={108 + i*48} y="22" class="gd-yd-num" opacity={n===50?'0.7':'0.5'}>{n}</text>
+            <text x={108 + i*48} y="13" class="gd-yd-num" opacity={n===50?'0.7':'0.5'}>{n}</text>
           ))}
           {/* First-down line */}
-          <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="120" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
-          {/* Football emoji — native platform rendering, no SVG path needed */}
-          <text id="gdBall" x={bx} y="75" font-size="30" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
+          <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="72" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
+          {/* Football emoji */}
+          <text id="gdBall" x={bx} y="45" font-size="14" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
         </svg>
         {/* Info row */}
         <div class="gd-field-info">

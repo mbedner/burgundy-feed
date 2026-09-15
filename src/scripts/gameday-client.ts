@@ -6,6 +6,55 @@
 const DEFAULT_TEAM_ID   = '28';
 const DEFAULT_TEAM_ABBR = 'WAS';
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+
+function parseFieldPos(sit: any, wasId: string, wasAbbr: string) {
+  const rawPoss = sit.possessionText ?? '';
+  const rawDt   = sit.downDistanceText ?? '';
+  const pm = rawPoss.match(/^(\w+)\s+(\d+)$/) ?? rawDt.match(/at\s+(\w+)\s+(\d+)/i);
+  let fp = 50;
+  if (pm) {
+    const t = pm[1].toUpperCase();
+    const y = parseInt(pm[2]);
+    const alt = wasAbbr === 'WAS' ? 'WSH' : wasAbbr === 'WSH' ? 'WAS' : '';
+    fp = (t === wasAbbr || (alt && t === alt)) ? y : 100 - y;
+  } else if (sit.yardLine) {
+    fp = sit.possessionTeam?.id === wasId ? sit.yardLine : 100 - sit.yardLine;
+  }
+  fp = Math.max(0, Math.min(100, fp));
+  const bx     = 60 + (fp / 100) * 480;
+  const isWas  = sit.possessionTeam?.id === wasId;
+  const fdp    = Math.max(3, Math.min(97, isWas ? fp + (sit.distance ?? 10) : fp - (sit.distance ?? 10)));
+  const fdx    = 60 + (fdp / 100) * 480;
+  return { bx, fdx, isWas };
+}
+
+function buildFieldSvg(bx: number, fdx: number, wasAbbr: string, oppAbbr: string, wasColor: string, oppColor: string): string {
+  const stripes = Array.from({length: 10}, (_, i) =>
+    `<rect x="${60+i*48}" y="0" width="48" height="72" fill="${i%2===0?'#2e7a14':'#1a4e08'}"/>`,
+  ).join('');
+  const ydLines = [108,156,204,252,348,396,444,492].map(x =>
+    `<line x1="${x}" y1="0" x2="${x}" y2="72" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>`,
+  ).join('');
+  const ydNums = [10,20,30,40,50,40,30,20,10].map((n,i) =>
+    `<text x="${108+i*48}" y="13" class="gd-yd-num" opacity="${n===50?'0.7':'0.5'}">${n}</text>`,
+  ).join('');
+  const bxR = Math.round(bx), fdxR = Math.round(fdx);
+  return `<svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+  ${stripes}
+  <rect x="0" y="0" width="60" height="72" fill="${wasColor}"/>
+  <rect x="540" y="0" width="60" height="72" fill="${oppColor}"/>
+  <text id="gdFieldHome" x="30" y="36" class="gd-ez-label">${wasAbbr}</text>
+  <text id="gdFieldOpp"  x="570" y="36" class="gd-ez-label">${oppAbbr}</text>
+  <line x1="60"  y1="0" x2="60"  y2="72" stroke="white" stroke-width="2"/>
+  <line x1="540" y1="0" x2="540" y2="72" stroke="white" stroke-width="2"/>
+  ${ydLines}
+  <line x1="300" y1="0" x2="300" y2="72" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+  ${ydNums}
+  <line id="gdFDLine" x1="${fdxR}" y1="0" x2="${fdxR}" y2="72" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
+  <text id="gdBall" x="${bxR}" y="45" font-size="14" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
+</svg>`;
+}
+
 const SCORE_TYPES: Record<string, string> = {
   '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG',
   '70':'Safety','57':'XP','58':'XP','69':'2PT',
@@ -76,7 +125,7 @@ export async function gdClientDetect(): Promise<void> {
     // Fetch summary for plays + situation
     let scoringPlays: any[] = [];
     let recentPlays:  any[] = [];
-    let situation:    { text: string; pos: string } | null = null;
+    let liveSit: any = null;
 
     try {
       const sumRes = await fetch(`${BASE}/summary?event=${gameId}`);
@@ -86,10 +135,7 @@ export async function gdClientDetect(): Promise<void> {
 
         const sit = comp.situation || sum.situation;
         if (sit && phase === 'live') {
-          situation = {
-            text: sit.downDistanceText || '',
-            pos:  sit.possession?.id || sit.possessionTeam?.id || '',
-          };
+          liveSit = sit;
         }
 
         if (phase === 'live' || phase === 'halftime') {
@@ -128,6 +174,14 @@ export async function gdClientDetect(): Promise<void> {
     const oppColorVal = oppC?.team?.color ? `#${oppC.team.color}` : '#555555';
     const periodLabel = phase === 'halftime' ? 'HALF' : period > 4 ? 'OT' : `Q${period}`;
 
+    let fieldHtml = '';
+    let initPossText = '';
+    if (liveSit) {
+      const fp = parseFieldPos(liveSit, wasId, wasAbbr);
+      initPossText = fp.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
+      fieldHtml = buildFieldSvg(fp.bx, fp.fdx, wasAbbr, oppAbbr, wasColor, oppColorVal);
+    }
+
     function playHtml(p: any, showScores: boolean): string {
       const isScore = !!p.scoringPlay;
       const badge   = isScore ? (SCORE_TYPES[p?.type?.id || ''] || '') : '';
@@ -158,6 +212,15 @@ export async function gdClientDetect(): Promise<void> {
     const section = document.createElement('section');
     section.id = 'gameday';
     section.innerHTML = `
+      <style>
+        .gd-field{border-top:1px solid var(--gd-border,#eae8e4)}
+        .gd-field-svg{display:block;width:100%;height:auto}
+        .gd-ez-label{fill:rgba(255,255,255,0.75);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
+        .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle;dominant-baseline:hanging}
+        .gd-field-info{display:flex;align-items:center;justify-content:center;gap:16px;padding:5px 20px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px;font-weight:600}
+        .gd-field-info .gd-possession{color:#e8a820}
+        .gd-field-info .gd-down-dist{color:var(--gd-text,#1a1918)}
+      </style>
       <div class="gd-banner" id="gdBanner" data-game-id="${gameId}" data-phase="${phase}"
            style="--was-color:${wasColor};--opp-color:${oppColorVal}">
         <div class="gd-scorebar">
@@ -200,10 +263,13 @@ export async function gdClientDetect(): Promise<void> {
             ${oppLogo ? `<img class="gd-logo" src="${oppLogo}" alt="${oppAbbr}" loading="eager" />` : ''}
           </div>
         </div>
-        ${situation ? `
-          <div class="gd-situation" id="gdSituation">
-            <span class="gd-possession">${situation.pos === wasId ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr}</span>
-            <span class="gd-down-dist">${situation.text}</span>
+        ${fieldHtml ? `
+          <div class="gd-field" id="gdSituation">
+            ${fieldHtml}
+            <div class="gd-field-info">
+              <span class="gd-possession" id="gdPossession">${initPossText}</span>
+              <span class="gd-down-dist" id="gdDownDist"></span>
+            </div>
           </div>` : ''}
         ${hasPlays ? `
           <div class="gd-tabs" role="tablist">
@@ -255,12 +321,16 @@ export async function gdClientDetect(): Promise<void> {
           const pel = document.getElementById('gdPeriod'); if (pel) pel.textContent = isH ? 'HALF' : p2 > 4 ? 'OT' : `Q${p2}`;
           const cel = document.getElementById('gdClock');  if (cel) cel.textContent = c2;
           const sit2 = hc?.situation;
-          const sel  = document.getElementById('gdSituation');
-          if (sel && sit2) {
-            const pp = sel.querySelector('.gd-possession');
-            const dd = sel.querySelector('.gd-down-dist');
-            if (pp) pp.textContent = sit2.possessionTeam?.id === wasId ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr;
-            if (dd) dd.textContent = sit2.downDistanceText ?? '';
+          if (sit2) {
+            const fp2 = parseFieldPos(sit2, wasId, wasAbbr);
+            const ballEl = document.getElementById('gdBall');
+            const fdEl   = document.getElementById('gdFDLine');
+            if (ballEl) ballEl.setAttribute('x', String(Math.round(fp2.bx)));
+            if (fdEl)   { fdEl.setAttribute('x1', String(Math.round(fp2.fdx))); fdEl.setAttribute('x2', String(Math.round(fp2.fdx))); }
+            const possEl = document.getElementById('gdPossession');
+            const ddEl   = document.getElementById('gdDownDist');
+            if (possEl) possEl.textContent = fp2.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
+            if (ddEl)   ddEl.textContent = sit2.downDistanceText ?? '';
           }
           if (st?.type?.state === 'post') { window.location.reload(); }
         } catch { /* silent — retry next poll */ }
