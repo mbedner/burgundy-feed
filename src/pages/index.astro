@@ -327,11 +327,11 @@ if (articles.length === 0) {
 // ── Game Day Detection ────────────────────────────────────────────────────────
 const VALID_PHASES = new Set(['pregame', 'live', 'halftime', 'postgame']);
 const forcePhase = Astro.url.searchParams.get('gameday') as GamePhase | null;
+const teamOverride = Astro.url.searchParams.get('team') ?? undefined;
 let gameDay: GameDayInfo | null = null;
-if (forcePhase && VALID_PHASES.has(forcePhase)) {
+if (forcePhase && VALID_PHASES.has(forcePhase) && !teamOverride) {
   gameDay = getMockGame(forcePhase);
 } else {
-  const teamOverride = Astro.url.searchParams.get('team') ?? undefined;
   try { gameDay = await detectGameDay(teamOverride); } catch {}
 }
 
