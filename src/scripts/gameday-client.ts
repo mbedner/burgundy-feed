@@ -7,6 +7,27 @@ const DEFAULT_TEAM_ID   = '28';
 const DEFAULT_TEAM_ABBR = 'WAS';
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 
+function extractWinPct(d: any, wasIsHome: boolean): number | null {
+  // 1. winProbability array (play-by-play, last entry = current)
+  const wp = d?.winProbability ?? d?.winprobability;
+  if (Array.isArray(wp) && wp.length > 0) {
+    const last = wp[wp.length - 1];
+    const hwp  = last?.homeWinPercentage ?? last?.homewinpercentage;
+    const n    = Number(hwp);
+    if (!isNaN(n) && n >= 0 && n <= 1) {
+      const homePct = Math.round(n * 100);
+      return wasIsHome ? homePct : 100 - homePct;
+    }
+  }
+  // 2. predictor.homeTeam.gameProjection (0-100 string, not 0-1 decimal)
+  const pred = d?.predictor ?? d?.header?.competitions?.[0]?.predictor;
+  const homeProj = parseFloat(String(pred?.homeTeam?.gameProjection ?? ''));
+  if (!isNaN(homeProj) && homeProj >= 0 && homeProj <= 100) {
+    return wasIsHome ? Math.round(homeProj) : Math.round(100 - homeProj);
+  }
+  return null;
+}
+
 function parseFieldPos(sit: any, wasId: string, wasAbbr: string) {
   const rawPoss = sit.possessionText ?? '';
   const rawDt   = sit.downDistanceText ?? '';
@@ -159,11 +180,9 @@ export async function gdClientDetect(): Promise<void> {
           liveSit = sit;
         }
 
-        const wp = sum?.winProbability;
-        if (wp?.length && (phase === 'live' || phase === 'halftime')) {
-          const last   = wp[wp.length - 1];
-          const homePct = Math.round((last.homeWinPercentage ?? 0.5) * 100);
-          initWasPct   = wasIsHome ? homePct : 100 - homePct;
+        if (phase === 'live' || phase === 'halftime') {
+          initWasPct = extractWinPct(sum, wasIsHome)
+                    ?? extractWinPct(comp, wasIsHome); // scoreboard competition predictor
         }
 
         if (phase === 'live' || phase === 'halftime') {
@@ -392,11 +411,8 @@ export async function gdClientDetect(): Promise<void> {
             const cel = document.getElementById('gdClock');  if (cel) cel.textContent = c2;
 
             // Win probability
-            const wp = d?.winProbability;
-            if (wp?.length) {
-              const last      = wp[wp.length - 1];
-              const homePct   = Math.round((last.homeWinPercentage ?? 0.5) * 100);
-              const wasPct    = wasIsHome ? homePct : 100 - homePct;
+            const wasPct = extractWinPct(d, wasIsHome);
+            if (wasPct !== null) {
               const oppPct    = 100 - wasPct;
               const wasWpEl   = document.getElementById('gdWinProbWas');
               const oppWpEl   = document.getElementById('gdWinProbOpp');
@@ -439,11 +455,12 @@ export async function gdClientDetect(): Promise<void> {
             if (st?.type?.state === 'post') { window.location.reload(); }
           }
 
-          // ── Scoreboard (situation — most reliable source for field position) ──
+          // ── Scoreboard (situation + fallback win prob) ────────────────────────
           if (rBoard.ok) {
-            const board = await rBoard.json() as any;
-            const evt   = (board.events as any[] || []).find((e: any) => e.id === gameId);
-            const sit2  = evt?.competitions?.[0]?.situation;
+            const board  = await rBoard.json() as any;
+            const evt    = (board.events as any[] || []).find((e: any) => e.id === gameId);
+            const evtComp = evt?.competitions?.[0];
+            const sit2   = evtComp?.situation;
             if (sit2) {
               const fp2    = parseFieldPos(sit2, wasId, wasAbbr);
               const ballEl = document.getElementById('gdBall') as HTMLElement | null;
@@ -454,6 +471,19 @@ export async function gdClientDetect(): Promise<void> {
               const ddEl   = document.getElementById('gdDownDist');
               if (possEl) possEl.textContent = fp2.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
               if (ddEl)   ddEl.textContent   = sit2.downDistanceText ?? '';
+            }
+            // Win prob fallback from scoreboard predictor (if summary didn't have it)
+            const wpBoard = extractWinPct(evtComp, wasIsHome) ?? extractWinPct(evt, wasIsHome);
+            if (wpBoard !== null) {
+              const oppPct    = 100 - wpBoard;
+              const wasWpEl   = document.getElementById('gdWinProbWas');
+              const oppWpEl   = document.getElementById('gdWinProbOpp');
+              const fillEl    = document.getElementById('gdWinProbFill');
+              const fillOppEl = document.getElementById('gdWinProbFillOpp');
+              if (wasWpEl && wasWpEl.textContent === '—') wasWpEl.textContent = `${wpBoard}%`;
+              if (oppWpEl && oppWpEl.textContent === '—') oppWpEl.textContent = `${oppPct}%`;
+              if (fillEl)    fillEl.style.width    = `${wpBoard}%`;
+              if (fillOppEl) fillOppEl.style.width = `${oppPct}%`;
             }
           }
         } catch { /* silent — retry next poll */ }
