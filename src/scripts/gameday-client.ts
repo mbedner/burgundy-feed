@@ -32,26 +32,45 @@ function buildFieldSvg(bx: number, fdx: number, wasAbbr: string, oppAbbr: string
   const stripes = Array.from({length: 10}, (_, i) =>
     `<rect x="${60+i*48}" y="0" width="48" height="72" fill="${i%2===0?'#2e7a14':'#1a4e08'}"/>`,
   ).join('');
+  // 10-yard lines
   const ydLines = [108,156,204,252,348,396,444,492].map(x =>
-    `<line x1="${x}" y1="0" x2="${x}" y2="72" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>`,
+    `<line x1="${x}" y1="0" x2="${x}" y2="72" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>`,
+  ).join('');
+  // 5-yard hash marks at both sidelines
+  const hashes = Array.from({length: 21}, (_,i) => 60 + i*24).map(x =>
+    `<line x1="${x}" y1="0" x2="${x}" y2="9" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>` +
+    `<line x1="${x}" y1="63" x2="${x}" y2="72" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>`,
+  ).join('');
+  // Interior hash marks (NFL-style infield marks at ~y=29 and y=43)
+  const intHashes = Array.from({length: 21}, (_,i) => 60 + i*24).map(x =>
+    `<line x1="${x}" y1="29" x2="${x}" y2="34" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>` +
+    `<line x1="${x}" y1="38" x2="${x}" y2="43" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>`,
   ).join('');
   const ydNums = [10,20,30,40,50,40,30,20,10].map((n,i) =>
-    `<text x="${108+i*48}" y="13" class="gd-yd-num" opacity="${n===50?'0.7':'0.5'}">${n}</text>`,
+    `<text x="${108+i*48}" y="15" class="gd-yd-num" opacity="${n===50?'0.75':'0.55'}">${n}</text>` +
+    `<text x="${108+i*48}" y="64" class="gd-yd-num" opacity="${n===50?'0.75':'0.55'}">${n}</text>`,
   ).join('');
   const bxR = Math.round(bx), fdxR = Math.round(fdx);
   return `<svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+  <defs>
+    <linearGradient id="gdDepth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="rgba(0,0,0,0.38)"/>
+      <stop offset="45%"  stop-color="rgba(0,0,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+  </defs>
   ${stripes}
-  <rect x="0" y="0" width="60" height="72" fill="${wasColor}"/>
+  <rect x="0"   y="0" width="60" height="72" fill="${wasColor}"/>
   <rect x="540" y="0" width="60" height="72" fill="${oppColor}"/>
-  <text id="gdFieldHome" x="30" y="36" class="gd-ez-label">${wasAbbr}</text>
+  <text id="gdFieldHome" x="30"  y="36" class="gd-ez-label">${wasAbbr}</text>
   <text id="gdFieldOpp"  x="570" y="36" class="gd-ez-label">${oppAbbr}</text>
-  <line x1="60"  y1="0" x2="60"  y2="72" stroke="white" stroke-width="2"/>
-  <line x1="540" y1="0" x2="540" y2="72" stroke="white" stroke-width="2"/>
-  ${ydLines}
-  <line x1="300" y1="0" x2="300" y2="72" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
-  ${ydNums}
+  <line x1="60"  y1="0" x2="60"  y2="72" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+  <line x1="540" y1="0" x2="540" y2="72" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+  <line x1="300" y1="0" x2="300" y2="72" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  ${ydLines}${hashes}${intHashes}${ydNums}
+  <rect x="0" y="0" width="600" height="72" fill="url(#gdDepth)" pointer-events="none"/>
   <line id="gdFDLine" x1="${fdxR}" y1="0" x2="${fdxR}" y2="72" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
-  <text id="gdBall" x="${bxR}" y="45" font-size="14" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
+  <text id="gdBall" x="${bxR}" y="44" font-size="13" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
 </svg>`;
 }
 
@@ -226,23 +245,23 @@ export async function gdClientDetect(): Promise<void> {
     section.innerHTML = `
       <style>
         .gd-field{border-top:1px solid var(--gd-border,#eae8e4);overflow:hidden}
-        .gd-field-perspective{perspective:600px;perspective-origin:50% 0%;overflow:hidden;background:#1a4e08}
-        .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(18deg);transform-origin:bottom center;transform-style:preserve-3d}
-        .gd-ez-label{fill:rgba(255,255,255,0.75);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
-        .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle;dominant-baseline:hanging}
-        .gd-field-info{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 16px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px}
+        .gd-field-perspective{perspective:110px;perspective-origin:50% 100%;overflow:hidden}
+        .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(54deg);transform-origin:bottom center}
+        .gd-field-slab{height:12px;background:linear-gradient(to bottom,#1a5c0a 0%,#091e04 100%)}
+        .gd-ez-label{fill:rgba(255,255,255,0.85);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
+        .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle}
+        .gd-field-info{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 16px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px}
         .gd-possession{color:#e8a820;font-weight:700;white-space:nowrap}
-        .gd-down-dist{color:var(--gd-text,#1a1918);font-weight:700;text-align:center;white-space:nowrap}
-        .gd-ball-on{color:var(--gd-text-3,#6a6058);font-size:11px;text-align:right;white-space:nowrap}
-        .gd-winprob{display:flex;align-items:center;gap:8px;padding:6px 16px 8px;font-size:11px;font-weight:700}
-        .gd-winprob-label{color:var(--gd-text-3,#6a6058);flex:0 0 auto;min-width:32px}
+        .gd-down-dist{color:var(--gd-text,#1a1918);font-weight:700;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+        .gd-winprob{display:flex;align-items:center;gap:6px;padding:5px 16px 8px;font-size:11px;font-weight:700}
+        .gd-winprob-label{color:var(--gd-text-3,#6a6058);flex:0 0 auto;min-width:28px}
         .gd-winprob-label--opp{text-align:right}
         .gd-winprob-bar{flex:1;height:5px;border-radius:3px;background:var(--gd-border,#e0ddd9);overflow:hidden;position:relative}
         .gd-winprob-fill{height:100%;border-radius:3px;background:var(--was-color,#9b1535);transition:width 0.6s ease;position:absolute;left:0;top:0}
-        .gd-winprob-pct{flex:0 0 auto;font-variant-numeric:tabular-nums;min-width:30px}
+        .gd-winprob-pct{flex:0 0 auto;font-variant-numeric:tabular-nums;min-width:28px}
         .gd-winprob-pct--was{color:var(--was-color,#9b1535);text-align:left}
         .gd-winprob-pct--opp{color:var(--opp-color,#555);text-align:right}
-        .gd-winprob-title{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gd-text-4,#9c9590);text-align:center;flex:0 0 auto;width:60px}
+        .gd-winprob-title{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gd-text-4,#9c9590);text-align:center;flex:0 0 auto;width:56px}
       </style>
       <div class="gd-banner" id="gdBanner" data-game-id="${gameId}" data-phase="${phase}"
            style="--was-color:${wasColor};--opp-color:${oppColorVal}">
@@ -289,24 +308,24 @@ export async function gdClientDetect(): Promise<void> {
         ${fieldHtml ? `
           <div class="gd-field" id="gdSituation">
             <div class="gd-field-perspective">${fieldHtml}</div>
+            <div class="gd-field-slab"></div>
             <div class="gd-field-info">
               <span class="gd-possession" id="gdPossession">${initPossText}</span>
               <span class="gd-down-dist" id="gdDownDist">${initDownDist}</span>
-              <span class="gd-ball-on" id="gdBallOn">${initBallOn}</span>
             </div>
-            ${initWasPct !== null ? `
+            ${phase === 'live' || phase === 'halftime' ? `
             <div class="gd-winprob">
-              <span class="gd-winprob-pct gd-winprob-pct--was" id="gdWinProbWas">${initWasPct}%</span>
+              <span class="gd-winprob-pct gd-winprob-pct--was" id="gdWinProbWas">${initWasPct !== null ? initWasPct+'%' : '—'}</span>
               <span class="gd-winprob-label">${wasAbbr}</span>
               <div class="gd-winprob-bar">
-                <div class="gd-winprob-fill" id="gdWinProbFill" style="width:${initWasPct}%"></div>
+                <div class="gd-winprob-fill" id="gdWinProbFill" style="width:${initWasPct ?? 50}%"></div>
               </div>
               <span class="gd-winprob-title">Win Prob</span>
               <div class="gd-winprob-bar" style="transform:scaleX(-1)">
-                <div class="gd-winprob-fill" id="gdWinProbFillOpp" style="width:${100-initWasPct}%;background:var(--opp-color,#555)"></div>
+                <div class="gd-winprob-fill" id="gdWinProbFillOpp" style="width:${initWasPct !== null ? 100-initWasPct : 50}%;background:var(--opp-color,#555)"></div>
               </div>
               <span class="gd-winprob-label gd-winprob-label--opp">${oppAbbr}</span>
-              <span class="gd-winprob-pct gd-winprob-pct--opp" id="gdWinProbOpp">${100-initWasPct}%</span>
+              <span class="gd-winprob-pct gd-winprob-pct--opp" id="gdWinProbOpp">${initWasPct !== null ? (100-initWasPct)+'%' : '—'}</span>
             </div>` : ''}
           </div>` : ''}
         ${hasPlays ? `
@@ -343,85 +362,94 @@ export async function gdClientDetect(): Promise<void> {
     if (phase === 'live' || phase === 'halftime') {
       setInterval(async () => {
         try {
-          const r = await fetch(`${BASE}/summary?event=${gameId}`);
-          if (!r.ok) return;
-          const d = await r.json() as any;
-          const hc    = d?.header?.competitions?.[0];
-          const st    = hc?.status;
-          const comps = hc?.competitors ?? [];
-          const wC    = comps.find((c: any) => c.id === wasId);
-          const oC    = comps.find((c: any) => c.id !== wasId);
-          if (wC) { const el = document.getElementById('gdWasScore'); if (el) el.textContent = wC.score ?? '0'; }
-          if (oC) { const el = document.getElementById('gdOppScore'); if (el) el.textContent = oC.score ?? '0'; }
+          // Fetch both in parallel: summary for plays/wp, scoreboard for situation (more reliable)
+          const [rSum, rBoard] = await Promise.all([
+            fetch(`${BASE}/summary?event=${gameId}`),
+            fetch(`${BASE}/scoreboard`),
+          ]);
 
-          const p2  = st?.period ?? 1;
-          const c2  = st?.displayClock ?? '0:00';
-          const isH = (st?.type?.description || '').toLowerCase().includes('halftime');
-          const pel = document.getElementById('gdPeriod'); if (pel) pel.textContent = isH ? 'HALF' : p2 > 4 ? 'OT' : `Q${p2}`;
-          const cel = document.getElementById('gdClock');  if (cel) cel.textContent = c2;
+          // ── Summary (plays, win probability, scores) ──────────────────────
+          if (rSum.ok) {
+            const d   = await rSum.json() as any;
+            const hc  = d?.header?.competitions?.[0];
+            const st  = hc?.status;
+            const comps = hc?.competitors ?? [];
+            const wC  = comps.find((c: any) => c.id === wasId);
+            const oC  = comps.find((c: any) => c.id !== wasId);
+            if (wC) { const el = document.getElementById('gdWasScore'); if (el) el.textContent = wC.score ?? '0'; }
+            if (oC) { const el = document.getElementById('gdOppScore'); if (el) el.textContent = oC.score ?? '0'; }
 
-          // Situation — check header first, fall back to top-level
-          const sit2 = hc?.situation ?? d?.situation;
-          if (sit2) {
-            const fp2 = parseFieldPos(sit2, wasId, wasAbbr);
-            const ballEl = document.getElementById('gdBall');
-            const fdEl   = document.getElementById('gdFDLine');
-            if (ballEl) ballEl.setAttribute('x', String(Math.round(fp2.bx)));
-            if (fdEl)   { fdEl.setAttribute('x1', String(Math.round(fp2.fdx))); fdEl.setAttribute('x2', String(Math.round(fp2.fdx))); }
-            const possEl = document.getElementById('gdPossession');
-            const ddEl   = document.getElementById('gdDownDist');
-            const boEl   = document.getElementById('gdBallOn');
-            if (possEl) possEl.textContent = fp2.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
-            if (ddEl)   ddEl.textContent   = sit2.downDistanceText ?? '';
-            if (boEl)   boEl.textContent   = sit2.possessionText ?? '';
-          }
+            const p2  = st?.period ?? 1;
+            const c2  = st?.displayClock ?? '0:00';
+            const isH = (st?.type?.description || '').toLowerCase().includes('halftime');
+            const pel = document.getElementById('gdPeriod'); if (pel) pel.textContent = isH ? 'HALF' : p2 > 4 ? 'OT' : `Q${p2}`;
+            const cel = document.getElementById('gdClock');  if (cel) cel.textContent = c2;
 
-          // Win probability
-          const wp = d?.winProbability;
-          if (wp?.length) {
-            const last       = wp[wp.length - 1];
-            const homePct    = Math.round((last.homeWinPercentage ?? 0.5) * 100);
-            const wasPct     = wasIsHome ? homePct : 100 - homePct;
-            const oppPct     = 100 - wasPct;
-            const wasWpEl    = document.getElementById('gdWinProbWas');
-            const oppWpEl    = document.getElementById('gdWinProbOpp');
-            const fillEl     = document.getElementById('gdWinProbFill');
-            const fillOppEl  = document.getElementById('gdWinProbFillOpp');
-            if (wasWpEl)   wasWpEl.textContent  = `${wasPct}%`;
-            if (oppWpEl)   oppWpEl.textContent  = `${oppPct}%`;
-            if (fillEl)    fillEl.style.width   = `${wasPct}%`;
-            if (fillOppEl) fillOppEl.style.width = `${oppPct}%`;
-          }
+            // Win probability
+            const wp = d?.winProbability;
+            if (wp?.length) {
+              const last      = wp[wp.length - 1];
+              const homePct   = Math.round((last.homeWinPercentage ?? 0.5) * 100);
+              const wasPct    = wasIsHome ? homePct : 100 - homePct;
+              const oppPct    = 100 - wasPct;
+              const wasWpEl   = document.getElementById('gdWinProbWas');
+              const oppWpEl   = document.getElementById('gdWinProbOpp');
+              const fillEl    = document.getElementById('gdWinProbFill');
+              const fillOppEl = document.getElementById('gdWinProbFillOpp');
+              if (wasWpEl)   wasWpEl.textContent   = `${wasPct}%`;
+              if (oppWpEl)   oppWpEl.textContent   = `${oppPct}%`;
+              if (fillEl)    fillEl.style.width    = `${wasPct}%`;
+              if (fillOppEl) fillOppEl.style.width = `${oppPct}%`;
+            }
 
-          // Plays list
-          const drives = d?.drives ?? {};
-          const plays: any[] = [];
-          for (const p of ([...(drives.current?.plays ?? [])].reverse())) plays.push(p);
-          for (const drv of ([...(drives.previous ?? [])].reverse())) {
-            for (const p of ([...(drv.plays ?? [])].reverse())) {
-              plays.push(p);
+            // Plays list
+            const drives = d?.drives ?? {};
+            const plays: any[] = [];
+            for (const p of ([...(drives.current?.plays ?? [])].reverse())) plays.push(p);
+            for (const drv of ([...(drives.previous ?? [])].reverse())) {
+              for (const p of ([...(drv.plays ?? [])].reverse())) {
+                plays.push(p);
+                if (plays.length >= 10) break;
+              }
               if (plays.length >= 10) break;
             }
-            if (plays.length >= 10) break;
-          }
-          const listEl = document.getElementById('gdPlaysList');
-          if (listEl && plays.length) {
-            const stMap: Record<string,string> = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
-            listEl.innerHTML = plays.slice(0, 10).map((p: any) => {
-              const isScore = !!p.scoringPlay;
-              const badge   = isScore ? (stMap[p?.type?.id ?? ''] ?? '') : '';
-              return `<div class="gd-play${isScore ? ' gd-play--scoring' : ''}">
-                <span class="gd-play-meta">
-                  ${badge ? `<span class="gd-play-score-type">${badge}</span>` : ''}
-                  <span class="gd-play-period">Q${p?.period?.number ?? p?.period ?? '?'}</span>
-                  <span class="gd-play-clock">${p?.clock?.displayValue ?? p?.clock ?? '—'}</span>
-                </span>
-                <span class="gd-play-text">${p?.text || ''}</span>
-              </div>`;
-            }).join('');
+            const listEl = document.getElementById('gdPlaysList');
+            if (listEl && plays.length) {
+              const stMap: Record<string,string> = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
+              listEl.innerHTML = plays.slice(0, 10).map((p: any) => {
+                const isScore = !!p.scoringPlay;
+                const badge   = isScore ? (stMap[p?.type?.id ?? ''] ?? '') : '';
+                return `<div class="gd-play${isScore ? ' gd-play--scoring' : ''}">
+                  <span class="gd-play-meta">
+                    ${badge ? `<span class="gd-play-score-type">${badge}</span>` : ''}
+                    <span class="gd-play-period">Q${p?.period?.number ?? p?.period ?? '?'}</span>
+                    <span class="gd-play-clock">${p?.clock?.displayValue ?? p?.clock ?? '—'}</span>
+                  </span>
+                  <span class="gd-play-text">${p?.text || ''}</span>
+                </div>`;
+              }).join('');
+            }
+
+            if (st?.type?.state === 'post') { window.location.reload(); }
           }
 
-          if (st?.type?.state === 'post') { window.location.reload(); }
+          // ── Scoreboard (situation — most reliable source for field position) ──
+          if (rBoard.ok) {
+            const board = await rBoard.json() as any;
+            const evt   = (board.events as any[] || []).find((e: any) => e.id === gameId);
+            const sit2  = evt?.competitions?.[0]?.situation;
+            if (sit2) {
+              const fp2    = parseFieldPos(sit2, wasId, wasAbbr);
+              const ballEl = document.getElementById('gdBall');
+              const fdEl   = document.getElementById('gdFDLine');
+              if (ballEl) ballEl.setAttribute('x', String(Math.round(fp2.bx)));
+              if (fdEl)   { fdEl.setAttribute('x1', String(Math.round(fp2.fdx))); fdEl.setAttribute('x2', String(Math.round(fp2.fdx))); }
+              const possEl = document.getElementById('gdPossession');
+              const ddEl   = document.getElementById('gdDownDist');
+              if (possEl) possEl.textContent = fp2.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
+              if (ddEl)   ddEl.textContent   = sit2.downDistanceText ?? '';
+            }
+          }
         } catch { /* silent — retry next poll */ }
       }, 15_000);
     }
