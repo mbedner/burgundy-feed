@@ -125,7 +125,8 @@ export async function gdClientDetect(): Promise<void> {
     // Fetch summary for plays + situation
     let scoringPlays: any[] = [];
     let recentPlays:  any[] = [];
-    let liveSit: any = null;
+    let liveSit:      any = null;
+    let initWasPct:   number | null = null;
 
     try {
       const sumRes = await fetch(`${BASE}/summary?event=${gameId}`);
@@ -133,9 +134,16 @@ export async function gdClientDetect(): Promise<void> {
         const sum = await sumRes.json() as any;
         scoringPlays = sum.scoringPlays || [];
 
-        const sit = comp.situation || sum.situation;
+        const sit = sum?.header?.competitions?.[0]?.situation ?? comp.situation ?? sum.situation;
         if (sit && phase === 'live') {
           liveSit = sit;
+        }
+
+        const wp = sum?.winProbability;
+        if (wp?.length && (phase === 'live' || phase === 'halftime')) {
+          const last   = wp[wp.length - 1];
+          const homePct = Math.round((last.homeWinPercentage ?? 0.5) * 100);
+          initWasPct   = wasIsHome ? homePct : 100 - homePct;
         }
 
         if (phase === 'live' || phase === 'halftime') {
@@ -174,12 +182,16 @@ export async function gdClientDetect(): Promise<void> {
     const oppColorVal = oppC?.team?.color ? `#${oppC.team.color}` : '#555555';
     const periodLabel = phase === 'halftime' ? 'HALF' : period > 4 ? 'OT' : `Q${period}`;
 
-    let fieldHtml = '';
-    let initPossText = '';
+    let fieldHtml      = '';
+    let initPossText   = '';
+    let initDownDist   = '';
+    let initBallOn     = '';
     if (liveSit) {
-      const fp = parseFieldPos(liveSit, wasId, wasAbbr);
-      initPossText = fp.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
-      fieldHtml = buildFieldSvg(fp.bx, fp.fdx, wasAbbr, oppAbbr, wasColor, oppColorVal);
+      const fp       = parseFieldPos(liveSit, wasId, wasAbbr);
+      initPossText   = fp.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
+      initDownDist   = liveSit.downDistanceText ?? '';
+      initBallOn     = liveSit.possessionText ?? '';
+      fieldHtml      = buildFieldSvg(fp.bx, fp.fdx, wasAbbr, oppAbbr, wasColor, oppColorVal);
     }
 
     function playHtml(p: any, showScores: boolean): string {
@@ -213,13 +225,24 @@ export async function gdClientDetect(): Promise<void> {
     section.id = 'gameday';
     section.innerHTML = `
       <style>
-        .gd-field{border-top:1px solid var(--gd-border,#eae8e4)}
-        .gd-field-svg{display:block;width:100%;height:auto}
+        .gd-field{border-top:1px solid var(--gd-border,#eae8e4);overflow:hidden}
+        .gd-field-perspective{perspective:600px;perspective-origin:50% 0%;overflow:hidden;background:#1a4e08}
+        .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(18deg);transform-origin:bottom center;transform-style:preserve-3d}
         .gd-ez-label{fill:rgba(255,255,255,0.75);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
         .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle;dominant-baseline:hanging}
-        .gd-field-info{display:flex;align-items:center;justify-content:center;gap:16px;padding:5px 20px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px;font-weight:600}
-        .gd-field-info .gd-possession{color:#e8a820}
-        .gd-field-info .gd-down-dist{color:var(--gd-text,#1a1918)}
+        .gd-field-info{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:6px 16px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px}
+        .gd-possession{color:#e8a820;font-weight:700;white-space:nowrap}
+        .gd-down-dist{color:var(--gd-text,#1a1918);font-weight:700;text-align:center;white-space:nowrap}
+        .gd-ball-on{color:var(--gd-text-3,#6a6058);font-size:11px;text-align:right;white-space:nowrap}
+        .gd-winprob{display:flex;align-items:center;gap:8px;padding:6px 16px 8px;font-size:11px;font-weight:700}
+        .gd-winprob-label{color:var(--gd-text-3,#6a6058);flex:0 0 auto;min-width:32px}
+        .gd-winprob-label--opp{text-align:right}
+        .gd-winprob-bar{flex:1;height:5px;border-radius:3px;background:var(--gd-border,#e0ddd9);overflow:hidden;position:relative}
+        .gd-winprob-fill{height:100%;border-radius:3px;background:var(--was-color,#9b1535);transition:width 0.6s ease;position:absolute;left:0;top:0}
+        .gd-winprob-pct{flex:0 0 auto;font-variant-numeric:tabular-nums;min-width:30px}
+        .gd-winprob-pct--was{color:var(--was-color,#9b1535);text-align:left}
+        .gd-winprob-pct--opp{color:var(--opp-color,#555);text-align:right}
+        .gd-winprob-title{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gd-text-4,#9c9590);text-align:center;flex:0 0 auto;width:60px}
       </style>
       <div class="gd-banner" id="gdBanner" data-game-id="${gameId}" data-phase="${phase}"
            style="--was-color:${wasColor};--opp-color:${oppColorVal}">
@@ -265,11 +288,26 @@ export async function gdClientDetect(): Promise<void> {
         </div>
         ${fieldHtml ? `
           <div class="gd-field" id="gdSituation">
-            ${fieldHtml}
+            <div class="gd-field-perspective">${fieldHtml}</div>
             <div class="gd-field-info">
               <span class="gd-possession" id="gdPossession">${initPossText}</span>
-              <span class="gd-down-dist" id="gdDownDist"></span>
+              <span class="gd-down-dist" id="gdDownDist">${initDownDist}</span>
+              <span class="gd-ball-on" id="gdBallOn">${initBallOn}</span>
             </div>
+            ${initWasPct !== null ? `
+            <div class="gd-winprob">
+              <span class="gd-winprob-pct gd-winprob-pct--was" id="gdWinProbWas">${initWasPct}%</span>
+              <span class="gd-winprob-label">${wasAbbr}</span>
+              <div class="gd-winprob-bar">
+                <div class="gd-winprob-fill" id="gdWinProbFill" style="width:${initWasPct}%"></div>
+              </div>
+              <span class="gd-winprob-title">Win Prob</span>
+              <div class="gd-winprob-bar" style="transform:scaleX(-1)">
+                <div class="gd-winprob-fill" id="gdWinProbFillOpp" style="width:${100-initWasPct}%;background:var(--opp-color,#555)"></div>
+              </div>
+              <span class="gd-winprob-label gd-winprob-label--opp">${oppAbbr}</span>
+              <span class="gd-winprob-pct gd-winprob-pct--opp" id="gdWinProbOpp">${100-initWasPct}%</span>
+            </div>` : ''}
           </div>` : ''}
         ${hasPlays ? `
           <div class="gd-tabs" role="tablist">
@@ -301,26 +339,29 @@ export async function gdClientDetect(): Promise<void> {
       });
     }
 
-    // Set up live polling (reuses same logic as SSR banner)
+    // Set up live polling
     if (phase === 'live' || phase === 'halftime') {
       setInterval(async () => {
         try {
           const r = await fetch(`${BASE}/summary?event=${gameId}`);
           if (!r.ok) return;
           const d = await r.json() as any;
-          const hc  = d?.header?.competitions?.[0];
-          const st  = hc?.status;
+          const hc    = d?.header?.competitions?.[0];
+          const st    = hc?.status;
           const comps = hc?.competitors ?? [];
-          const wC  = comps.find((c: any) => c.id === wasId);
-          const oC  = comps.find((c: any) => c.id !== wasId);
+          const wC    = comps.find((c: any) => c.id === wasId);
+          const oC    = comps.find((c: any) => c.id !== wasId);
           if (wC) { const el = document.getElementById('gdWasScore'); if (el) el.textContent = wC.score ?? '0'; }
           if (oC) { const el = document.getElementById('gdOppScore'); if (el) el.textContent = oC.score ?? '0'; }
+
           const p2  = st?.period ?? 1;
           const c2  = st?.displayClock ?? '0:00';
           const isH = (st?.type?.description || '').toLowerCase().includes('halftime');
           const pel = document.getElementById('gdPeriod'); if (pel) pel.textContent = isH ? 'HALF' : p2 > 4 ? 'OT' : `Q${p2}`;
           const cel = document.getElementById('gdClock');  if (cel) cel.textContent = c2;
-          const sit2 = hc?.situation;
+
+          // Situation — check header first, fall back to top-level
+          const sit2 = hc?.situation ?? d?.situation;
           if (sit2) {
             const fp2 = parseFieldPos(sit2, wasId, wasAbbr);
             const ballEl = document.getElementById('gdBall');
@@ -329,12 +370,60 @@ export async function gdClientDetect(): Promise<void> {
             if (fdEl)   { fdEl.setAttribute('x1', String(Math.round(fp2.fdx))); fdEl.setAttribute('x2', String(Math.round(fp2.fdx))); }
             const possEl = document.getElementById('gdPossession');
             const ddEl   = document.getElementById('gdDownDist');
+            const boEl   = document.getElementById('gdBallOn');
             if (possEl) possEl.textContent = fp2.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
-            if (ddEl)   ddEl.textContent = sit2.downDistanceText ?? '';
+            if (ddEl)   ddEl.textContent   = sit2.downDistanceText ?? '';
+            if (boEl)   boEl.textContent   = sit2.possessionText ?? '';
           }
+
+          // Win probability
+          const wp = d?.winProbability;
+          if (wp?.length) {
+            const last       = wp[wp.length - 1];
+            const homePct    = Math.round((last.homeWinPercentage ?? 0.5) * 100);
+            const wasPct     = wasIsHome ? homePct : 100 - homePct;
+            const oppPct     = 100 - wasPct;
+            const wasWpEl    = document.getElementById('gdWinProbWas');
+            const oppWpEl    = document.getElementById('gdWinProbOpp');
+            const fillEl     = document.getElementById('gdWinProbFill');
+            const fillOppEl  = document.getElementById('gdWinProbFillOpp');
+            if (wasWpEl)   wasWpEl.textContent  = `${wasPct}%`;
+            if (oppWpEl)   oppWpEl.textContent  = `${oppPct}%`;
+            if (fillEl)    fillEl.style.width   = `${wasPct}%`;
+            if (fillOppEl) fillOppEl.style.width = `${oppPct}%`;
+          }
+
+          // Plays list
+          const drives = d?.drives ?? {};
+          const plays: any[] = [];
+          for (const p of ([...(drives.current?.plays ?? [])].reverse())) plays.push(p);
+          for (const drv of ([...(drives.previous ?? [])].reverse())) {
+            for (const p of ([...(drv.plays ?? [])].reverse())) {
+              plays.push(p);
+              if (plays.length >= 10) break;
+            }
+            if (plays.length >= 10) break;
+          }
+          const listEl = document.getElementById('gdPlaysList');
+          if (listEl && plays.length) {
+            const stMap: Record<string,string> = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
+            listEl.innerHTML = plays.slice(0, 10).map((p: any) => {
+              const isScore = !!p.scoringPlay;
+              const badge   = isScore ? (stMap[p?.type?.id ?? ''] ?? '') : '';
+              return `<div class="gd-play${isScore ? ' gd-play--scoring' : ''}">
+                <span class="gd-play-meta">
+                  ${badge ? `<span class="gd-play-score-type">${badge}</span>` : ''}
+                  <span class="gd-play-period">Q${p?.period?.number ?? p?.period ?? '?'}</span>
+                  <span class="gd-play-clock">${p?.clock?.displayValue ?? p?.clock ?? '—'}</span>
+                </span>
+                <span class="gd-play-text">${p?.text || ''}</span>
+              </div>`;
+            }).join('');
+          }
+
           if (st?.type?.state === 'post') { window.location.reload(); }
         } catch { /* silent — retry next poll */ }
-      }, 30_000);
+      }, 15_000);
     }
 
   } catch (e) {
