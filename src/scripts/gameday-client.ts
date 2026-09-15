@@ -173,11 +173,11 @@ export async function gdClientDetect(): Promise<void> {
           for (const d of ([...(drives.previous || [])].reverse())) {
             for (const p of ([...(d.plays || [])].reverse())) {
               all.push(p);
-              if (all.length >= 10) break;
+              if (all.length >= 25) break;
             }
-            if (all.length >= 10) break;
+            if (all.length >= 25) break;
           }
-          recentPlays = all.slice(0, 10);
+          recentPlays = all.slice(0, 25);
         }
       }
     } catch { /* summary is non-critical */ }
@@ -319,20 +319,20 @@ export async function gdClientDetect(): Promise<void> {
               <span class="gd-possession" id="gdPossession">${initPossText}</span>
               <span class="gd-down-dist" id="gdDownDist">${initDownDist}</span>
             </div>
-            ${phase === 'live' || phase === 'halftime' ? `
-            <div class="gd-winprob">
-              <span class="gd-winprob-pct gd-winprob-pct--was" id="gdWinProbWas">${initWasPct !== null ? initWasPct+'%' : '—'}</span>
-              <span class="gd-winprob-label">${wasAbbr}</span>
-              <div class="gd-winprob-bar">
-                <div class="gd-winprob-fill" id="gdWinProbFill" style="width:${initWasPct ?? 50}%"></div>
-              </div>
-              <span class="gd-winprob-title">Win Prob</span>
-              <div class="gd-winprob-bar" style="transform:scaleX(-1)">
-                <div class="gd-winprob-fill" id="gdWinProbFillOpp" style="width:${initWasPct !== null ? 100-initWasPct : 50}%;background:var(--opp-color,#555)"></div>
-              </div>
-              <span class="gd-winprob-label gd-winprob-label--opp">${oppAbbr}</span>
-              <span class="gd-winprob-pct gd-winprob-pct--opp" id="gdWinProbOpp">${initWasPct !== null ? (100-initWasPct)+'%' : '—'}</span>
-            </div>` : ''}
+          </div>` : ''}
+        ${(phase === 'live' || phase === 'halftime') ? `
+          <div class="gd-winprob">
+            <span class="gd-winprob-pct gd-winprob-pct--was" id="gdWinProbWas">${initWasPct !== null ? initWasPct+'%' : '—'}</span>
+            <span class="gd-winprob-label">${wasAbbr}</span>
+            <div class="gd-winprob-bar">
+              <div class="gd-winprob-fill" id="gdWinProbFill" style="width:${initWasPct ?? 50}%"></div>
+            </div>
+            <span class="gd-winprob-title">Win Prob</span>
+            <div class="gd-winprob-bar" style="transform:scaleX(-1)">
+              <div class="gd-winprob-fill" id="gdWinProbFillOpp" style="width:${initWasPct !== null ? 100-initWasPct : 50}%;background:var(--opp-color,#555)"></div>
+            </div>
+            <span class="gd-winprob-label gd-winprob-label--opp">${oppAbbr}</span>
+            <span class="gd-winprob-pct gd-winprob-pct--opp" id="gdWinProbOpp">${initWasPct !== null ? (100-initWasPct)+'%' : '—'}</span>
           </div>` : ''}
         ${hasPlays ? `
           <div class="gd-tabs" role="tablist">
@@ -415,14 +415,14 @@ export async function gdClientDetect(): Promise<void> {
             for (const drv of ([...(drives.previous ?? [])].reverse())) {
               for (const p of ([...(drv.plays ?? [])].reverse())) {
                 plays.push(p);
-                if (plays.length >= 10) break;
+                if (plays.length >= 25) break;
               }
-              if (plays.length >= 10) break;
+              if (plays.length >= 25) break;
             }
             const listEl = document.getElementById('gdPlaysList');
             if (listEl && plays.length) {
               const stMap: Record<string,string> = { '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG','70':'Safety','57':'XP','58':'XP','69':'2PT' };
-              listEl.innerHTML = plays.slice(0, 10).map((p: any) => {
+              listEl.innerHTML = plays.slice(0, 25).map((p: any) => {
                 const isScore = !!p.scoringPlay;
                 const badge   = isScore ? (stMap[p?.type?.id ?? ''] ?? '') : '';
                 return `<div class="gd-play${isScore ? ' gd-play--scoring' : ''}">
