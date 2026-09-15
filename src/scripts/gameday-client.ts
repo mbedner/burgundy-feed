@@ -245,9 +245,9 @@ export async function gdClientDetect(): Promise<void> {
     section.innerHTML = `
       <style>
         .gd-field{border-top:1px solid var(--gd-border,#eae8e4);overflow:hidden}
-        .gd-field-perspective{perspective:110px;perspective-origin:50% 100%;overflow:hidden}
-        .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(54deg);transform-origin:bottom center}
-        .gd-field-slab{height:12px;background:linear-gradient(to bottom,#1a5c0a 0%,#091e04 100%)}
+        .gd-field-perspective{perspective:150px;perspective-origin:50% 100%;overflow:hidden}
+        .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(38deg);transform-origin:bottom center}
+        .gd-field-slab{height:8px;background:linear-gradient(to bottom,#1a5c0a 0%,#091e04 100%)}
         .gd-ez-label{fill:rgba(255,255,255,0.85);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
         .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle}
         .gd-field-info{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 16px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px}
