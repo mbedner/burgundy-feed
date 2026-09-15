@@ -269,7 +269,12 @@ export async function gdClientDetect(): Promise<void> {
         .gd-field-perspective{perspective:150px;perspective-origin:50% 100%;overflow:hidden;position:relative}
         .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(38deg);transform-origin:bottom center}
         .gd-field-slab{height:4px;background:linear-gradient(to bottom,#1a5c0a 0%,#091e04 100%)}
-        .gd-ball-float{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:12px;line-height:1;pointer-events:none;user-select:none;z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7))}
+        .gd-ball-float{position:absolute;top:55%;transform:translate(-50%,-50%);font-size:12px;line-height:1;pointer-events:none;user-select:none;z-index:2;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7))}
+        @media(min-width:768px){
+          .gd-field-perspective{perspective:280px}
+          .gd-field-svg{transform:rotateX(24deg)}
+          .gd-ball-float{top:58%;font-size:15px}
+        }
         .gd-ez-label{fill:rgba(255,255,255,0.85);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
         .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle}
         .gd-field-info{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 16px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px}
