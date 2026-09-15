@@ -331,7 +331,8 @@ let gameDay: GameDayInfo | null = null;
 if (forcePhase && VALID_PHASES.has(forcePhase)) {
   gameDay = getMockGame(forcePhase);
 } else {
-  try { gameDay = await detectGameDay(); } catch {}
+  const teamOverride = Astro.url.searchParams.get('team') ?? undefined;
+  try { gameDay = await detectGameDay(teamOverride); } catch {}
 }
 
 // ── Draft Day Detection ───────────────────────────────────────────────────────

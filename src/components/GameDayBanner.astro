@@ -92,45 +92,34 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     const fdx = Math.round(60 + (fdp / 100) * 480);
     return (
       <div class="gd-field" id="gdSituation">
-        <svg class="gd-field-svg" viewBox="0 0 600 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+        <svg class="gd-field-svg" viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
           {/* Alternating stripes */}
           {[0,1,2,3,4,5,6,7,8,9].map(i => (
-            <rect x={60 + i*48} y="0" width="48" height="56" fill={i%2===0 ? '#195c0a' : '#1d6b0c'}/>
+            <rect x={60 + i*48} y="0" width="48" height="120" fill={i%2===0 ? '#2e7a14' : '#1a4e08'}/>
           ))}
-          {/* Red zone tint */}
-          <rect x="444" y="0" width="96" height="56" fill="rgba(220,38,38,0.12)"/>
           {/* End zones */}
-          <rect x="0"   y="0" width="60" height="56" fill="var(--was-color,#5a1414)"/>
-          <rect x="540" y="0" width="60" height="56" fill="var(--opp-color,#333)"/>
+          <rect x="0"   y="0" width="60" height="120" fill="var(--was-color,#5a1414)"/>
+          <rect x="540" y="0" width="60" height="120" fill="var(--opp-color,#333)"/>
           {/* End zone labels */}
-          <text x="30"  y="28" class="gd-ez-label">WAS</text>
-          <text id="gdFieldOpp" x="570" y="28" class="gd-ez-label">{opponent.abbreviation}</text>
+          <text id="gdFieldHome" x="30"  y="60" class="gd-ez-label">WAS</text>
+          <text id="gdFieldOpp" x="570" y="60" class="gd-ez-label">{opponent.abbreviation}</text>
           {/* Goal lines */}
-          <line x1="60"  y1="0" x2="60"  y2="56" stroke="white" stroke-width="2"/>
-          <line x1="540" y1="0" x2="540" y2="56" stroke="white" stroke-width="2"/>
+          <line x1="60"  y1="0" x2="60"  y2="120" stroke="white" stroke-width="2"/>
+          <line x1="540" y1="0" x2="540" y2="120" stroke="white" stroke-width="2"/>
           {/* 10-yard lines */}
           {[108,156,204,252,348,396,444,492].map(x => (
-            <line x1={x} y1="0" x2={x} y2="56" stroke="rgba(255,255,255,0.28)" stroke-width="1"/>
+            <line x1={x} y1="0" x2={x} y2="120" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
           ))}
           {/* Midfield brighter */}
-          <line x1="300" y1="0" x2="300" y2="56" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+          <line x1="300" y1="0" x2="300" y2="120" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
           {/* Yard numbers */}
           {([10,20,30,40,50,40,30,20,10] as number[]).map((n,i) => (
-            <text x={108 + i*48} y="13" class="gd-yd-num" opacity={n===50?'0.7':'0.5'}>{n}</text>
+            <text x={108 + i*48} y="22" class="gd-yd-num" opacity={n===50?'0.7':'0.5'}>{n}</text>
           ))}
           {/* First-down line */}
-          <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="56" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
-          {/* Ball shadow */}
-          <ellipse id="gdBallShadow" cx={bx} cy="39" rx="7" ry="2.5" fill="rgba(0,0,0,0.35)"/>
-          {/* Ball body */}
-          <ellipse id="gdBall" cx={bx} cy="34" rx="8" ry="5.5" fill="#8B3A0F"/>
-          {/* Ball highlight */}
-          <ellipse cx={bx-2} cy="31" rx="3" ry="2" fill="rgba(255,180,80,0.25)"/>
-          {/* Laces */}
-          <line id="gdLaceV" x1={bx} y1="28.5" x2={bx} y2="39.5" stroke="rgba(255,255,255,0.65)" stroke-width="1.2"/>
-          <line id="gdLace1" x1={bx-3} y1="31"   x2={bx+3} y2="31"   stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
-          <line id="gdLace2" x1={bx-3} y1="34"   x2={bx+3} y2="34"   stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
-          <line id="gdLace3" x1={bx-3} y1="37"   x2={bx+3} y2="37"   stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+          <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="120" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
+          {/* Football emoji — native platform rendering, no SVG path needed */}
+          <text id="gdBall" x={bx} y="75" font-size="30" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
         </svg>
         {/* Info row */}
         <div class="gd-field-info">
@@ -286,9 +275,8 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
 
 {/* ── Client-side live updater (SSR-rendered live/halftime games) ── */}
 {(phase === 'live' || phase === 'halftime') ? (
-  <script define:vars={{ gameId, POLL_MS: 30000 }}>
+  <script define:vars={{ gameId, POLL_MS: 30000, homeTeamId: washington.id, homeTeamAbbr: washington.abbreviation.toUpperCase() }}>
     const ESPN_URL = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${gameId}`;
-    const WAS_ID = '28';
 
     async function pollGame() {
       try {
@@ -301,8 +289,8 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
         const state      = status?.type?.state;
 
         const competitors = headerComp?.competitors ?? [];
-        const was = competitors.find(c => c.id === WAS_ID);
-        const opp = competitors.find(c => c.id !== WAS_ID);
+        const was = competitors.find(c => c.id === homeTeamId);
+        const opp = competitors.find(c => c.id !== homeTeamId);
         if (was) document.getElementById('gdWasScore').textContent = was.score ?? '0';
         if (opp) document.getElementById('gdOppScore').textContent = opp.score ?? '0';
 
@@ -321,11 +309,11 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
           // Update text labels
           const possEl = document.getElementById('gdPossession');
           const ddEl   = document.getElementById('gdDownDist');
-          if (possEl) possEl.textContent = sit.possessionTeam?.id === WAS_ID
-            ? '🏈 WAS' : `🏈 ${opp?.team?.abbreviation ?? 'OPP'}`;
+          if (possEl) possEl.textContent = sit.possessionTeam?.id === homeTeamId
+            ? `🏈 ${homeTeamAbbr}` : `🏈 ${opp?.team?.abbreviation ?? 'OPP'}`;
           if (ddEl) ddEl.textContent = sit.downDistanceText ?? '';
 
-          // Parse field position (0–100 from WAS end zone)
+          // Parse field position (0–100 from home-team end zone)
           let fp = 50;
           const rawPoss = sit.possessionText ?? '';
           const rawDt   = sit.downDistanceText ?? '';
@@ -333,28 +321,23 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
           if (pm) {
             const t = pm[1].toUpperCase();
             const y = parseInt(pm[2]);
-            fp = (t === 'WSH' || t === 'WAS') ? y : 100 - y;
+            const altAbbr = homeTeamAbbr === 'WAS' ? 'WSH' : homeTeamAbbr === 'WSH' ? 'WAS' : '';
+            fp = (t === homeTeamAbbr || (altAbbr && t === altAbbr)) ? y : 100 - y;
           } else if (sit.yardLine) {
-            fp = sit.possessionTeam?.id === WAS_ID ? sit.yardLine : 100 - sit.yardLine;
+            fp = sit.possessionTeam?.id === homeTeamId ? sit.yardLine : 100 - sit.yardLine;
           }
           fp = Math.max(0, Math.min(100, fp));
 
           const bx  = 60 + (fp / 100) * 480;
-          const isW = sit.possessionTeam?.id === WAS_ID;
+          const isW = sit.possessionTeam?.id === homeTeamId;
           const fdp = Math.max(3, Math.min(97,
             isW ? fp + (sit.distance ?? 10) : fp - (sit.distance ?? 10)));
           const fdx = 60 + (fdp / 100) * 480;
 
-          // Move ball
+          // Move ball and first-down line
           const setA = (id: string, attr: string, val: number) =>
             document.getElementById(id)?.setAttribute(attr, String(Math.round(val)));
-          setA('gdBall',       'cx', bx);
-          setA('gdBallShadow', 'cx', bx);
-          setA('gdLaceV', 'x1', bx); setA('gdLaceV', 'x2', bx);
-          setA('gdLace1', 'x1', bx-3); setA('gdLace1', 'x2', bx+3);
-          setA('gdLace2', 'x1', bx-3); setA('gdLace2', 'x2', bx+3);
-          setA('gdLace3', 'x1', bx-3); setA('gdLace3', 'x2', bx+3);
-          // Move first-down line
+          setA('gdBall',   'x',  bx);
           setA('gdFDLine', 'x1', fdx); setA('gdFDLine', 'x2', fdx);
         }
 

@@ -3,8 +3,9 @@
 // detection always fails. This module runs in the visitor's browser where no
 // such block exists, then creates and inserts the game day banner into the DOM.
 
-const WAS_ID = '28';
-const BASE   = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
+const DEFAULT_TEAM_ID   = '28';
+const DEFAULT_TEAM_ABBR = 'WAS';
+const BASE = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
 const SCORE_TYPES: Record<string, string> = {
   '67':'TD','68':'TD','72':'TD','59':'FG','63':'FG',
   '70':'Safety','57':'XP','58':'XP','69':'2PT',
@@ -13,6 +14,8 @@ const SCORE_TYPES: Record<string, string> = {
 export async function gdClientDetect(): Promise<void> {
   // SSR already rendered the banner — nothing to do
   if (document.getElementById('gdBanner')) return;
+
+  const teamParam = new URLSearchParams(window.location.search).get('team')?.toUpperCase() || null;
 
   try {
     const today = new Date()
@@ -24,7 +27,11 @@ export async function gdClientDetect(): Promise<void> {
     const board = await res.json() as any;
 
     const event = (board.events as any[] || []).find((e: any) =>
-      e?.competitions?.[0]?.competitors?.some((c: any) => c?.id === WAS_ID),
+      e?.competitions?.[0]?.competitors?.some((c: any) =>
+        teamParam
+          ? c?.team?.abbreviation?.toUpperCase() === teamParam
+          : c?.id === DEFAULT_TEAM_ID,
+      ),
     );
     if (!event) return;
 
@@ -45,11 +52,14 @@ export async function gdClientDetect(): Promise<void> {
                  : desc.includes('halftime') ? 'halftime' : 'live';
 
     // Teams
-    const wasC     = (comp.competitors as any[]).find((c: any) => c.id === WAS_ID);
-    const oppC     = (comp.competitors as any[]).find((c: any) => c.id !== WAS_ID);
+    const wasC     = (comp.competitors as any[]).find((c: any) =>
+      teamParam ? c?.team?.abbreviation?.toUpperCase() === teamParam : c.id === DEFAULT_TEAM_ID,
+    );
+    const oppC     = (comp.competitors as any[]).find((c: any) => c !== wasC);
+    const wasId    = wasC?.id ?? DEFAULT_TEAM_ID;
     const wasScore = parseInt(wasC?.score || '0') || 0;
     const oppScore = parseInt(oppC?.score || '0') || 0;
-    const wasAbbr  = wasC?.team?.abbreviation || 'WAS';
+    const wasAbbr  = wasC?.team?.abbreviation?.toUpperCase() || DEFAULT_TEAM_ABBR;
     const oppAbbr  = oppC?.team?.abbreviation || 'OPP';
     const wasLogo  = wasC?.team?.logos?.[0]?.href || '';
     const oppLogo  = oppC?.team?.logos?.[0]?.href || '';
@@ -192,7 +202,7 @@ export async function gdClientDetect(): Promise<void> {
         </div>
         ${situation ? `
           <div class="gd-situation" id="gdSituation">
-            <span class="gd-possession">${situation.pos === WAS_ID ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr}</span>
+            <span class="gd-possession">${situation.pos === wasId ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr}</span>
             <span class="gd-down-dist">${situation.text}</span>
           </div>` : ''}
         ${hasPlays ? `
@@ -235,8 +245,8 @@ export async function gdClientDetect(): Promise<void> {
           const hc  = d?.header?.competitions?.[0];
           const st  = hc?.status;
           const comps = hc?.competitors ?? [];
-          const wC  = comps.find((c: any) => c.id === WAS_ID);
-          const oC  = comps.find((c: any) => c.id !== WAS_ID);
+          const wC  = comps.find((c: any) => c.id === wasId);
+          const oC  = comps.find((c: any) => c.id !== wasId);
           if (wC) { const el = document.getElementById('gdWasScore'); if (el) el.textContent = wC.score ?? '0'; }
           if (oC) { const el = document.getElementById('gdOppScore'); if (el) el.textContent = oC.score ?? '0'; }
           const p2  = st?.period ?? 1;
@@ -249,7 +259,7 @@ export async function gdClientDetect(): Promise<void> {
           if (sel && sit2) {
             const pp = sel.querySelector('.gd-possession');
             const dd = sel.querySelector('.gd-down-dist');
-            if (pp) pp.textContent = sit2.possessionTeam?.id === WAS_ID ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr;
+            if (pp) pp.textContent = sit2.possessionTeam?.id === wasId ? '🏈 ' + wasAbbr : '🏈 ' + oppAbbr;
             if (dd) dd.textContent = sit2.downDistanceText ?? '';
           }
           if (st?.type?.state === 'post') { window.location.reload(); }

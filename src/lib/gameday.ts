@@ -181,9 +181,9 @@ export function getMockGame(phase: GamePhase): GameDayInfo {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export async function detectGameDay(): Promise<GameDayInfo | null> {
+export async function detectGameDay(teamAbbrOverride?: string): Promise<GameDayInfo | null> {
   try {
-    // 1. Check today's scoreboard for a Washington game.
+    // 1. Check today's scoreboard for a Washington game (or override team).
     // Pass ?dates=YYYYMMDD so we always get exactly today's games regardless
     // of where we fall in the NFL week (avoids relying on the default "current
     // week" window which can return wrong days near week boundaries).
@@ -191,8 +191,13 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
     const board = await fetchJson(`${BASE}/scoreboard?dates=${today}`) as any;
     const events: any[] = board?.events ?? [];
 
+    const overrideAbbr = teamAbbrOverride?.toUpperCase();
     const event = events.find(e =>
-      e?.competitions?.[0]?.competitors?.some((c: any) => c?.id === TEAM_ID),
+      e?.competitions?.[0]?.competitors?.some((c: any) =>
+        overrideAbbr
+          ? c?.team?.abbreviation?.toUpperCase() === overrideAbbr
+          : c?.id === TEAM_ID,
+      ),
     );
     if (!event) return null;
 
@@ -216,8 +221,12 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
 
     // 2. Parse competitors
     const comps: any[] = comp?.competitors ?? [];
-    const wasComp = comps.find((c: any) => c?.id === TEAM_ID);
-    const oppComp = comps.find((c: any) => c?.id !== TEAM_ID);
+    const wasComp = comps.find((c: any) =>
+      overrideAbbr
+        ? c?.team?.abbreviation?.toUpperCase() === overrideAbbr
+        : c?.id === TEAM_ID,
+    );
+    const oppComp = comps.find((c: any) => c !== wasComp);
 
     function buildTeam(c: any): GameTeam {
       return {
@@ -270,9 +279,10 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
     const sit = comp?.situation ?? summary?.situation;
     if (sit && phase === 'live') {
       const wasAbbr = washington.abbreviation.toUpperCase();
-      const isWasPoss = safeStr(sit.possession?.id ?? sit.possessionTeam?.id) === TEAM_ID;
+      const wasTeamId = wasComp?.id ?? TEAM_ID;
+      const isWasPoss = safeStr(sit.possession?.id ?? sit.possessionTeam?.id) === wasTeamId;
 
-      // Parse field position (0–100, yards from WAS end zone) from possessionText
+      // Parse field position (0–100, yards from home-team end zone) from possessionText
       // or downDistanceText. ESPN formats: "WSH 31", "DAL 35", "2nd & 7 at WAS 31".
       let fieldPosition = 50;
       const rawPoss = safeStr(sit.possessionText ?? '');
@@ -283,7 +293,9 @@ export async function detectGameDay(): Promise<GameDayInfo | null> {
       if (m) {
         const team = m[1].toUpperCase();
         const yd   = parseInt(m[2]);
-        const isWasSide = team === wasAbbr || team === 'WSH' || team === 'WAS';
+        // ESPN sometimes uses different abbrs (WAS/WSH); also check alternate abbr
+        const altAbbr = wasAbbr === 'WAS' ? 'WSH' : wasAbbr === 'WSH' ? 'WAS' : '';
+        const isWasSide = team === wasAbbr || (altAbbr && team === altAbbr);
         fieldPosition = isWasSide ? yd : 100 - yd;
       } else {
         fieldPosition = isWasPoss ? (sit.yardLine ?? 50) : 100 - (sit.yardLine ?? 50);
