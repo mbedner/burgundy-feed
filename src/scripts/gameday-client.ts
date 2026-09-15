@@ -21,14 +21,15 @@ function parseFieldPos(sit: any, wasId: string, wasAbbr: string) {
     fp = sit.possessionTeam?.id === wasId ? sit.yardLine : 100 - sit.yardLine;
   }
   fp = Math.max(0, Math.min(100, fp));
-  const bx     = 60 + (fp / 100) * 480;
-  const isWas  = sit.possessionTeam?.id === wasId;
+  const bx      = 60 + (fp / 100) * 480;
+  const posId   = sit.possessionTeam?.id ?? sit.possession;
+  const isWas   = posId != null && String(posId) === String(wasId);
   const fdp    = Math.max(3, Math.min(97, isWas ? fp + (sit.distance ?? 10) : fp - (sit.distance ?? 10)));
   const fdx    = 60 + (fdp / 100) * 480;
   return { bx, fdx, isWas };
 }
 
-function buildFieldSvg(bx: number, fdx: number, wasAbbr: string, oppAbbr: string, wasColor: string, oppColor: string): string {
+function buildFieldSvg(bx: number, fdx: number, wasAbbr: string, oppAbbr: string, wasColor: string, oppColor: string): { svg: string; bxPct: number } {
   const stripes = Array.from({length: 10}, (_, i) =>
     `<rect x="${60+i*48}" y="0" width="48" height="72" fill="${i%2===0?'#2e7a14':'#1a4e08'}"/>`,
   ).join('');
@@ -51,7 +52,7 @@ function buildFieldSvg(bx: number, fdx: number, wasAbbr: string, oppAbbr: string
     `<text x="${108+i*48}" y="64" class="gd-yd-num" opacity="${n===50?'0.75':'0.55'}">${n}</text>`,
   ).join('');
   const bxR = Math.round(bx), fdxR = Math.round(fdx);
-  return `<svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+  const svg = `<svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
   <defs>
     <linearGradient id="gdDepth" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%"   stop-color="rgba(0,0,0,0.38)"/>
@@ -70,8 +71,8 @@ function buildFieldSvg(bx: number, fdx: number, wasAbbr: string, oppAbbr: string
   ${ydLines}${hashes}${intHashes}${ydNums}
   <rect x="0" y="0" width="600" height="72" fill="url(#gdDepth)" pointer-events="none"/>
   <line id="gdFDLine" x1="${fdxR}" y1="0" x2="${fdxR}" y2="72" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
-  <text id="gdBall" x="${bxR}" y="44" font-size="13" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
 </svg>`;
+  return { svg, bxPct: parseFloat(((bxR / 600) * 100).toFixed(2)) };
 }
 
 const SCORE_TYPES: Record<string, string> = {
@@ -202,15 +203,16 @@ export async function gdClientDetect(): Promise<void> {
     const periodLabel = phase === 'halftime' ? 'HALF' : period > 4 ? 'OT' : `Q${period}`;
 
     let fieldHtml      = '';
+    let initBxPct      = 50;
     let initPossText   = '';
     let initDownDist   = '';
-    let initBallOn     = '';
     if (liveSit) {
-      const fp       = parseFieldPos(liveSit, wasId, wasAbbr);
-      initPossText   = fp.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
-      initDownDist   = liveSit.downDistanceText ?? '';
-      initBallOn     = liveSit.possessionText ?? '';
-      fieldHtml      = buildFieldSvg(fp.bx, fp.fdx, wasAbbr, oppAbbr, wasColor, oppColorVal);
+      const fp      = parseFieldPos(liveSit, wasId, wasAbbr);
+      initPossText  = fp.isWas ? `🏈 ${wasAbbr}` : `🏈 ${oppAbbr}`;
+      initDownDist  = liveSit.downDistanceText ?? '';
+      const built   = buildFieldSvg(fp.bx, fp.fdx, wasAbbr, oppAbbr, wasColor, oppColorVal);
+      fieldHtml     = built.svg;
+      initBxPct     = built.bxPct;
     }
 
     function playHtml(p: any, showScores: boolean): string {
@@ -245,9 +247,10 @@ export async function gdClientDetect(): Promise<void> {
     section.innerHTML = `
       <style>
         .gd-field{border-top:1px solid var(--gd-border,#eae8e4);overflow:hidden}
-        .gd-field-perspective{perspective:150px;perspective-origin:50% 100%;overflow:hidden}
+        .gd-field-perspective{perspective:150px;perspective-origin:50% 100%;overflow:hidden;position:relative}
         .gd-field-svg{display:block;width:100%;height:auto;transform:rotateX(38deg);transform-origin:bottom center}
-        .gd-field-slab{height:8px;background:linear-gradient(to bottom,#1a5c0a 0%,#091e04 100%)}
+        .gd-field-slab{height:4px;background:linear-gradient(to bottom,#1a5c0a 0%,#091e04 100%)}
+        .gd-ball-float{position:absolute;bottom:6px;transform:translateX(-50%);font-size:15px;line-height:1;pointer-events:none;user-select:none;z-index:2;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.7))}
         .gd-ez-label{fill:rgba(255,255,255,0.85);font-size:10px;font-weight:800;font-family:system-ui,sans-serif;letter-spacing:.08em;text-anchor:middle;dominant-baseline:middle}
         .gd-yd-num{fill:white;font-size:8px;font-weight:700;font-family:system-ui,sans-serif;text-anchor:middle}
         .gd-field-info{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 16px;border-top:1px solid var(--gd-border,#eae8e4);font-size:12px}
@@ -307,7 +310,10 @@ export async function gdClientDetect(): Promise<void> {
         </div>
         ${fieldHtml ? `
           <div class="gd-field" id="gdSituation">
-            <div class="gd-field-perspective">${fieldHtml}</div>
+            <div class="gd-field-perspective">
+              ${fieldHtml}
+              <div id="gdBall" class="gd-ball-float" style="left:${initBxPct}%">🏈</div>
+            </div>
             <div class="gd-field-slab"></div>
             <div class="gd-field-info">
               <span class="gd-possession" id="gdPossession">${initPossText}</span>
@@ -440,9 +446,9 @@ export async function gdClientDetect(): Promise<void> {
             const sit2  = evt?.competitions?.[0]?.situation;
             if (sit2) {
               const fp2    = parseFieldPos(sit2, wasId, wasAbbr);
-              const ballEl = document.getElementById('gdBall');
+              const ballEl = document.getElementById('gdBall') as HTMLElement | null;
               const fdEl   = document.getElementById('gdFDLine');
-              if (ballEl) ballEl.setAttribute('x', String(Math.round(fp2.bx)));
+              if (ballEl) ballEl.style.left = `${((fp2.bx / 600) * 100).toFixed(2)}%`;
               if (fdEl)   { fdEl.setAttribute('x1', String(Math.round(fp2.fdx))); fdEl.setAttribute('x2', String(Math.round(fp2.fdx))); }
               const possEl = document.getElementById('gdPossession');
               const ddEl   = document.getElementById('gdDownDist');
