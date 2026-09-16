@@ -9,6 +9,13 @@ const hiddenCount   = Math.max(0, items.length - INITIAL_COUNT);
 let rank = 1;
 ---
 
+<div class="stream-controls">
+  <button class="free-filter-btn" id="free-filter-btn" type="button"
+          aria-pressed="false" title="Hide articles that require a subscription">
+    Free articles only
+  </button>
+</div>
+
 <div id="filter-banner" class="filter-banner" hidden>
   <span class="filter-banner-label">Showing: <strong id="filter-banner-tag"></strong></span>
   <button class="filter-banner-clear" id="filter-banner-clear" type="button" aria-label="Clear filter">✕ clear</button>
@@ -25,6 +32,37 @@ let rank = 1;
 )}
 
 <style>
+  /* ── Stream controls ─────────────────────────────────────────────────────── */
+  .stream-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .free-filter-btn {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+  }
+  .free-filter-btn:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+  .free-filter-btn[aria-pressed="true"] {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+  }
+
   /* ── Filter banner ───────────────────────────────────────────────────────── */
   .filter-banner {
     display: flex;
@@ -100,15 +138,27 @@ let rank = 1;
 
 <script>
   (() => {
-    const stream      = document.getElementById('news-stream');
-    const banner      = document.getElementById('filter-banner');
-    const bannerTag   = document.getElementById('filter-banner-tag');
-    const bannerClear = document.getElementById('filter-banner-clear');
-    const seeMoreBtn  = document.getElementById('see-more-btn');
+    const stream        = document.getElementById('news-stream');
+    const banner        = document.getElementById('filter-banner');
+    const bannerTag     = document.getElementById('filter-banner-tag');
+    const bannerClear   = document.getElementById('filter-banner-clear');
+    const seeMoreBtn    = document.getElementById('see-more-btn');
+    const freeFilterBtn = document.getElementById('free-filter-btn');
     if (!stream || !banner || !bannerTag || !bannerClear) return;
 
-    let activeTag = null;
-    let isCapped  = stream.classList.contains('stream-capped');
+    let activeTag  = null;
+    let freeOnly   = false;
+    let isCapped   = stream.classList.contains('stream-capped');
+
+    // Restore free filter preference from localStorage
+    try {
+      freeOnly = localStorage.getItem('bf-free-only') === '1';
+    } catch { /* localStorage unavailable */ }
+
+    function isPaywalled(art) {
+      const pw = art.dataset.paywall;
+      return pw === 'subscription' || pw === 'may_require';
+    }
 
     function uncap() {
       isCapped = false;
@@ -116,31 +166,29 @@ let rank = 1;
       if (seeMoreBtn) seeMoreBtn.hidden = true;
     }
 
-    function applyFilter(tag) {
-      activeTag = tag;
+    function applyFilters() {
+      const tag = activeTag;
 
       if (tag) {
         bannerTag.textContent = tag;
         banner.hidden = false;
-        // Auto-expand so all matching articles are visible
         stream.classList.remove('stream-capped');
         if (seeMoreBtn) seeMoreBtn.hidden = true;
       } else {
         banner.hidden = true;
-        // Restore cap only if the user hasn't manually expanded
         if (isCapped) {
           stream.classList.add('stream-capped');
           if (seeMoreBtn) seeMoreBtn.hidden = false;
         }
       }
 
-      // Show/hide individual articles
       stream.querySelectorAll('article[data-tags]').forEach(art => {
-        const tags = art.dataset.tags ? art.dataset.tags.split(',') : [];
-        art.hidden = !!tag && !tags.includes(tag);
+        const tags      = art.dataset.tags ? art.dataset.tags.split(',') : [];
+        const tagHidden = !!tag && !tags.includes(tag);
+        const pwHidden  = freeOnly && isPaywalled(art);
+        art.hidden = tagHidden || pwHidden;
       });
 
-      // Scroll to top of Latest News when a filter is applied
       if (tag) {
         const section = document.getElementById('stream');
         if (section) {
@@ -151,16 +199,41 @@ let rank = 1;
       }
     }
 
+    function setFreeOnly(val) {
+      freeOnly = val;
+      if (freeFilterBtn) freeFilterBtn.setAttribute('aria-pressed', val ? 'true' : 'false');
+      try { localStorage.setItem('bf-free-only', val ? '1' : '0'); } catch { /* ignore */ }
+      // When free filter is active, expand so all remaining articles are visible
+      if (val) {
+        stream.classList.remove('stream-capped');
+        if (seeMoreBtn) seeMoreBtn.hidden = true;
+      }
+      applyFilters();
+    }
+
+    // Initialize free filter button state
+    if (freeFilterBtn) {
+      freeFilterBtn.setAttribute('aria-pressed', freeOnly ? 'true' : 'false');
+      freeFilterBtn.addEventListener('click', () => setFreeOnly(!freeOnly));
+    }
+
+    // Apply free filter on load if previously enabled
+    if (freeOnly) applyFilters();
+
     // Tag pill clicks
     stream.addEventListener('click', e => {
       const btn = e.target.closest('[data-filter-tag]');
       if (!btn) return;
       e.preventDefault();
-      applyFilter(activeTag === btn.dataset.filterTag ? null : btn.dataset.filterTag);
+      activeTag = activeTag === btn.dataset.filterTag ? null : btn.dataset.filterTag;
+      applyFilters();
     });
 
-    // Clear filter
-    bannerClear.addEventListener('click', () => applyFilter(null));
+    // Clear tag filter
+    bannerClear.addEventListener('click', () => {
+      activeTag = null;
+      applyFilters();
+    });
 
     // See More
     if (seeMoreBtn) {

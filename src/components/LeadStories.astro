@@ -44,6 +44,13 @@ function rel(iso: string): string {
             <span class={`tag tag--${tag}`}>{tag}</span>
           ))}
         </span>
+        {(primary.paywallStatus === 'subscription' || primary.paywallStatus === 'may_require') && (
+          <span class={`paywall-badge paywall-badge--${primary.paywallStatus}`}
+                title={primary.paywallStatus === 'subscription' ? 'Subscription required' : 'May require subscription'}
+                aria-label={primary.paywallStatus === 'subscription' ? 'Subscription required' : 'May require subscription'}>
+            {primary.paywallStatus === 'subscription' ? 'Sub' : 'Sub?'}
+          </span>
+        )}
       </div>
       <h2 class="primary-hed">{primary.displayHeadline}</h2>
       {primary.summary && (
@@ -87,6 +94,13 @@ function rel(iso: string): string {
                 <span class={`tag tag--${tag}`}>{tag}</span>
               ))}
             </span>
+            {(item.paywallStatus === 'subscription' || item.paywallStatus === 'may_require') && (
+              <span class={`paywall-badge paywall-badge--${item.paywallStatus}`}
+                    title={item.paywallStatus === 'subscription' ? 'Subscription required' : 'May require subscription'}
+                    aria-label={item.paywallStatus === 'subscription' ? 'Subscription required' : 'May require subscription'}>
+                {item.paywallStatus === 'subscription' ? 'Sub' : 'Sub?'}
+              </span>
+            )}
           </div>
           <h3 class="secondary-hed">{item.displayHeadline}</h3>
           {item.originalHeadline !== item.displayHeadline && (
@@ -339,5 +353,25 @@ function rel(iso: string): string {
     color: var(--text-4);
     border: 1px solid var(--border-strong);
     flex-shrink: 0;
+  }
+
+  .paywall-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .paywall-badge--subscription {
+    background: var(--surface-2);
+    color: var(--text-3);
+    border: 1px solid var(--border-strong);
+  }
+  .paywall-badge--may_require {
+    background: transparent;
+    color: var(--text-4);
+    border: 1px solid var(--border);
   }
 </style>

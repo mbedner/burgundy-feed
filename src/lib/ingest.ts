@@ -11,6 +11,8 @@ import {
   computeCompositeScore,
 } from './scoring';
 import { rewriteHeadline } from './rewrite';
+import { classifyPaywall } from './paywall';
+import { detectContentType } from './content-type';
 import { SOURCES, BLOCKED_DOMAINS } from '../config/sources';
 import { SITE, MIN_RELEVANCE_SCORE, MIN_RELEVANCE_SCORE_NATIONAL } from '../config/site';
 
@@ -83,6 +85,7 @@ function titleSimilarity(a: string, b: string): number {
 async function ingestSource(
   source:      SourceConfig,
   rewriteMode: typeof SITE.rewriteMode,
+  runId:       string,
 ): Promise<{ items: Article[]; error: string | null }> {
   try {
     const rawItems = await fetchRssFeed(source.rssUrl);
@@ -113,6 +116,8 @@ async function ingestSource(
       const sentiment    = detectSentiment(raw.title, summary);
       const tags         = detectTags(raw.title, summary);
       const displayHead  = rewriteHeadline(raw.title, sentiment, tags, rewriteMode);
+      const contentType  = detectContentType(raw.title, tags, source.id);
+      const { status: paywallStatus, reason: paywallReason } = classifyPaywall(raw.link, source);
 
       const partialScore = computeCompositeScore({
         relevanceScore:    relevance,
@@ -125,28 +130,44 @@ async function ingestSource(
 
       const article: Article = {
         id,
-        sourceId:         source.id,
-        sourceName:       source.name,
-        sourceUrl:        raw.link,
-        canonicalUrl:     canonical,
-        author:           raw.author,
-        publishedAt:      raw.pubDate,
-        ingestedAt:       new Date().toISOString(),
-        originalHeadline: raw.title,
-        displayHeadline:  displayHead,
-        summary:          summary.slice(0, 300) || null,
-        imageUrl:         raw.imageUrl,
+        sourceId:            source.id,
+        sourceName:          source.name,
+        sourceUrl:           raw.link,
+        canonicalUrl:        canonical,
+        author:              raw.author,
+        publishedAt:         raw.pubDate,
+        ingestedAt:          new Date().toISOString(),
+        originalHeadline:    raw.title,
+        displayHeadline:     displayHead,
+        summary:             summary.slice(0, 300) || null,
+        imageUrl:            raw.imageUrl,
         tags,
-        score:            partialScore,
-        relevanceScore:   relevance,
-        isBreaking:       false,
+        score:               partialScore,
+        relevanceScore:      relevance,
+        isBreaking:          false,
         sentiment,
+        contentType,
+        paywallStatus,
+        paywallReason,
+        sourceTier:          source.tier,
+        isOriginalReporting: source.isOriginalReporting,
+        runId,
+        status:              'active',
+        scoreComponents: {
+          relevance,
+          freshness,
+          sourceQuality: source.quality,
+          isBreaking:    false,
+          tier:          source.tier,
+          contentType,
+        },
       };
 
       // Promote to breaking if candidate
       if (isBreakingCandidate({ score: partialScore, tags, title: raw.title, summary })) {
         article.isBreaking = true;
         article.score = Math.min(article.score + 8, 100);
+        if (article.scoreComponents) article.scoreComponents.isBreaking = true;
       }
 
       articles.push(article);
@@ -204,7 +225,7 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
   for (let i = 0; i < enabledSources.length; i += CHUNK_SIZE) {
     const chunk = enabledSources.slice(i, i + CHUNK_SIZE);
     const results = await Promise.all(
-      chunk.map(source => ingestSource(source, rewriteMode)),
+      chunk.map(source => ingestSource(source, rewriteMode, runId)),
     );
 
     results.forEach((result, idx) => {

@@ -20,9 +20,16 @@ const showOrig = item.originalHeadline !== item.displayHeadline;
 // Only show tags that mean something to a reader; strip internal classifier tags
 const HIDE_TAGS = new Set(['good', 'bad', 'weird', 'national', 'offense', 'defense', 'roster']);
 const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
+
+const pw = item.paywallStatus ?? 'unknown';
+const showPaywall = pw === 'subscription' || pw === 'may_require';
+const pwLabel     = pw === 'subscription' ? 'Sub' : 'Sub?';
+const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May require subscription';
 ---
 
-<article class={`story ${item.isBreaking ? 'story--breaking' : ''}`} data-tags={item.tags.join(',')}>
+<article class={`story ${item.isBreaking ? 'story--breaking' : ''}`}
+         data-tags={item.tags.join(',')}
+         data-paywall={pw}>
   <div class="story-inner">
     <span class="story-rank">{rank}</span>
     <div class="story-body">
@@ -38,6 +45,9 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
         {displayTags.map(tag => (
           <button class={`tag tag--${tag}`} data-filter-tag={tag} type="button" aria-label={`Filter by ${tag}`}>{tag}</button>
         ))}
+        {showPaywall && (
+          <span class={`paywall-badge paywall-badge--${pw}`} title={pwTitle} aria-label={pwTitle}>{pwLabel}</span>
+        )}
         <span class={`story-time story-time--${hotness}`}>{rel(item.publishedAt)}</span>
       </div>
     </div>
@@ -158,5 +168,25 @@ const displayTags = item.tags.filter(t => !HIDE_TAGS.has(t)).slice(0, 2);
     background: var(--accent);
     color: #ffffff;
     border-color: var(--accent);
+  }
+
+  .paywall-badge {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .paywall-badge--subscription {
+    background: var(--surface-2);
+    color: var(--text-3);
+    border: 1px solid var(--border-strong);
+  }
+  .paywall-badge--may_require {
+    background: transparent;
+    color: var(--text-4);
+    border: 1px solid var(--border);
   }
 </style>
