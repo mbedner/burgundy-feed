@@ -3,9 +3,10 @@
 ---
 
 <div class="ss-shell" id="ssShell">
+  <div class="ss-inner">
   <div class="ss-nav" id="ssNav">
     <button class="ss-week-btn" id="ssWeekBtn" aria-haspopup="listbox" aria-expanded="false">
-      <span id="ssWeekLabel">Week 1</span>
+      <span id="ssWeekLabel">—</span>
       <svg class="ss-chevron" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">
         <path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -31,6 +32,7 @@
   <button class="ss-scroll-btn ss-scroll-btn--right" id="ssScrollRight" aria-label="Scroll right">
     <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
+  </div>{/* .ss-inner */}
 </div>
 
 <script>
@@ -191,6 +193,10 @@
     currentYear       = data?.season?.year ?? 2026;
     currentSeasonType = data?.season?.type ?? 2;
 
+    // Update label to match what the API actually returned
+    const weekLabelEl = document.getElementById('ssWeekLabel');
+    if (weekLabelEl) weekLabelEl.textContent = `Week ${currentWeek}`;
+
     const shell     = document.getElementById('ssShell');
     const weekBtn   = document.getElementById('ssWeekBtn')   as HTMLButtonElement | null;
     const weekLabel = document.getElementById('ssWeekLabel') as HTMLElement | null;
@@ -330,13 +336,19 @@
   .ss-sk-score { width: 14px; height: 11px; margin-left: auto; }
   .ss-sk-status { width: 44px; height: 8px; margin-top: 4px; border-radius: 2px; }
 
-  /* ── Strip shell ── */
+  /* ── Strip shell — full-width background/border wrapper ── */
   .ss-shell {
-    display: flex;
-    align-items: stretch;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     overflow-y: hidden;
+  }
+
+  /* ── Inner — constrained to page width, holds flex children ── */
+  .ss-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: stretch;
   }
 
   /* ── Track wrapper (fade gradients only) ── */
