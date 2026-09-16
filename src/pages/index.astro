@@ -30,7 +30,6 @@ import DraftBanner         from '../components/DraftBanner.astro';
 import type { Article, BreakingItem } from '../lib/types';
 import NfcEastSection from '../components/NfcEastSection.astro';
 import ScoresStrip    from '../components/ScoresStrip.astro';
-import NewSince       from '../components/NewSince.astro';
 import type { RivalItem } from '../lib/types';
 import { readNfcEast } from '../lib/kv';
 
@@ -1198,8 +1197,6 @@ const hasBreaking = freshBreaking.length > 0;
           </section>
         )}
 
-        <NewSince items={articles} />
-
         <section id="leads">
           {leads.length > 0
             ? <LeadStories items={leads} />
@@ -1596,12 +1593,6 @@ const hasBreaking = freshBreaking.length > 0;
       push({ event: 'topic_filter_select', tag: btn.getAttribute('data-filter-tag') });
     });
 
-    // ── New Since panel dismiss
-    document.addEventListener('click', e => {
-      if ((e.target as Element).closest('#new-since-dismiss')) {
-        push({ event: 'new_since_dismiss' });
-      }
-    });
   })();
 </script>
 </body>
