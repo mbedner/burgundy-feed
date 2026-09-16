@@ -2,7 +2,7 @@
 // Scores strip — fully client-side (ESPN blocks Cloudflare Workers egress)
 ---
 
-<div class="ss-shell" id="ssShell" hidden>
+<div class="ss-shell" id="ssShell">
   <div class="ss-nav" id="ssNav">
     <button class="ss-week-btn" id="ssWeekBtn" aria-haspopup="listbox" aria-expanded="false">
       <span id="ssWeekLabel">Week 1</span>
@@ -16,7 +16,17 @@
     <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M6 1L1 6L6 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <div class="ss-track-wrap">
-    <div class="ss-track" id="ssTrack"></div>
+    <div class="ss-track" id="ssTrack">
+      <!-- Skeleton cards — replaced by real data once JS fetch completes -->
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+      <div class="ss-sk-card"><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-team"><div class="ss-sk-logo ss-sk-pulse"></div><div class="ss-sk-abbr ss-sk-pulse"></div><div class="ss-sk-score ss-sk-pulse"></div></div><div class="ss-sk-status ss-sk-pulse"></div></div>
+    </div>
   </div>
   <button class="ss-scroll-btn ss-scroll-btn--right" id="ssScrollRight" aria-label="Scroll right">
     <svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1L6 6L1 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -185,7 +195,6 @@
     const weekBtn   = document.getElementById('ssWeekBtn')   as HTMLButtonElement | null;
     const weekLabel = document.getElementById('ssWeekLabel') as HTMLElement | null;
     const weekPanel = document.getElementById('ssWeekPanel') as HTMLElement | null;
-    if (shell) shell.hidden = false;
 
     const { html, wasIdx } = buildCards(events);
     const track = document.getElementById('ssTrack') as HTMLElement | null;
@@ -290,6 +299,37 @@
 </script>
 
 <style is:global>
+  /* ── Skeleton cards (live inside ss-track, replaced when data loads) ── */
+  @keyframes ss-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .ss-sk-pulse {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+    animation: ss-shimmer 1.4s ease-in-out infinite;
+    border-radius: 3px;
+  }
+  .ss-sk-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding: 7px 10px 6px;
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+    width: 88px;
+  }
+  .ss-sk-team {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .ss-sk-logo  { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+  .ss-sk-abbr  { width: 26px; height: 9px; }
+  .ss-sk-score { width: 14px; height: 11px; margin-left: auto; }
+  .ss-sk-status { width: 44px; height: 8px; margin-top: 4px; border-radius: 2px; }
+
   /* ── Strip shell ── */
   .ss-shell {
     display: flex;

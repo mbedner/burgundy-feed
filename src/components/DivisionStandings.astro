@@ -14,38 +14,26 @@ const { entries } = Astro.props;
 if (!entries.length) return;
 ---
 
-<div class="standings">
-  <p class="standings-title">NFC East</p>
-  <table class="standings-table" cellspacing="0" cellpadding="0">
-    <thead>
-      <tr>
-        <th class="col-team">Team</th>
-        <th class="col-num">W</th>
-        <th class="col-num">L</th>
-        {entries.some(e => e.ties > 0) && <th class="col-num">T</th>}
-        <th class="col-pct">PCT</th>
-      </tr>
-    </thead>
-    <tbody>
-      {entries.map(e => (
-        <tr class={e.isCommanders ? 'row--us' : ''}>
-          <td class="col-team">{e.abbr}</td>
-          <td class="col-num">{e.wins}</td>
-          <td class="col-num">{e.losses}</td>
-          {entries.some(x => x.ties > 0) && <td class="col-num">{e.ties}</td>}
-          <td class="col-pct">{e.pct}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
+<div class="module">
+  <div class="module-hd">NFC East</div>
+  <div class="std-col-hdr">
+    <span></span>
+    <span class="std-lbl">W</span>
+    <span class="std-lbl">L</span>
+    <span class="std-lbl std-lbl--r">PCT</span>
+  </div>
+  {entries.map(e => (
+    <div class={`std-row${e.isCommanders ? ' std-row--us' : ''}`}>
+      <span class="std-abbr">{e.abbr}</span>
+      <span class="std-num">{e.wins}</span>
+      <span class="std-num">{e.losses}</span>
+      <span class="std-pct">{e.pct}</span>
+    </div>
+  ))}
 </div>
 
 <style>
-  .standings {
-    font-size: 13px;
-  }
-
-  .standings-title {
+  .module-hd {
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.1em;
@@ -53,41 +41,41 @@ if (!entries.length) return;
     color: var(--accent);
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
-    margin: 0 0 12px;
+    margin-bottom: 12px;
   }
 
-  .standings-table {
-    width: 100%;
-    border-collapse: collapse;
+  .std-col-hdr {
+    display: grid;
+    grid-template-columns: 1fr 22px 22px 36px;
+    gap: 4px;
+    align-items: center;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
   }
-
-  .standings-table th {
-    font-size: 10px;
+  .std-lbl {
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--text-4);
-    padding: 0 4px 5px;
+    text-align: center;
+  }
+  .std-lbl--r { text-align: right; }
+
+  .std-row {
+    display: grid;
+    grid-template-columns: 1fr 22px 22px 36px;
+    gap: 4px;
+    align-items: center;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border);
-    text-align: left;
+    font-size: 11px;
   }
+  .std-row:last-child { border-bottom: none; }
 
-  .standings-table td {
-    padding: 5px 4px;
-    color: var(--text-2);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  .standings-table tr:last-child td { border-bottom: none; }
+  .std-abbr { font-weight: 600; color: var(--text-2); }
+  .std-num  { text-align: center; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .std-pct  { text-align: right; font-size: 10px; color: var(--text-4); font-variant-numeric: tabular-nums; }
 
-  .col-team { width: 100%; font-weight: 600; font-size: 12px; }
-  .col-num  { text-align: center; min-width: 22px; }
-  .col-pct  { text-align: right; color: var(--text-4); font-size: 11px; }
-
-  /* Highlight the Commanders row */
-  .row--us td { color: var(--text-1); }
-  .row--us .col-team {
-    color: #9b1535;
-    font-weight: 700;
-  }
+  .std-row--us .std-abbr { font-weight: 800; color: var(--accent); }
 </style>

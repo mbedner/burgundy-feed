@@ -357,7 +357,34 @@ try {
   console.warn('[cw] rail data fetch error:', (e as Error).message);
 }
 
-const leads = articles.slice(0, SITE.leadCount);
+// ── Top Stories: 30hr cap + max 1 source in top 3 ────────────────────────────
+const LEADS_MAX_AGE_HRS = 6;
+const leadsAgeCutoff = new Date(Date.now() - LEADS_MAX_AGE_HRS * 60 * 60 * 1000);
+const freshForLeads = articles.filter(a => new Date(a.publishedAt) >= leadsAgeCutoff);
+// Only apply freshness filter when we have enough articles; otherwise fall back
+const leadsPool = freshForLeads.length >= 3 ? freshForLeads : articles;
+
+// Fill positions 0–2 with one story per source, then let the rest through
+const leadsTop3: typeof articles = [];
+const usedSources = new Set<string>();
+const leadsOverflow: typeof articles = [];
+for (const a of leadsPool) {
+  if (leadsTop3.length < 3 && !usedSources.has(a.sourceId)) {
+    usedSources.add(a.sourceId);
+    leadsTop3.push(a);
+  } else {
+    leadsOverflow.push(a);
+  }
+}
+// If not enough distinct sources fill positions 0–2, allow repeats
+if (leadsTop3.length < 3) {
+  for (const a of leadsOverflow.splice(0)) {
+    leadsTop3.length < 3 ? leadsTop3.push(a) : leadsOverflow.push(a);
+  }
+}
+const leads = [...leadsTop3, ...leadsOverflow].slice(0, SITE.leadCount);
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Latest News: everything after leads, sorted newest-first
 const streamItems = articles
   .slice(SITE.leadCount)

@@ -41,11 +41,10 @@ const { dates, schedule, stats, players,
   <div class="rail-section" id="rail-schedule">
     <Schedule schedule={schedule} />
   </div>
-  {standings.length > 0 && (
-    <div class="rail-section">
-      <DivisionStandings entries={standings} />
-    </div>
-  )}
+  {standings.length > 0
+    ? <div class="rail-section"><DivisionStandings entries={standings} /></div>
+    : <div id="rail-standings-mount"></div>
+  }
   <div class="rail-section">
     <TeamStats stats={stats} players={players} />
   </div>

@@ -187,6 +187,89 @@ async function renderInjuries(): Promise<void> {
   mount.replaceWith(section);
 }
 
+async function renderStandings(): Promise<void> {
+  const mount = document.getElementById('rail-standings-mount');
+  if (!mount) return;
+
+  const NFC_EAST = new Set([
+    'Washington Commanders', 'Dallas Cowboys',
+    'Philadelphia Eagles', 'New York Giants',
+  ]);
+
+  try {
+    const res = await fetch(
+      'https://site.api.espn.com/apis/v2/sports/football/nfl/standings',
+      { signal: AbortSignal.timeout(6000) },
+    );
+    if (!res.ok) return;
+    const data = await res.json() as any;
+
+    const raw: any[] = [];
+    for (const conf of (data.children || [])) {
+      for (const div of (conf.children || [])) {
+        for (const e of (div.standings?.entries || [])) {
+          if (NFC_EAST.has(e.team?.displayName)) raw.push(e);
+        }
+      }
+      // Flat path (some API versions)
+      for (const e of (conf.standings?.entries || [])) {
+        if (NFC_EAST.has(e.team?.displayName)) raw.push(e);
+      }
+    }
+
+    const seen = new Set<string>();
+    const teams = raw
+      .filter(e => { const k = e.team?.displayName; if (seen.has(k)) return false; seen.add(k); return true; })
+      .map(e => {
+        const s = Object.fromEntries((e.stats || []).map((x: any) => [x.name, x.displayValue]));
+        return {
+          abbr:  e.team.abbreviation as string,
+          wins:  Number(s.wins   ?? 0),
+          losses:Number(s.losses ?? 0),
+          gb:    s.gamesBehind ?? '—',
+          pct:   s.winPercent  ?? '.000',
+          isWas: e.team.displayName === 'Washington Commanders',
+        };
+      })
+      .sort((a, b) => b.wins - a.wins || a.losses - b.losses);
+
+    if (teams.length < 2) return;
+
+    const HDR = `font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:12px`;
+    const COL_HDR = `display:grid;grid-template-columns:1fr 22px 22px 36px;gap:4px;align-items:center;padding:0 0 5px;border-bottom:1px solid var(--border);margin-bottom:0`;
+    const COL_LBL = `font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-4)`;
+    const ROW = `display:grid;grid-template-columns:1fr 22px 22px 36px;gap:4px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px`;
+
+    const colHeaders = `<div style="${COL_HDR}">
+      <span></span>
+      <span style="${COL_LBL};text-align:center">W</span>
+      <span style="${COL_LBL};text-align:center">L</span>
+      <span style="${COL_LBL};text-align:right">PCT</span>
+    </div>`;
+
+    const rows = teams.map(t => {
+      const nameStyle = t.isWas
+        ? `font-weight:800;color:var(--accent)`
+        : `font-weight:600;color:var(--text-2)`;
+      return `<div style="${ROW}${t.isWas ? ';background:transparent' : ''}">
+        <span style="${nameStyle}">${t.abbr}</span>
+        <span style="text-align:center;font-variant-numeric:tabular-nums;color:var(--text-2)">${t.wins}</span>
+        <span style="text-align:center;font-variant-numeric:tabular-nums;color:var(--text-2)">${t.losses}</span>
+        <span style="text-align:right;font-size:10px;color:var(--text-4);font-variant-numeric:tabular-nums">${t.pct}</span>
+      </div>`;
+    }).join('');
+
+    const section = document.createElement('div');
+    section.className = 'rail-section';
+    section.innerHTML = `<div class="module">
+      <div style="${HDR}">NFC East</div>
+      ${colHeaders}${rows}
+    </div>`;
+
+    mount.replaceWith(section);
+  } catch { /* silent */ }
+}
+
 export async function railClientInit(): Promise<void> {
-  await Promise.all([renderOpponent(), renderInjuries()]);
+  await Promise.all([renderOpponent(), renderInjuries(), renderStandings()]);
 }
