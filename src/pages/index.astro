@@ -30,6 +30,7 @@ import DraftBanner         from '../components/DraftBanner.astro';
 import type { Article, BreakingItem } from '../lib/types';
 import NfcEastSection from '../components/NfcEastSection.astro';
 import ScoresStrip    from '../components/ScoresStrip.astro';
+import NewSince       from '../components/NewSince.astro';
 import type { RivalItem } from '../lib/types';
 import { readNfcEast } from '../lib/kv';
 
@@ -1168,6 +1169,7 @@ const hasBreaking = freshBreaking.length > 0;
         </section>
 
         <section id="stream" style="margin-top: 36px;">
+          <NewSince items={articles} />
           <p class="section-label">Latest News</p>
           {streamItems.length > 0
             ? <NewsStream items={streamItems} />

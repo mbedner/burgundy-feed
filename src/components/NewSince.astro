@@ -1,0 +1,187 @@
+---
+import type { Article } from '../lib/types';
+interface Props { items: Article[]; }
+const { items } = Astro.props;
+
+const meta = items.map(a => ({
+  id:         a.id,
+  headline:   a.displayHeadline,
+  url:        a.sourceUrl,
+  ingestedAt: a.ingestedAt,
+  sourceName: a.sourceName,
+}));
+---
+
+<div id="new-since-section" hidden>
+  <div class="ns-header">
+    <span class="ns-label">New since your last visit</span>
+    <span id="ns-count" class="ns-count"></span>
+    <button class="ns-dismiss" id="ns-dismiss" type="button" aria-label="Dismiss new stories section">✕</button>
+  </div>
+  <ul id="ns-list" class="ns-list"></ul>
+  <button id="ns-more" class="ns-more" type="button" hidden></button>
+</div>
+
+<style>
+  #new-since-section {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface-2);
+    padding: 12px 14px 10px;
+    margin-bottom: 20px;
+  }
+  #new-since-section[hidden] { display: none; }
+
+  .ns-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ns-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    flex: 1;
+  }
+  .ns-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    background: var(--surface-3);
+    border-radius: 10px;
+    padding: 1px 7px;
+  }
+  .ns-dismiss {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-4);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+    font-family: inherit;
+    transition: color 0.12s;
+  }
+  .ns-dismiss:hover { color: var(--text); }
+
+  .ns-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .ns-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    min-width: 0;
+  }
+  .ns-item:last-child { border-bottom: none; }
+  .ns-item a {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    text-decoration: none;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.12s;
+  }
+  .ns-item a:hover { color: var(--accent); }
+  .ns-source {
+    font-size: 11px;
+    color: var(--text-4);
+    flex-shrink: 0;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  .ns-more {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px 0;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--text-3);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.12s, border-color 0.12s;
+    letter-spacing: 0.03em;
+  }
+  .ns-more:hover { color: var(--accent); border-color: var(--accent); }
+  .ns-more[hidden] { display: none; }
+</style>
+
+<script define:vars={{ meta }}>
+  (() => {
+    const KEY = 'bf-last-visit';
+    const section  = document.getElementById('new-since-section');
+    const list     = document.getElementById('ns-list');
+    const countEl  = document.getElementById('ns-count');
+    const dismiss  = document.getElementById('ns-dismiss');
+    const moreBtn  = document.getElementById('ns-more');
+    if (!section || !list) return;
+
+    let lastVisit = null;
+    try { lastVisit = localStorage.getItem(KEY); } catch { /* blocked */ }
+
+    // Record this visit so next page load knows the baseline
+    try { localStorage.setItem(KEY, new Date().toISOString()); } catch {}
+
+    if (!lastVisit) return; // First visit — nothing to compare against
+
+    const lastTs   = new Date(lastVisit).getTime();
+    const newItems = meta.filter(a => new Date(a.ingestedAt).getTime() > lastTs);
+    if (newItems.length === 0) return;
+
+    const MAX_SHOWN = 5;
+
+    function buildItem(a) {
+      const li = document.createElement('li');
+      li.className = 'ns-item';
+      const anchor = document.createElement('a');
+      anchor.href   = a.url;
+      anchor.target = '_blank';
+      anchor.rel    = 'noopener noreferrer';
+      anchor.textContent = a.headline;
+      const src = document.createElement('span');
+      src.className   = 'ns-source';
+      src.textContent = a.sourceName;
+      li.appendChild(anchor);
+      li.appendChild(src);
+      return li;
+    }
+
+    newItems.slice(0, MAX_SHOWN).forEach(a => list.appendChild(buildItem(a)));
+
+    if (newItems.length > MAX_SHOWN && moreBtn) {
+      moreBtn.textContent = `+ ${newItems.length - MAX_SHOWN} more`;
+      moreBtn.hidden = false;
+      moreBtn.addEventListener('click', () => {
+        newItems.slice(MAX_SHOWN).forEach(a => list.appendChild(buildItem(a)));
+        moreBtn.hidden = true;
+      }, { once: true });
+    }
+
+    if (countEl) countEl.textContent = `${newItems.length} new`;
+    section.hidden = false;
+
+    if (dismiss) {
+      dismiss.addEventListener('click', () => { section.hidden = true; }, { once: true });
+    }
+  })();
+</script>
