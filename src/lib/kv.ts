@@ -1,5 +1,5 @@
 // ─── Cloudflare KV helpers ────────────────────────────────────────────────────
-import type { Article, BreakingItem, IngestRun, StoredData, RivalItem, ClusterMeta } from './types';
+import type { Article, BreakingItem, IngestRun, StoredData, RivalItem, ClusterMeta, VideoItem } from './types';
 import type { StoredSubscription } from './push';
 import { SITE } from '../config/site';
 
@@ -122,5 +122,21 @@ export async function readNfcEast(kv: KVNamespace): Promise<RivalItem[]> {
 export async function writeNfcEast(kv: KVNamespace, items: RivalItem[]): Promise<void> {
   await kv.put(SITE.kvKeys.nfcEast, JSON.stringify(items), {
     expirationTtl: 60 * 60 * 4,
+  });
+}
+
+export async function readVideos(kv: KVNamespace): Promise<VideoItem[]> {
+  try {
+    const raw = await kv.get(SITE.kvKeys.videos);
+    if (!raw) return [];
+    return JSON.parse(raw) as VideoItem[];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeVideos(kv: KVNamespace, items: VideoItem[]): Promise<void> {
+  await kv.put(SITE.kvKeys.videos, JSON.stringify(items), {
+    expirationTtl: 60 * 60 * 6,
   });
 }

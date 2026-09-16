@@ -1,8 +1,9 @@
 // ─── Cloudflare Worker: Hourly Ingest Cron ───────────────────────────────────
 import { runIngest, runNfcEastIngest } from '../src/lib/ingest';
 import { detectBreakingItems } from '../src/lib/breaking';
-import { writeArticles, writeBreaking, writeLastRun, writeNfcEast, writeClusters, listPushSubscriptions } from '../src/lib/kv';
+import { writeArticles, writeBreaking, writeLastRun, writeNfcEast, writeClusters, writeVideos, listPushSubscriptions } from '../src/lib/kv';
 import { fetchLiveStats, fetchTransactions } from '../src/lib/espn';
+import { fetchYouTubeVideos } from '../src/lib/youtube';
 import { sendPush } from '../src/lib/push';
 import { SITE } from '../src/config/site';
 
@@ -68,12 +69,13 @@ async function doIngest(env: Env) {
 
   console.log(`[ingest] starting run at ${now}`);
 
-  // Run articles ingest + live stats + transactions concurrently
-  const [{ articles, clusters, run }, liveStats, transactions, nfcEastItems] = await Promise.all([
+  // Run articles ingest + live stats + transactions + YouTube concurrently
+  const [{ articles, clusters, run }, liveStats, transactions, nfcEastItems, videos] = await Promise.all([
     runIngest(mode),
     fetchLiveStats(),
     fetchTransactions(),
     runNfcEastIngest(),
+    fetchYouTubeVideos(),
   ]);
 
   const breaking = detectBreakingItems(articles);
@@ -87,6 +89,13 @@ async function doIngest(env: Env) {
 
   writes.push(writeNfcEast(env.ARTICLES_KV, nfcEastItems));
   console.log(`[ingest] ${nfcEastItems.length} NFC East rival items fetched`);
+
+  if (videos.length > 0) {
+    writes.push(writeVideos(env.ARTICLES_KV, videos));
+    console.log(`[ingest] ${videos.length} YouTube videos fetched`);
+  } else {
+    console.warn('[ingest] YouTube fetch returned no videos — keeping cached copy');
+  }
 
   // Cache live stats in KV — expires after 3 hours
   if (liveStats) {

@@ -29,8 +29,9 @@ import DraftBanner         from '../components/DraftBanner.astro';
 
 import type { Article, BreakingItem } from '../lib/types';
 import NfcEastSection from '../components/NfcEastSection.astro';
+import VideoSection   from '../components/VideoSection.astro';
 import ScoresStrip    from '../components/ScoresStrip.astro';
-import type { RivalItem } from '../lib/types';
+import type { RivalItem, VideoItem } from '../lib/types';
 import { readNfcEast } from '../lib/kv';
 
 // ── DEV MOCK DATA ─────────────────────────────────────────────────────────────
@@ -233,6 +234,7 @@ const mockBreaking: BreakingItem[] = [
 // ── LIVE DATA ────────────────────────────────────────────────────────────────
 let data: StoredData = { articles: [], breaking: [], lastRun: null };
 let nfcEastItems: RivalItem[] = [];
+let videoItems: VideoItem[] = [];
 let liveStats: LiveStats | null = null;
 let espnTransactions: EspnTransaction[] = [];
 let divisionStandings: any[] = [];
@@ -292,15 +294,17 @@ try {
     runtime?.env?.ARTICLES_KV ??
     (Astro.locals as any).ARTICLES_KV;
   if (kv) {
-    const [allData, statsRaw, txRaw, nfcEastRaw] = await Promise.all([
+    const [allData, statsRaw, txRaw, nfcEastRaw, videosRaw] = await Promise.all([
       readAll(kv),
       kv.get('stats:snapshot'),
       kv.get('transactions:latest'),
       kv.get('nfceast:latest'),
+      kv.get('videos:latest'),
     ]);
     data = allData;
-    if (statsRaw) liveStats = JSON.parse(statsRaw) as LiveStats;
-    if (txRaw)    espnTransactions = JSON.parse(txRaw) as EspnTransaction[];
+    if (statsRaw)  liveStats = JSON.parse(statsRaw) as LiveStats;
+    if (txRaw)     espnTransactions = JSON.parse(txRaw) as EspnTransaction[];
+    if (videosRaw) videoItems = JSON.parse(videosRaw) as VideoItem[];
     nfcEastItems = nfcEastRaw ? JSON.parse(nfcEastRaw) as RivalItem[] : [];
     // KV cache miss — worker may not have run yet; fetch directly as fallback
     if (espnTransactions.length === 0) {
@@ -384,9 +388,10 @@ if (leadsTop3.length < 3) {
 const leads = [...leadsTop3, ...leadsOverflow].slice(0, SITE.leadCount);
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Latest News: everything after leads, sorted newest-first
+// Latest News: exclude anything already shown in Top Stories, sorted newest-first
+const leadIds = new Set(leads.map(a => a.id));
 const streamItems = articles
-  .slice(SITE.leadCount)
+  .filter(a => !leadIds.has(a.id))
   .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
 // ── Splash screen mode ────────────────────────────────────────────────────────
@@ -1220,6 +1225,7 @@ const hasBreaking = freshBreaking.length > 0;
       <a href="#voices">Reporter Voices</a>
       {showTxTracker && <a href="#transactions">Transactions</a>}
       <a href="#rail-schedule">Schedule &amp; Stats</a>
+      {videoItems.length > 0 && <a href="#videos">Videos</a>}
       <div class="display-toggle" role="group" aria-label="Display mode">
         <button id="dt-visual"  class="dt-btn" type="button" aria-pressed="true"  aria-label="Visual view" title="Visual">
           <svg viewBox="0 0 14 14" width="14" height="14" fill="currentColor" aria-hidden="true">
@@ -1277,6 +1283,12 @@ const hasBreaking = freshBreaking.length > 0;
         <section id="nfc-east">
           <NfcEastSection items={nfcEastItems} />
         </section>
+
+        {videoItems.length > 0 && (
+          <section id="videos">
+            <VideoSection items={videoItems} />
+          </section>
+        )}
       </div>
 
       <aside class="rail-col" id="rail">

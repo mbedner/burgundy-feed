@@ -137,3 +137,11 @@ export interface RivalItem {
   publishedAt: string;
   imageUrl:    string | null;
 }
+
+export interface VideoItem {
+  videoId:     string;
+  title:       string;
+  url:         string;
+  publishedAt: string;
+  thumbnailUrl: string;
+}
