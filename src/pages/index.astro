@@ -684,7 +684,7 @@ const hasBreaking = freshBreaking.length > 0;
     @media (min-width: 480px) { .subnav-hide-mobile { display: block; } }
 
     /* ── Anchor scroll offset — handled by JS for sticky-nav accuracy ───────── */
-    #gameday, #draft, #leads, #stream, #rail, #rail-schedule, #voices, #transactions {
+    #gameday, #draft, #leads, #stream, #rail, #rail-schedule, #voices, #transactions, #nfc-east {
       scroll-margin-top: 44px;
     }
 
@@ -1120,8 +1120,8 @@ const hasBreaking = freshBreaking.length > 0;
       {draftDay && <a href="#draft"><span class="subnav-short">Draft</span><span class="subnav-full">Draft</span></a>}
       <a href="#leads"><span class="subnav-short">Top</span><span class="subnav-full">Top Stories</span></a>
       <a href="#stream"><span class="subnav-short">Feed</span><span class="subnav-full">News Feed</span></a>
-      <a href="#rail-schedule"><span class="subnav-short">Schedule</span><span class="subnav-full">Schedule &amp; Stats</span></a>
       <a href="#voices" class="subnav-hide-mobile"><span class="subnav-full">Reporter Voices</span></a>
+      <a href="#rail-schedule"><span class="subnav-short">Schedule</span><span class="subnav-full">Schedule &amp; Stats</span></a>
     </div>
   </nav>
 
@@ -1137,9 +1137,9 @@ const hasBreaking = freshBreaking.length > 0;
       {draftDay && <a href="#draft">Draft</a>}
       <a href="#leads">Top Stories</a>
       <a href="#stream">News Feed</a>
+      <a href="#voices">Reporter Voices</a>
       {showTxTracker && <a href="#transactions">Transactions</a>}
       <a href="#rail-schedule">Schedule &amp; Stats</a>
-      <a href="#voices">Reporter Voices</a>
     </nav>
 
     <div class="content-grid">
@@ -1158,6 +1158,8 @@ const hasBreaking = freshBreaking.length > 0;
           </section>
         )}
 
+        <NewSince items={articles} />
+
         <section id="leads">
           {leads.length > 0
             ? <LeadStories items={leads} />
@@ -1169,12 +1171,18 @@ const hasBreaking = freshBreaking.length > 0;
         </section>
 
         <section id="stream" style="margin-top: 36px;">
-          <NewSince items={articles} />
           <p class="section-label">Latest News</p>
           {streamItems.length > 0
             ? <NewsStream items={streamItems} />
             : <p class="empty-msg">Waiting for first ingest run…</p>
           }
+        </section>
+
+        <section id="voices" style="padding-bottom: 48px; margin-top: 36px;">
+          <ReporterVoices config={REPORTER_CONFIG} />
+        </section>
+
+        <section id="nfc-east">
           <NfcEastSection items={nfcEastItems} />
         </section>
       </div>
@@ -1193,10 +1201,6 @@ const hasBreaking = freshBreaking.length > 0;
         />
       </aside>
     </div>
-
-    <section id="voices" style="padding-bottom: 48px; margin-top: 36px;">
-      <ReporterVoices config={REPORTER_CONFIG} />
-    </section>
   </main>
 
   <footer class="site-footer">
