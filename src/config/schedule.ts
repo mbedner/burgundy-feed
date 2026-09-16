@@ -12,16 +12,21 @@ export interface SeasonGame {
   result?:  'W' | 'L' | 'T';
 }
 
+// Dates shown in the sidebar key-dates section.
+// Past dates are kept but displayed in a collapsible "Past" group by TeamDates.
+// Do not list speculative dates without a source. Use `confirmed: false` when the
+// exact date/time has not been officially announced — the UI renders it as "TBA".
 export const IMPORTANT_DATES = [
-  // ── Upcoming games (notable / primetime / milestone) ─────────────────────
-  { label: 'Week 1 — at Philadelphia',  date: '2026-09-13', note: '4:25 PM · FOX' },
+  // ── Week 1 result ────────────────────────────────────────────────────────
+  { label: 'Week 1 — at Philadelphia',  date: '2026-09-13', note: 'L 22–24 · FOX',   past: true  },
+  // ── Upcoming primetime / notable games ────────────────────────────────────
   { label: 'Week 2 — at Dallas',        date: '2026-09-20', note: '4:25 PM · FOX' },
   { label: 'Week 3 — vs. Seattle',      date: '2026-09-27', note: '1:00 PM · FOX' },
   { label: 'London — vs. Indianapolis', date: '2026-10-04', note: 'Tottenham · 9:30 AM · NFLN' },
   { label: 'MNF — at San Francisco',    date: '2026-10-19', note: '8:15 PM · ESPN/ABC' },
   // ── Season milestones ─────────────────────────────────────────────────────
   { label: 'Bye Week',                  date: '2026-10-26', note: 'Week 7' },
-  { label: 'Trade Deadline',            date: '2026-11-03', note: 'Est. — confirm on NFL.com' },
+  { label: 'Trade Deadline',            date: '2026-11-04', note: '4:00 PM ET' },
   { label: 'SNF — vs. Philadelphia',    date: '2026-11-01', note: '8:20 PM · NBC' },
   { label: 'TNF — at NY Giants',        date: '2026-11-12', note: '8:15 PM · Prime Video' },
   { label: 'MNF — vs. Cincinnati',      date: '2026-11-23', note: '8:15 PM · ESPN/ABC' },

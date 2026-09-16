@@ -14,7 +14,6 @@ interface Props {
   dates:      any;
   schedule:   any;
   stats:      any;
-  players:    any;
   txItems?:   EspnTransaction[];
   txLabel?:   string;
   showTx?:    boolean;
@@ -23,7 +22,7 @@ interface Props {
   opponent?:  OpponentInfo | null;
 }
 
-const { dates, schedule, stats, players,
+const { dates, schedule, stats,
         txItems = [], txLabel = '', showTx = false,
         standings = [], injuries = [], opponent = null } = Astro.props;
 ---
@@ -46,7 +45,7 @@ const { dates, schedule, stats, players,
     : <div id="rail-standings-mount"></div>
   }
   <div class="rail-section">
-    <TeamStats stats={stats} players={players} />
+    <TeamStats stats={stats} />
   </div>
   {injuries.length > 0
     ? <div class="rail-section"><InjuryReport players={injuries} /></div>

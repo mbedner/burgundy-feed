@@ -1,5 +1,5 @@
 // ─── Main Ingestion Orchestrator ──────────────────────────────────────────────
-import type { Article, IngestRun, SourceConfig } from './types';
+import type { Article, IngestRun, IngestStatus, SourceConfig } from './types';
 import type { RawItem } from './sources/rss';
 import { fetchRssFeed } from './sources/rss';
 import {
@@ -17,14 +17,18 @@ import { SITE, MIN_RELEVANCE_SCORE, MIN_RELEVANCE_SCORE_NATIONAL } from '../conf
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function sha256Hex(s: string): string {
-  // Simple deterministic hash for ID generation.
-  // In Workers runtime you can use crypto.subtle; this is a fast FNV-style fallback.
   let hash = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     hash ^= s.charCodeAt(i);
     hash = (hash * 0x01000193) >>> 0;
   }
   return hash.toString(16).padStart(8, '0');
+}
+
+function generateRunId(): string {
+  const ts  = Date.now().toString(36);
+  const rnd = Math.random().toString(36).slice(2, 10);
+  return `run_${ts}_${rnd}`;
 }
 
 function normalizeUrl(url: string): string {
@@ -188,7 +192,7 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
   run:      IngestRun;
 }> {
   const startedAt = new Date().toISOString();
-  const runId     = startedAt;
+  const runId     = generateRunId();
 
   const enabledSources = SOURCES.filter(s => s.enabled);
   const allArticles: Article[] = [];
@@ -209,6 +213,7 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
         id:      source.id,
         success: result.error === null,
         count:   result.items.length,
+        error:   result.error ?? undefined,
       });
 
       if (result.error) {
@@ -219,7 +224,9 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
     });
   }
 
-  const deduped = deduplicate(allArticles);
+  const rawCount = allArticles.length;
+  const deduped  = deduplicate(allArticles);
+  const dupesRejected = rawCount - deduped.length;
 
   // Sort by composite score
   deduped.sort((a, b) => b.score - a.score);
@@ -249,14 +256,27 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
   // Keep top N stories
   const topArticles = capped.slice(0, SITE.storyCount + 10); // extra buffer
 
+  const succeeded = sourceResults.filter(s => s.success).length;
+  const failed    = sourceResults.filter(s => !s.success).length;
+  let status: IngestStatus;
+  if (failed === 0)                                    status = 'successful';
+  else if (succeeded === 0)                            status = 'failed';
+  else                                                 status = 'partially_successful';
+
   const run: IngestRun = {
-    id:            runId,
+    id:                 runId,
     startedAt,
-    completedAt:   new Date().toISOString(),
-    articlesFound: allArticles.length,
-    articlesNew:   deduped.length,
+    completedAt:        new Date().toISOString(),
+    status,
+    sourcesAttempted:   sourceResults.length,
+    sourcesSucceeded:   succeeded,
+    sourcesFailed:      failed,
+    articlesFound:      rawCount,
+    articlesNew:        deduped.length,
+    articlesUpdated:    0,
+    duplicatesRejected: dupesRejected,
     errors,
-    sources:       sourceResults,
+    sources:            sourceResults,
   };
 
   return { articles: topArticles, run };

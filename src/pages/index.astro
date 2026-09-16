@@ -13,7 +13,6 @@ import type { OpponentInfo } from '../lib/opponent';
 import { readAll } from '../lib/kv';
 import { SITE, TRANSACTION_SEASON } from '../config/site';
 import { IMPORTANT_DATES, UPCOMING_SCHEDULE, TEAM_STATS } from '../config/schedule';
-import { FEATURED_PLAYERS } from '../config/players';
 import { REPORTER_CONFIG } from '../config/reporters';
 
 import SplashScreen        from '../components/SplashScreen.astro';
@@ -420,7 +419,6 @@ const freshBreaking = breaking
   .filter(b => Date.now() - new Date(b.detectedAt).getTime() < BREAKING_TTL_MS)
   .slice(0, 1);
 const hasBreaking = freshBreaking.length > 0;
-const lastUpdated = lastRun?.completedAt ?? null;
 ---
 
 <!DOCTYPE html>
@@ -444,7 +442,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400;1,14..32,500&display=swap" rel="stylesheet" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="/manifest.json" />
-  <meta name="bf-version" content={lastRun?.id ?? ''} />
+  <meta name="bf-version" content={lastRun?.id ?? lastRun?.completedAt ?? ''} />
 
   <!-- PWA / Apple home-screen -->
   <meta name="mobile-web-app-capable" content="yes" />
@@ -1109,7 +1107,7 @@ const lastUpdated = lastRun?.completedAt ?? null;
 
   </div>
 
-  <Masthead lastUpdated={lastUpdated} />
+  <Masthead lastRun={lastRun} />
 
   <!-- Sticky burgundy subnav — hidden until user scrolls past the inline nav -->
   <nav class="sticky-subnav" id="stickySubnav" aria-label="Quick navigation">
@@ -1184,7 +1182,6 @@ const lastUpdated = lastRun?.completedAt ?? null;
           dates={IMPORTANT_DATES}
           schedule={UPCOMING_SCHEDULE}
           stats={stats}
-          players={FEATURED_PLAYERS}
           txItems={espnTransactions}
           txLabel={TRANSACTION_SEASON.label}
           showTx={showTxTracker}

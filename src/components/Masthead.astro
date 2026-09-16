@@ -1,6 +1,9 @@
 ---
-interface Props { lastUpdated: string | null; }
-const { lastUpdated } = Astro.props;
+import type { IngestRun } from '../lib/types';
+interface Props { lastRun: IngestRun | null; }
+const { lastRun } = Astro.props;
+const lastUpdated = lastRun?.completedAt ?? null;
+const runStatus   = lastRun?.status ?? null;
 ---
 
 <header class="mast">
@@ -14,33 +17,84 @@ const { lastUpdated } = Astro.props;
 
     <div class="mast-right">
       <div class="mast-sync">
-        <span class="sync-dot"></span>
-        <span class="sync-label" id="syncLabel" data-iso={lastUpdated ?? ''}>
-          {lastUpdated ? 'Updated —' : 'Not yet synced'}
+        <span class="sync-dot" id="syncDot"></span>
+        <span class="sync-label" id="syncLabel"
+              data-iso={lastUpdated ?? ''}
+              data-status={runStatus ?? ''}>
+          {lastUpdated ? 'Updated —' : 'News updates are temporarily unavailable'}
         </span>
       </div>
-
     </div>
   </div>
 </header>
 
 <script>
-  // ── Format the "Updated" timestamp in the browser's local timezone ──────────
-  const label = document.getElementById('syncLabel');
-  if (label) {
-    const iso = label.getAttribute('data-iso');
-    if (iso) {
-      const d = new Date(iso);
-      if (!isNaN(d.getTime())) {
-        const formatted = d.toLocaleTimeString('en-US', {
-          hour: 'numeric', minute: '2-digit', hour12: true, timeZoneName: 'short',
-        });
-        label.textContent = `Updated ${formatted}`;
-      }
-    }
+  function relativeTime(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const ageMs   = Date.now() - d.getTime();
+    const ageMins = Math.floor(ageMs / 60_000);
+    const ageHrs  = Math.floor(ageMs / 3_600_000);
+    if (ageMins <  1) return 'just now';
+    if (ageMins < 60) return `${ageMins} minute${ageMins === 1 ? '' : 's'} ago`;
+    if (ageHrs  === 1) return '1 hour ago';
+    return `${ageHrs} hours ago`;
   }
 
+  function exactTime(iso: string): string {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-US', {
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+    });
+  }
+
+  function updateLabel() {
+    const label = document.getElementById('syncLabel') as HTMLElement | null;
+    const dot   = document.getElementById('syncDot')   as HTMLElement | null;
+    if (!label) return;
+
+    const iso    = label.dataset.iso    ?? '';
+    const status = label.dataset.status ?? '';
+
+    if (!iso) {
+      label.textContent = 'News updates are temporarily unavailable';
+      if (dot) dot.classList.add('sync-dot--error');
+      return;
+    }
+
+    const ageMs  = Date.now() - new Date(iso).getTime();
+    const ageHrs = ageMs / 3_600_000;
+    const rel    = relativeTime(iso);
+    const exact  = exactTime(iso);
+
+    if (ageHrs >= 2) {
+      if (ageHrs >= 4) {
+        label.textContent = `Stale — last updated ${rel}`;
+        if (dot) dot.classList.add('sync-dot--error');
+      } else {
+        label.textContent = `Updated ${rel}`;
+        if (dot) dot.classList.add('sync-dot--warn');
+      }
+    } else if (status === 'partially_successful') {
+      label.textContent = `Updated ${rel} (some sources unavailable)`;
+    } else {
+      label.textContent = `Updated ${rel}`;
+    }
+
+    label.title = `Last updated: ${exact}`;
+  }
+
+  updateLabel();
+  // Refresh the relative time once a minute
+  setInterval(updateLabel, 60_000);
 </script>
+
+<style>
+  .sync-dot--warn  { background: #f59e0b !important; animation: none !important; }
+  .sync-dot--error { background: #ef4444 !important; animation: none !important; }
+</style>
 
 <style>
   .mast {

@@ -1,8 +1,7 @@
 ---
 import type { TEAM_STATS } from '../config/schedule';
-import type { FEATURED_PLAYERS } from '../config/players';
-interface Props { stats: typeof TEAM_STATS; players: typeof FEATURED_PLAYERS; }
-const { stats, players } = Astro.props;
+interface Props { stats: typeof TEAM_STATS; }
+const { stats } = Astro.props;
 
 function ordinal(n: number): string {
   const s = ['th','st','nd','rd'];
@@ -10,7 +9,11 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
+const passYpg  = stats.passYardsPerGame  > 0 ? stats.passYardsPerGame.toFixed(1)  : null;
+const rushYpg  = stats.rushYardsPerGame  > 0 ? stats.rushYardsPerGame.toFixed(1)  : null;
+const totalYpg = (passYpg !== null && rushYpg !== null)
+  ? (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1)
+  : null;
 ---
 
 <div class="module">
@@ -32,11 +35,11 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
       <span class="rank-lbl">Def Rank</span>
     </div>
     <div class="rank-cell">
-      <span class="rank-val" id="ts-ppg">{stats.pointsPerGame}</span>
+      <span class="rank-val" id="ts-ppg">{stats.pointsPerGame > 0 ? stats.pointsPerGame : '—'}</span>
       <span class="rank-lbl">PPG</span>
     </div>
     <div class="rank-cell">
-      <span class="rank-val" id="ts-opp-ppg">{stats.pointsAllowed}</span>
+      <span class="rank-val" id="ts-opp-ppg">{stats.pointsAllowed > 0 ? stats.pointsAllowed : '—'}</span>
       <span class="rank-lbl">Opp PPG</span>
     </div>
   </div>
@@ -44,15 +47,15 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
   <!-- Yards per game breakdown -->
   <div class="yards-grid">
     <div class="yards-cell">
-      <span class="yards-val" id="ts-pass-ypg">{stats.passYardsPerGame}</span>
+      <span class="yards-val" id="ts-pass-ypg">{passYpg ?? '—'}</span>
       <span class="yards-lbl">Pass Yds/G</span>
     </div>
     <div class="yards-cell">
-      <span class="yards-val" id="ts-rush-ypg">{stats.rushYardsPerGame}</span>
+      <span class="yards-val" id="ts-rush-ypg">{rushYpg ?? '—'}</span>
       <span class="yards-lbl">Rush Yds/G</span>
     </div>
     <div class="yards-cell yards-cell--total">
-      <span class="yards-val" id="ts-total-ypg">{totalYards}</span>
+      <span class="yards-val" id="ts-total-ypg">{totalYpg ?? '—'}</span>
       <span class="yards-lbl">Total Yds/G</span>
     </div>
   </div>
@@ -77,25 +80,8 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     ))}
   </div>
 
-  <!-- Player spotlight -->
-  {players.length > 0 && (
-    <div class="spotlight">
-      <div class="spotlight-hd">Spotlight</div>
-      {players.map(p => (
-        <div class="player-row">
-          <span class="player-num">#{p.number}</span>
-          <div class="player-info">
-            <span class="player-name">{p.name}</span>
-            <span class="player-note">{p.note}</span>
-          </div>
-          <span class="player-pos">{p.position}</span>
-        </div>
-      ))}
-    </div>
-  )}
-
   <div class="stats-footer" id="ts-footer" style="display:none">
-    <span class="live-badge">● Live via ESPN</span>
+    <span class="live-badge" id="ts-footer-label">Stats provided by ESPN</span>
   </div>
 </div>
 
@@ -141,17 +127,32 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     if (division?.summary) set('ts-div-rec', division.summary + ' DIV');
   }
 
+  let espnHasStats = false;
   if (statsRes.status === 'fulfilled') {
     const cats: any[] = statsRes.value?.splits?.categories ?? [];
     const passYpg = catStat(cats, 'passing', 'passingYardsPerGame').val;
     const rushYpg = catStat(cats, 'rushing', 'rushingYardsPerGame').val;
     const ppg     = catStat(cats, 'scoring', 'totalPointsPerGame').val;
-    if (passYpg || rushYpg) {
+
+    // Only update from ESPN if at least one meaningful value came back
+    if (passYpg > 0 || rushYpg > 0) {
       set('ts-pass-ypg',  fmtNum(passYpg));
       set('ts-rush-ypg',  fmtNum(rushYpg));
       set('ts-total-ypg', fmtNum(passYpg + rushYpg));
+      espnHasStats = true;
+    } else {
+      // Season started but no yardage data yet — clear zeros to dashes
+      const passEl = document.getElementById('ts-pass-ypg');
+      const rushEl = document.getElementById('ts-rush-ypg');
+      const totEl  = document.getElementById('ts-total-ypg');
+      if (passEl?.textContent === '0' || passEl?.textContent === '0.0') passEl.textContent = '—';
+      if (rushEl?.textContent === '0' || rushEl?.textContent === '0.0') rushEl.textContent = '—';
+      if (totEl?.textContent === '0' || totEl?.textContent === '0.0')   totEl.textContent  = '—';
     }
-    if (ppg) set('ts-ppg', fmtNum(ppg));
+    if (ppg > 0) {
+      set('ts-ppg', fmtNum(ppg));
+      espnHasStats = true;
+    }
   }
 
   if (standRes.status === 'fulfilled') {
@@ -235,11 +236,21 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
       if (!leader) continue;
       set(`ts-leader-${key}-name`, leader.name);
       set(`ts-leader-${key}-stat`, leader.stat);
+      // Hide the row if we couldn't find a valid stat
+      if (!leader) {
+        const row = document.getElementById(`ts-leader-${key}-name`)?.closest('.leader-row') as HTMLElement | null;
+        if (row) row.style.display = 'none';
+      }
     }
   } catch { /* leader fetch failed — fallback names stay */ }
 
   const footer = document.getElementById('ts-footer');
-  if (footer) footer.style.display = '';
+  if (footer) {
+    // Only show ESPN attribution if we received at least some live data
+    if (espnHasStats) {
+      footer.style.display = '';
+    }
+  }
 })();
 </script>
 
@@ -384,55 +395,6 @@ const totalYards = (stats.passYardsPerGame + stats.rushYardsPerGame).toFixed(1);
     font-size: 11px;
     color: var(--text-3);
     text-align: right;
-  }
-
-  /* ── Spotlight ── */
-  /* No border-top here — spacing alone separates it from leaders */
-  .spotlight {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-  }
-  .spotlight-hd {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--accent);
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 10px;
-  }
-  .player-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .player-num {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--accent);
-    width: 26px;
-    flex-shrink: 0;
-  }
-  .player-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .player-name { font-size: 13px; font-weight: 700; color: var(--text); }
-  .player-note { font-size: 11px; color: var(--text-3); font-style: italic; }
-  .player-pos {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--accent);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    padding: 2px 5px;
-    border-radius: 3px;
   }
 
   .stats-footer {

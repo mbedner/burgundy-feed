@@ -13,7 +13,8 @@ export interface Env {
 
 export default {
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
-    await doIngest(env);
+    const result = await doIngest(env);
+    if (!result) console.warn('[ingest] scheduled run skipped — another run in progress');
   },
 
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
@@ -31,8 +32,13 @@ export default {
         return new Response('Unauthorized', { status: 401 });
       }
       const result = await doIngest(env);
+      if (!result) {
+        return new Response(JSON.stringify({ success: false, reason: 'locked' }), {
+          status: 409, headers: { 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(
-        JSON.stringify({ success: true, articlesFound: result.articlesFound, articlesNew: result.articlesNew, sources: result.sources, errors: result.errors, completedAt: result.completedAt }),
+        JSON.stringify({ success: true, status: result.status, articlesFound: result.articlesFound, articlesNew: result.articlesNew, duplicatesRejected: result.duplicatesRejected, sources: result.sources, errors: result.errors, completedAt: result.completedAt }),
         { headers: { 'Content-Type': 'application/json' } },
       );
     }
@@ -41,9 +47,22 @@ export default {
   },
 };
 
+const LOCK_KEY = 'ingest:lock';
+const LOCK_TTL_SECS = 300; // 5-minute lock prevents overlap
+
 async function doIngest(env: Env) {
   const mode = (env.REWRITE_MODE ?? SITE.rewriteMode) as typeof SITE.rewriteMode;
-  console.log(`[ingest] starting run at ${new Date().toISOString()}`);
+  const now = new Date().toISOString();
+
+  // Overlap prevention: bail if another run is already in progress
+  const existingLock = await env.ARTICLES_KV.get(LOCK_KEY);
+  if (existingLock) {
+    console.warn(`[ingest] skipping — lock held since ${existingLock}`);
+    return null;
+  }
+  await env.ARTICLES_KV.put(LOCK_KEY, now, { expirationTtl: LOCK_TTL_SECS });
+
+  console.log(`[ingest] starting run at ${now}`);
 
   // Run articles ingest + live stats + transactions concurrently
   const [{ articles, run }, liveStats, transactions, nfcEastItems] = await Promise.all([
@@ -88,7 +107,10 @@ async function doIngest(env: Env) {
 
   await Promise.all(writes);
 
-  console.log(`[ingest] done — ${run.articlesNew} articles, ${breaking.length} breaking, ${run.errors.length} errors`);
+  // Release lock
+  await env.ARTICLES_KV.delete(LOCK_KEY);
+
+  console.log(`[ingest] done — status=${run.status} ${run.articlesNew} new, ${run.duplicatesRejected} dupes, ${run.errors.length} errors`);
   if (run.errors.length) console.warn('[ingest] source errors:', run.errors.join(' | '));
 
   return run;

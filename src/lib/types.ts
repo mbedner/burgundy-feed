@@ -52,14 +52,26 @@ export interface BreakingItem {
   detectedAt:string;  // ISO 8601
 }
 
+export type IngestStatus =
+  | 'running'
+  | 'successful'
+  | 'partially_successful'
+  | 'failed';
+
 export interface IngestRun {
-  id:           string;  // ISO timestamp
-  startedAt:    string;
-  completedAt:  string | null;
-  articlesFound:number;
-  articlesNew:  number;
-  errors:       string[];
-  sources:      { id: string; success: boolean; count: number }[];
+  id:                string;   // uuid v4
+  startedAt:         string;   // ISO 8601 UTC
+  completedAt:       string | null;  // ISO 8601 UTC
+  status:            IngestStatus;
+  sourcesAttempted:  number;
+  sourcesSucceeded:  number;
+  sourcesFailed:     number;
+  articlesFound:     number;   // raw items across all sources before dedup
+  articlesNew:       number;   // distinct articles kept after dedup
+  articlesUpdated:   number;   // existing articles refreshed (metadata change)
+  duplicatesRejected:number;   // items dropped by dedup
+  errors:            string[];
+  sources:           { id: string; success: boolean; count: number; error?: string }[];
 }
 
 export interface SourceConfig {
