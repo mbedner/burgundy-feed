@@ -4,172 +4,294 @@ interface Props { items: Article[]; }
 const { items } = Astro.props;
 
 const meta = items.map(a => ({
-  id:         a.id,
-  headline:   a.displayHeadline,
-  url:        a.sourceUrl,
-  ingestedAt: a.ingestedAt,
-  sourceName: a.sourceName,
+  id:            a.id,
+  headline:      a.displayHeadline,
+  url:           a.sourceUrl,
+  ingestedAt:    a.ingestedAt,
+  sourceName:    a.sourceName,
+  paywallStatus: a.paywallStatus ?? 'unknown',
+  score:         (a as any).score ?? 0,
 }));
 ---
 
 <div id="new-since-section" hidden>
-  <div class="ns-header">
-    <span class="ns-label">New since your last visit</span>
-    <span id="ns-count" class="ns-count"></span>
-    <button class="ns-dismiss" id="ns-dismiss" type="button" aria-label="Dismiss new stories section">✕</button>
+  {/* ── Compact summary bar ── */}
+  <div class="ns-bar">
+    <span class="ns-dot-indicator" aria-hidden="true"></span>
+    <span id="ns-summary" class="ns-summary"></span>
+    <button id="ns-toggle" class="ns-toggle" type="button" aria-expanded="false" aria-controls="ns-expanded">
+      Show new
+    </button>
+    <button id="ns-dismiss" class="ns-dismiss" type="button" aria-label="Mark all as seen">✕</button>
   </div>
-  <ul id="ns-list" class="ns-list"></ul>
-  <button id="ns-more" class="ns-more" type="button" hidden></button>
+
+  {/* ── Expanded list (hidden by default) ── */}
+  <div id="ns-expanded" class="ns-expanded" hidden>
+    <ul id="ns-list" class="ns-list"></ul>
+    <button id="ns-more" class="ns-more" type="button" hidden></button>
+  </div>
 </div>
 
 <style>
-  #new-since-section {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--surface-2);
-    padding: 12px 14px 10px;
-    margin-bottom: 20px;
-  }
+  #new-since-section { margin-bottom: 20px; }
   #new-since-section[hidden] { display: none; }
 
-  .ns-header {
+  /* ── Summary bar ── */
+  .ns-bar {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 10px;
+    padding: 9px 12px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+    border-radius: 5px;
   }
-  .ns-label {
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--accent);
+
+  .ns-dot-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .ns-summary {
     flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    min-width: 0;
   }
-  .ns-count {
+  .ns-summary strong {
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .ns-toggle {
     font-size: 11px;
-    font-weight: 600;
-    color: var(--text-3);
-    background: var(--surface-3);
-    border-radius: 10px;
-    padding: 1px 7px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 3px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.12s;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
+  .ns-toggle:hover {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+
   .ns-dismiss {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--text-4);
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 3px 5px;
     line-height: 1;
     font-family: inherit;
     transition: color 0.12s;
+    flex-shrink: 0;
   }
-  .ns-dismiss:hover { color: var(--text); }
+  .ns-dismiss:hover { color: var(--text-2); }
+
+  /* ── Expanded list ── */
+  .ns-expanded {
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    overflow: hidden;
+  }
+  .ns-expanded[hidden] { display: none; }
 
   .ns-list {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
   }
+
   .ns-item {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    padding: 5px 0;
+    display: block;
+    text-decoration: none;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border);
-    min-width: 0;
+    transition: background 0.1s;
   }
   .ns-item:last-child { border-bottom: none; }
-  .ns-item a {
-    font-size: 13px;
-    font-weight: 500;
+  .ns-item:hover { background: var(--surface-2); }
+
+  .ns-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+  }
+  .ns-source {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .ns-sep {
+    font-size: 9px;
+    color: var(--border-strong);
+  }
+  .ns-time {
+    font-size: 10px;
+    color: var(--text-4);
+    font-variant-numeric: tabular-nums;
+  }
+  .ns-paywall-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-4);
+    border: 1px solid var(--border-strong);
+    border-radius: 2px;
+    padding: 1px 4px;
+  }
+
+  .ns-hed {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.3;
     color: var(--text);
-    text-decoration: none;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    margin: 0;
     transition: color 0.12s;
   }
-  .ns-item a:hover { color: var(--accent); }
-  .ns-source {
-    font-size: 11px;
-    color: var(--text-4);
-    flex-shrink: 0;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-  }
+  .ns-item:hover .ns-hed { color: var(--accent); }
 
   .ns-more {
     display: block;
     width: 100%;
-    margin-top: 8px;
-    padding: 6px 0;
+    padding: 9px 0;
     font-size: 12px;
     font-weight: 700;
     font-family: inherit;
     color: var(--text-3);
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    background: var(--surface-2);
+    border: none;
     cursor: pointer;
-    transition: color 0.12s, border-color 0.12s;
+    transition: color 0.12s, background 0.12s;
     letter-spacing: 0.03em;
   }
-  .ns-more:hover { color: var(--accent); border-color: var(--accent); }
+  .ns-more:hover { color: var(--accent); background: var(--surface-3, var(--surface-2)); }
   .ns-more[hidden] { display: none; }
 </style>
 
 <script define:vars={{ meta }}>
   (() => {
-    const KEY = 'bf-last-visit';
+    const VISIT_KEY   = 'bf-last-visit';
+    const SESSION_KEY = 'bf-session-start';
+
     const section  = document.getElementById('new-since-section');
-    const list     = document.getElementById('ns-list');
-    const countEl  = document.getElementById('ns-count');
-    const dismiss  = document.getElementById('ns-dismiss');
-    const moreBtn  = document.getElementById('ns-more');
+    const summaryEl = document.getElementById('ns-summary');
+    const toggleBtn = document.getElementById('ns-toggle');
+    const expanded  = document.getElementById('ns-expanded');
+    const list      = document.getElementById('ns-list');
+    const dismiss   = document.getElementById('ns-dismiss');
+    const moreBtn   = document.getElementById('ns-more');
     if (!section || !list) return;
 
+    const now = Date.now();
+
+    // One timestamp per browsing session — don't reset on reload
+    let sessionStart = null;
+    try { sessionStart = sessionStorage.getItem(SESSION_KEY); } catch {}
+    if (!sessionStart) {
+      sessionStart = new Date().toISOString();
+      try { sessionStorage.setItem(SESSION_KEY, sessionStart); } catch {}
+    }
+
+    // Previous session's end time
     let lastVisit = null;
-    try { lastVisit = localStorage.getItem(KEY); } catch { /* blocked */ }
+    try { lastVisit = localStorage.getItem(VISIT_KEY); } catch {}
 
-    // Record this visit so next page load knows the baseline
-    try { localStorage.setItem(KEY, new Date().toISOString()); } catch {}
+    // Update baseline to this session's start (next visit uses this)
+    try { localStorage.setItem(VISIT_KEY, sessionStart); } catch {}
 
-    if (!lastVisit) return; // First visit — nothing to compare against
+    if (!lastVisit) return; // first ever visit
 
     const lastTs   = new Date(lastVisit).getTime();
     const newItems = meta.filter(a => new Date(a.ingestedAt).getTime() > lastTs);
     if (newItems.length === 0) return;
 
-    const MAX_SHOWN = 5;
+    function rel(iso) {
+      const ms = now - new Date(iso).getTime();
+      const m  = Math.max(0, Math.floor(ms / 60000));
+      if (m < 60)  return m === 0 ? 'just now' : `${m}m ago`;
+      const h  = Math.floor(m / 60);
+      if (h < 24)  return `${h}h ago`;
+      return `${Math.floor(h / 24)}d ago`;
+    }
+
+    // Summary line
+    const sinceStr = rel(lastVisit);
+    const n = newItems.length;
+    if (summaryEl) {
+      summaryEl.innerHTML =
+        `<strong>${n} new ${n === 1 ? 'story' : 'stories'}</strong> since your last visit ${sinceStr}`;
+    }
+
+    // Build expanded list items
+    const MAX_SHOWN = 10;
 
     function buildItem(a) {
-      const li = document.createElement('li');
-      li.className = 'ns-item';
-      const anchor = document.createElement('a');
-      anchor.href   = a.url;
-      anchor.target = '_blank';
-      anchor.rel    = 'noopener noreferrer';
-      anchor.textContent = a.headline;
+      const li   = document.createElement('li');
+      const link = document.createElement('a');
+      link.href      = a.url;
+      link.target    = '_blank';
+      link.rel       = 'noopener noreferrer';
+      link.className = 'ns-item';
+
+      const eyebrow = document.createElement('div');
+      eyebrow.className = 'ns-eyebrow';
+
       const src = document.createElement('span');
       src.className   = 'ns-source';
       src.textContent = a.sourceName;
-      li.appendChild(anchor);
-      li.appendChild(src);
+
+      const sep = document.createElement('span');
+      sep.className   = 'ns-sep';
+      sep.textContent = '·';
+      sep.setAttribute('aria-hidden', 'true');
+
+      const time = document.createElement('span');
+      time.className   = 'ns-time';
+      time.textContent = rel(a.ingestedAt);
+
+      eyebrow.appendChild(src);
+      eyebrow.appendChild(sep);
+      eyebrow.appendChild(time);
+
+      if (a.paywallStatus === 'subscription' || a.paywallStatus === 'may_require') {
+        const pw = document.createElement('span');
+        pw.className   = 'ns-paywall-badge';
+        pw.textContent = a.paywallStatus === 'subscription' ? 'Sub' : 'Sub?';
+        eyebrow.appendChild(pw);
+      }
+
+      const hed = document.createElement('p');
+      hed.className   = 'ns-hed';
+      hed.textContent = a.headline;
+
+      link.appendChild(eyebrow);
+      link.appendChild(hed);
+      li.appendChild(link);
       return li;
     }
 
     newItems.slice(0, MAX_SHOWN).forEach(a => list.appendChild(buildItem(a)));
 
     if (newItems.length > MAX_SHOWN && moreBtn) {
-      moreBtn.textContent = `+ ${newItems.length - MAX_SHOWN} more`;
+      moreBtn.textContent = `Show ${newItems.length - MAX_SHOWN} more`;
       moreBtn.hidden = false;
       moreBtn.addEventListener('click', () => {
         newItems.slice(MAX_SHOWN).forEach(a => list.appendChild(buildItem(a)));
@@ -177,11 +299,20 @@ const meta = items.map(a => ({
       }, { once: true });
     }
 
-    if (countEl) countEl.textContent = `${newItems.length} new`;
-    section.hidden = false;
+    // Toggle expand/collapse
+    toggleBtn?.addEventListener('click', () => {
+      const isOpen = !expanded.hidden;
+      expanded.hidden = isOpen;
+      toggleBtn.setAttribute('aria-expanded', String(!isOpen));
+      toggleBtn.textContent = isOpen ? 'Show new' : 'Hide';
+    });
 
-    if (dismiss) {
-      dismiss.addEventListener('click', () => { section.hidden = true; }, { once: true });
-    }
+    // Dismiss
+    dismiss?.addEventListener('click', () => {
+      section.hidden = true;
+      try { localStorage.setItem(VISIT_KEY, new Date().toISOString()); } catch {}
+    }, { once: true });
+
+    section.hidden = false;
   })();
 </script>
