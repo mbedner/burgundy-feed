@@ -382,11 +382,39 @@ function rel(iso: string): string {
   }
 
   /* ── Compact mode overrides ── */
-  :global(html[data-display="compact"]) .primary-img-wrap { display: none; }
-  :global(html[data-display="compact"]) .primary-summary   { display: none; }
-  :global(html[data-display="compact"]) .primary-hed       { font-size: 26px; }
+  /* Hide all images and summaries */
+  :global(html[data-display="compact"]) .primary-img-wrap   { display: none; }
+  :global(html[data-display="compact"]) .primary-summary    { display: none; }
   :global(html[data-display="compact"]) .secondary-img-wrap { display: none; }
-  :global(html[data-display="compact"]) .secondary-hed     { font-size: 18px; }
-  :global(html[data-display="compact"]) .primary           { padding-bottom: 16px; margin-bottom: 16px; }
-  :global(html[data-display="compact"]) .secondary         { padding-bottom: 14px; }
+  :global(html[data-display="compact"]) .primary-orig       { display: none; }
+  :global(html[data-display="compact"]) .secondary-orig     { display: none; }
+  :global(html[data-display="compact"]) .secondary-author   { display: none; }
+
+  /* Primary becomes a compact title-only row */
+  :global(html[data-display="compact"]) .primary {
+    padding-bottom: 12px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  :global(html[data-display="compact"]) .primary-eyebrow { margin-bottom: 6px; }
+  :global(html[data-display="compact"]) .primary-hed {
+    font-size: 22px;
+    margin-bottom: 0;
+  }
+
+  /* Secondaries: collapse the 2-col grid to a single stacked list */
+  :global(html[data-display="compact"]) .secondaries {
+    display: block;
+  }
+  :global(html[data-display="compact"]) .secondaries::after { display: none; }
+  :global(html[data-display="compact"]) .secondary {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  :global(html[data-display="compact"]) .secondary:last-child { border-bottom: none; }
+  :global(html[data-display="compact"]) .secondary-eyebrow { margin-bottom: 4px; }
+  :global(html[data-display="compact"]) .secondary-hed {
+    font-size: 18px;
+    text-wrap: unset;
+  }
 </style>

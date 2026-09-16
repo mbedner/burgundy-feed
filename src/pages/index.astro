@@ -662,6 +662,39 @@ const hasBreaking = freshBreaking.length > 0;
         white-space: nowrap;
       }
       .anchor-nav a:hover { color: var(--accent); }
+
+      /* Display mode toggle — pushed to far right */
+      .display-toggle {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .dt-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: var(--text-4);
+        cursor: pointer;
+        font-family: inherit;
+        transition: color 0.12s, background 0.12s, border-color 0.12s;
+      }
+      .dt-btn:hover {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+      .dt-btn[aria-pressed="true"] {
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 10%, transparent);
+        border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+      }
     }
 
     /* ── Sticky subnav (burgundy bar, appears on scroll) ────────────────────── */
@@ -1186,6 +1219,20 @@ const hasBreaking = freshBreaking.length > 0;
       <a href="#voices">Reporter Voices</a>
       {showTxTracker && <a href="#transactions">Transactions</a>}
       <a href="#rail-schedule">Schedule &amp; Stats</a>
+      <div class="display-toggle" role="group" aria-label="Display mode">
+        <button id="dt-visual"  class="dt-btn" type="button" aria-pressed="true"  aria-label="Visual view" title="Visual">
+          <svg viewBox="0 0 14 14" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <rect x="0" y="0" width="6" height="6" rx="1"/><rect x="8" y="0" width="6" height="6" rx="1"/>
+            <rect x="0" y="8" width="6" height="6" rx="1"/><rect x="8" y="8" width="6" height="6" rx="1"/>
+          </svg>
+        </button>
+        <button id="dt-compact" class="dt-btn" type="button" aria-pressed="false" aria-label="Compact view" title="Compact">
+          <svg viewBox="0 0 14 14" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <rect x="0" y="1" width="14" height="2" rx="1"/><rect x="0" y="6" width="14" height="2" rx="1"/>
+            <rect x="0" y="11" width="14" height="2" rx="1"/>
+          </svg>
+        </button>
+      </div>
     </nav>
 
     <div class="content-grid">
@@ -1515,6 +1562,27 @@ const hasBreaking = freshBreaking.length > 0;
         });
     }, { passive: true });
   }
+
+  // ── Display mode toggle (Compact / Visual) ───────────────────────────────
+  (function initDisplayToggle() {
+    const btnVisual  = document.getElementById('dt-visual');
+    const btnCompact = document.getElementById('dt-compact');
+    if (!btnVisual || !btnCompact) return;
+
+    function applyMode(mode) {
+      document.documentElement.setAttribute('data-display', mode);
+      btnVisual.setAttribute('aria-pressed',  String(mode === 'visual'));
+      btnCompact.setAttribute('aria-pressed', String(mode === 'compact'));
+      try { localStorage.setItem('bf-display-mode', mode); } catch {}
+    }
+
+    // Sync button state with what the inline head script already set
+    const current = document.documentElement.getAttribute('data-display') || 'visual';
+    applyMode(current);
+
+    btnVisual.addEventListener('click',  () => applyMode('visual'));
+    btnCompact.addEventListener('click', () => applyMode('compact'));
+  })();
 
   // ── Service worker registration ───────────────────────────────────────────
   if ('serviceWorker' in navigator) {

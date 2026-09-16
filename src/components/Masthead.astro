@@ -18,10 +18,6 @@ const runStatus   = lastRun?.status ?? null;
     </div>
 
     <div class="mast-right">
-      <div class="display-toggle" role="group" aria-label="Display mode">
-        <button class="dt-btn" id="dt-compact" type="button" aria-pressed="false">Compact</button>
-        <button class="dt-btn" id="dt-visual"  type="button" aria-pressed="true">Visual</button>
-      </div>
       <div class="mast-sync">
         <span class="sync-dot" id="syncDot"></span>
         <span class="sync-label" id="syncLabel"
@@ -35,28 +31,6 @@ const runStatus   = lastRun?.status ?? null;
 </header>
 
 <script>
-  // ── Display mode toggle ───────────────────────────────────────────────────
-  (function () {
-    const compactBtn = document.getElementById('dt-compact') as HTMLButtonElement | null;
-    const visualBtn  = document.getElementById('dt-visual')  as HTMLButtonElement | null;
-    if (!compactBtn || !visualBtn) return;
-
-    function setMode(mode: string) {
-      const isCompact = mode === 'compact';
-      document.documentElement.setAttribute('data-display', mode);
-      compactBtn!.setAttribute('aria-pressed', String(isCompact));
-      visualBtn!.setAttribute('aria-pressed', String(!isCompact));
-      try { localStorage.setItem('bf-display-mode', mode); } catch {}
-    }
-
-    // Sync buttons to whatever the <head> script already applied
-    const current = document.documentElement.getAttribute('data-display') ?? 'visual';
-    setMode(current);
-
-    compactBtn.addEventListener('click', () => setMode('compact'));
-    visualBtn.addEventListener('click',  () => setMode('visual'));
-  })();
-
   function relativeTime(iso: string): string {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return '';
@@ -142,7 +116,7 @@ const runStatus   = lastRun?.status ?? null;
     gap: 12px;
   }
 
-  /* h1 resets — display:contents passes layout through to the child <a> */
+  /* ── h1 reset ── */
   .mast-h1 { display: contents; }
 
   /* ── Wordmark ── */
@@ -219,35 +193,5 @@ const runStatus   = lastRun?.status ?? null;
     50%       { opacity: 0.25; }
   }
 
-  /* ── Display mode toggle ── */
-  .display-toggle {
-    display: flex;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .dt-btn {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 4px 9px;
-    background: transparent;
-    border: none;
-    color: var(--text-4);
-    cursor: pointer;
-    font-family: inherit;
-    line-height: 1;
-    transition: background 0.12s, color 0.12s;
-  }
-  .dt-btn + .dt-btn { border-left: 1px solid var(--border); }
-  .dt-btn[aria-pressed="true"] {
-    background: var(--accent);
-    color: #fff;
-  }
-  .dt-btn:hover:not([aria-pressed="true"]) {
-    background: var(--surface-2);
-    color: var(--text-2);
-  }
 
 </style>
