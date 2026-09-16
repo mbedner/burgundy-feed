@@ -1579,13 +1579,6 @@ const hasBreaking = freshBreaking.length > 0;
       });
     });
 
-    // ── Free filter toggle
-    document.addEventListener('click', e => {
-      const btn = (e.target as Element).closest('#free-filter-btn');
-      if (!btn) return;
-      push({ event: 'paywall_filter_toggle', enabled: btn.getAttribute('aria-pressed') !== 'true' });
-    });
-
     // ── Topic tag filter clicks
     document.addEventListener('click', e => {
       const btn = (e.target as Element).closest('[data-filter-tag]');
