@@ -1,7 +1,7 @@
 // ─── Cloudflare Worker: Hourly Ingest Cron ───────────────────────────────────
 import { runIngest, runNfcEastIngest } from '../src/lib/ingest';
 import { detectBreakingItems } from '../src/lib/breaking';
-import { writeArticles, writeBreaking, writeLastRun, writeNfcEast } from '../src/lib/kv';
+import { writeArticles, writeBreaking, writeLastRun, writeNfcEast, writeClusters } from '../src/lib/kv';
 import { fetchLiveStats, fetchTransactions } from '../src/lib/espn';
 import { SITE } from '../src/config/site';
 
@@ -65,7 +65,7 @@ async function doIngest(env: Env) {
   console.log(`[ingest] starting run at ${now}`);
 
   // Run articles ingest + live stats + transactions concurrently
-  const [{ articles, run }, liveStats, transactions, nfcEastItems] = await Promise.all([
+  const [{ articles, clusters, run }, liveStats, transactions, nfcEastItems] = await Promise.all([
     runIngest(mode),
     fetchLiveStats(),
     fetchTransactions(),
@@ -78,6 +78,7 @@ async function doIngest(env: Env) {
     writeArticles(env.ARTICLES_KV, articles),
     writeBreaking(env.ARTICLES_KV, breaking),
     writeLastRun(env.ARTICLES_KV, run),
+    writeClusters(env.ARTICLES_KV, clusters),
   ];
 
   writes.push(writeNfcEast(env.ARTICLES_KV, nfcEastItems));

@@ -13,6 +13,7 @@ import {
 import { rewriteHeadline } from './rewrite';
 import { classifyPaywall } from './paywall';
 import { detectContentType } from './content-type';
+import { clusterArticles } from './cluster';
 import { SOURCES, BLOCKED_DOMAINS } from '../config/sources';
 import { SITE, MIN_RELEVANCE_SCORE, MIN_RELEVANCE_SCORE_NATIONAL } from '../config/site';
 
@@ -33,15 +34,40 @@ function generateRunId(): string {
   return `run_${ts}_${rnd}`;
 }
 
+// Known mobile→desktop domain rewrites
+const MOBILE_DOMAINS: Record<string, string> = {
+  'm.espn.com':           'espn.com',
+  'mobile.twitter.com':  'twitter.com',
+  'm.si.com':             'si.com',
+  'm.bleacherreport.com': 'bleacherreport.com',
+};
+
+const TRACKING_PARAMS = new Set([
+  'utm_source','utm_medium','utm_campaign','utm_content','utm_term',
+  'utm_id','utm_referrer',
+  'ref','ref_src','ref_url','source',
+  'fbclid','gclid','msclkid','twclid',
+  'cid','mc_cid','mc_eid',
+  '_ga','_gid','xtor',
+  'icid','ncid','cmpid','hss_channel',
+]);
+
 function normalizeUrl(url: string): string {
   try {
-    const u = new URL(url);
-    u.search  = '';
-    u.hash    = '';
-    // Strip common tracking params
-    const trackingParams = ['utm_source','utm_medium','utm_campaign','utm_content',
-                            'utm_term','ref','source','fbclid','gclid'];
-    trackingParams.forEach(p => u.searchParams.delete(p));
+    const u = new URL(url.trim());
+    // Lowercase hostname
+    u.hostname = u.hostname.toLowerCase();
+    // Remove fragment
+    u.hash = '';
+    // Strip tracking query params (preserve params that identify unique content)
+    for (const key of [...u.searchParams.keys()]) {
+      if (TRACKING_PARAMS.has(key.toLowerCase())) u.searchParams.delete(key);
+    }
+    // Remove query string entirely if now empty
+    if (![...u.searchParams.keys()].length) u.search = '';
+    // Resolve known mobile domains
+    u.hostname = MOBILE_DOMAINS[u.hostname] ?? u.hostname;
+    // Remove trailing slash
     return u.href.replace(/\/$/, '');
   } catch {
     return url;
@@ -120,12 +146,15 @@ async function ingestSource(
       const { status: paywallStatus, reason: paywallReason } = classifyPaywall(raw.link, source);
 
       const partialScore = computeCompositeScore({
-        relevanceScore:    relevance,
-        freshnessScore:    freshness,
-        sourceQuality:     source.quality,
-        isCommandersFocus: source.commandersFocus,
-        tagCount:          tags.length,
-        isBreaking:        false, // set later
+        relevanceScore:      relevance,
+        freshnessScore:      freshness,
+        sourceQuality:       source.quality,
+        isCommandersFocus:   source.commandersFocus,
+        tagCount:            tags.length,
+        isBreaking:          false, // set later
+        sourceTier:          source.tier,
+        contentType,
+        isOriginalReporting: source.isOriginalReporting,
       });
 
       const article: Article = {
@@ -274,8 +303,9 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
   // Re-sort after capping (order may have shifted)
   capped.sort((a, b) => b.score - a.score);
 
-  // Keep top N stories
+  // Keep top N stories, then cluster
   const topArticles = capped.slice(0, SITE.storyCount + 10); // extra buffer
+  const { articles: clusteredArticles, clusters } = clusterArticles(topArticles);
 
   const succeeded = sourceResults.filter(s => s.success).length;
   const failed    = sourceResults.filter(s => !s.success).length;
@@ -300,7 +330,7 @@ export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
     sources:            sourceResults,
   };
 
-  return { articles: topArticles, run };
+  return { articles: clusteredArticles, clusters, run };
 }
 
 // ─── NFC East rival ingest ────────────────────────────────────────────────────

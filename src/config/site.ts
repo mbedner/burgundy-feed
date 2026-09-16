@@ -25,6 +25,7 @@ export const SITE = {
     breaking:  'breaking:latest',
     lastRun:   'ingest:lastrun',
     nfcEast:   'nfceast:latest',
+    clusters:  'clusters:latest',
   },
 };
 

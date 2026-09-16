@@ -113,11 +113,19 @@ export interface SourceConfig {
   isOriginalReporting: boolean;       // true for beat reporters and official sources
 }
 
+export interface ClusterMeta {
+  id:         string;
+  size:       number;
+  primaryId:  string;
+  articleIds: string[];
+}
+
 export interface StoredData {
   articles:  Article[];
   breaking:  BreakingItem[];
   lastRun:   IngestRun | null;
   nfcEast?:  RivalItem[];
+  clusters?: ClusterMeta[];
 }
 
 export interface RivalItem {

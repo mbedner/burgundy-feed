@@ -1,5 +1,5 @@
 // ─── Cloudflare KV helpers ────────────────────────────────────────────────────
-import type { Article, BreakingItem, IngestRun, StoredData, RivalItem } from './types';
+import type { Article, BreakingItem, IngestRun, StoredData, RivalItem, ClusterMeta } from './types';
 import { SITE } from '../config/site';
 
 export async function readArticles(kv: KVNamespace): Promise<Article[]> {
@@ -50,13 +50,30 @@ export async function writeLastRun(kv: KVNamespace, run: IngestRun): Promise<voi
   });
 }
 
+export async function readClusters(kv: KVNamespace): Promise<ClusterMeta[]> {
+  try {
+    const raw = await kv.get(SITE.kvKeys.clusters);
+    if (!raw) return [];
+    return JSON.parse(raw) as ClusterMeta[];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeClusters(kv: KVNamespace, clusters: ClusterMeta[]): Promise<void> {
+  await kv.put(SITE.kvKeys.clusters, JSON.stringify(clusters), {
+    expirationTtl: 60 * 60 * 4,
+  });
+}
+
 export async function readAll(kv: KVNamespace): Promise<StoredData> {
-  const [articles, breaking, lastRun] = await Promise.all([
+  const [articles, breaking, lastRun, clusters] = await Promise.all([
     readArticles(kv),
     readBreaking(kv),
     readLastRun(kv),
+    readClusters(kv),
   ]);
-  return { articles, breaking, lastRun };
+  return { articles, breaking, lastRun, clusters };
 }
 
 export async function readNfcEast(kv: KVNamespace): Promise<RivalItem[]> {

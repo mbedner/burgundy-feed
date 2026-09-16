@@ -200,13 +200,31 @@ export function isBreakingCandidate(
   return hasSignal && article.score >= 65;
 }
 
+// Source-tier modifiers (§8.7 of brief)
+const TIER_BONUS: Record<number, number> = { 1: 6, 2: 0, 3: -6 };
+
+// Content-type modifiers — rewards signal-rich content, penalizes speculation/listicles
+const CONTENT_TYPE_BONUS: Record<string, number> = {
+  official:  8,
+  news:      0,
+  recap:     3,
+  preview:   2,
+  analysis:  1,
+  opinion:  -3,
+  rumor:    -3,
+  listicle: -7,
+};
+
 export function computeCompositeScore(params: {
-  relevanceScore: number;
-  freshnessScore: number;
-  sourceQuality:  number;  // 1–10
-  isCommandersFocus: boolean;
-  tagCount:       number;
-  isBreaking:     boolean;
+  relevanceScore:      number;
+  freshnessScore:      number;
+  sourceQuality:       number;  // 1–10
+  isCommandersFocus:   boolean;
+  tagCount:            number;
+  isBreaking:          boolean;
+  sourceTier?:         number;  // 1 | 2 | 3
+  contentType?:        string;
+  isOriginalReporting?:boolean;
 }): number {
   const {
     relevanceScore,
@@ -215,15 +233,21 @@ export function computeCompositeScore(params: {
     isCommandersFocus,
     tagCount,
     isBreaking,
+    sourceTier,
+    contentType,
+    isOriginalReporting,
   } = params;
 
   let score = 0;
-  score += relevanceScore * 0.40;           // 40 pts max
-  score += freshnessScore * 0.30;           // 30 pts max
-  score += (sourceQuality / 10) * 100 * 0.20; // 20 pts max
-  score += Math.min(tagCount * 1.5, 5);    //  5 pts max
-  if (isCommandersFocus) score += 3;        //  3 pts bonus
-  if (isBreaking)        score += 8;        //  8 pts bonus (stacks)
+  score += relevanceScore * 0.38;               // 38 pts max
+  score += freshnessScore * 0.28;               // 28 pts max
+  score += (sourceQuality / 10) * 100 * 0.18;  // 18 pts max
+  score += Math.min(tagCount * 1.5, 5);         //  5 pts max
+  if (isCommandersFocus)    score += 3;         //  3 pts bonus
+  if (isBreaking)           score += 8;         //  8 pts bonus (stacks)
+  if (sourceTier !== undefined) score += (TIER_BONUS[sourceTier] ?? 0);
+  if (contentType) score += (CONTENT_TYPE_BONUS[contentType] ?? 0);
+  if (isOriginalReporting)  score += 4;         //  4 pts original-reporting bonus
 
-  return Math.min(Math.round(score), 100);
+  return Math.min(Math.max(Math.round(score), 0), 100);
 }
