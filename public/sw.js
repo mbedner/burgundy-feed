@@ -56,6 +56,36 @@ self.addEventListener('fetch', e => {
   }
 });
 
+// ── Push notifications ────────────────────────────────────────────────────────
+self.addEventListener('push', e => {
+  let data = { title: 'Burgundy Feed', body: 'New update', url: '/', tag: 'bf-update' };
+  try { if (e.data) data = { ...data, ...e.data.json() }; } catch {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body:    data.body,
+      icon:    '/icons/icon-192.svg',
+      badge:   '/icons/icon-192.svg',
+      data:    { url: data.url },
+      tag:     data.tag,          // deduplicates: replaces earlier notification with same tag
+      renotify: false,
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || '/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const existing = clients.find(c => {
+        try { return new URL(c.url).pathname === new URL(url, self.location.origin).pathname; } catch { return false; }
+      });
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
+    }),
+  );
+});
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function cacheFirst(req) {
   const cached = await caches.match(req);

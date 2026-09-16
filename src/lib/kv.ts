@@ -1,5 +1,6 @@
 // ─── Cloudflare KV helpers ────────────────────────────────────────────────────
 import type { Article, BreakingItem, IngestRun, StoredData, RivalItem, ClusterMeta } from './types';
+import type { StoredSubscription } from './push';
 import { SITE } from '../config/site';
 
 export async function readArticles(kv: KVNamespace): Promise<Article[]> {
@@ -64,6 +65,38 @@ export async function writeClusters(kv: KVNamespace, clusters: ClusterMeta[]): P
   await kv.put(SITE.kvKeys.clusters, JSON.stringify(clusters), {
     expirationTtl: 60 * 60 * 4,
   });
+}
+
+const PUSH_SUB_PREFIX = 'push:sub:';
+
+export async function listPushSubscriptions(kv: KVNamespace): Promise<StoredSubscription[]> {
+  try {
+    const list = await kv.list({ prefix: PUSH_SUB_PREFIX, limit: 1000 });
+    const subs = await Promise.all(list.keys.map(async k => {
+      const raw = await kv.get(k.name);
+      if (!raw) return null;
+      return JSON.parse(raw) as StoredSubscription;
+    }));
+    return subs.filter(Boolean) as StoredSubscription[];
+  } catch {
+    return [];
+  }
+}
+
+export async function savePushSubscription(kv: KVNamespace, sub: StoredSubscription): Promise<void> {
+  const key = PUSH_SUB_PREFIX + await hashEndpoint(sub.subscription.endpoint);
+  await kv.put(key, JSON.stringify(sub));
+}
+
+export async function deletePushSubscription(kv: KVNamespace, endpoint: string): Promise<void> {
+  const key = PUSH_SUB_PREFIX + await hashEndpoint(endpoint);
+  await kv.delete(key);
+}
+
+async function hashEndpoint(endpoint: string): Promise<string> {
+  const data = new TextEncoder().encode(endpoint);
+  const buf  = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export async function readAll(kv: KVNamespace): Promise<StoredData> {

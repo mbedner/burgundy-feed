@@ -1,0 +1,425 @@
+---
+// Notification opt-in component.
+// Shown after the user has visited twice (tracked in localStorage 'bf-visit-count').
+// Never shown immediately on first visit or if already subscribed.
+// The bell icon is always in the masthead; the settings panel appears on click.
+---
+
+<div id="notif-btn-wrap" hidden>
+  <button id="notif-btn" type="button" class="notif-btn" aria-label="Notification settings" title="Notification settings">
+    <svg class="notif-icon" id="notif-icon-off" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M18 10C18 6.68629 15.3137 4 12 4C8.68629 4 6 6.68629 6 10V18H18V10ZM20 18H22V20H2V18H4V10C4 5.58172 7.58172 2 12 2C16.4183 2 20 5.58172 20 10V18ZM9.5 21H14.5C14.5 22.3807 13.3807 23.5 12 23.5C10.6193 23.5 9.5 22.3807 9.5 21Z"/>
+    </svg>
+    <svg class="notif-icon notif-icon--on" id="notif-icon-on" viewBox="0 0 24 24" aria-hidden="true" focusable="false" hidden>
+      <path d="M18 10C18 6.68629 15.3137 4 12 4C8.68629 4 6 6.68629 6 10V18H18V10ZM20 18H22V20H2V18H4V10C4 5.58172 7.58172 2 12 2C16.4183 2 20 5.58172 20 10V18ZM9.5 21H14.5C14.5 22.3807 13.3807 23.5 12 23.5C10.6193 23.5 9.5 22.3807 9.5 21Z"/>
+      <circle cx="18" cy="6" r="5" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+    </svg>
+  </button>
+</div>
+
+<!-- Settings panel — shown when bell is clicked -->
+<div id="notif-panel" class="notif-panel" role="dialog" aria-modal="false" aria-labelledby="notif-panel-title" hidden>
+  <div class="notif-panel-inner">
+    <div class="notif-panel-header">
+      <strong id="notif-panel-title" class="notif-panel-title">Notifications</strong>
+      <button class="notif-panel-close" id="notif-panel-close" type="button" aria-label="Close notification settings">✕</button>
+    </div>
+
+    <!-- Unsupported state -->
+    <div id="notif-unsupported" hidden>
+      <p class="notif-text">Notifications are not supported in this browser.</p>
+    </div>
+
+    <!-- Denied state -->
+    <div id="notif-denied" hidden>
+      <p class="notif-text">Notification permission was denied. To enable, update your browser settings for this site.</p>
+    </div>
+
+    <!-- Subscribe form -->
+    <div id="notif-form" hidden>
+      <p class="notif-desc">
+        Get notified when something significant happens: confirmed transactions, major injuries, roster moves, or game outcomes.
+        No spam. No listicles. Deduplicated by story.
+      </p>
+      <fieldset class="notif-fieldset">
+        <legend class="notif-legend">Notify me for</legend>
+        <label class="notif-option">
+          <input type="radio" name="notif-type" value="breaking" checked class="notif-radio" />
+          <span class="notif-option-label">Breaking news only</span>
+          <span class="notif-option-sub">High-confidence events as they happen</span>
+        </label>
+        <label class="notif-option">
+          <input type="radio" name="notif-type" value="digest" class="notif-radio" />
+          <span class="notif-option-label">Morning &amp; evening digest</span>
+          <span class="notif-option-sub">Top stories at ~8 am and ~6 pm</span>
+        </label>
+      </fieldset>
+      <button id="notif-subscribe-btn" type="button" class="notif-cta">Enable notifications</button>
+    </div>
+
+    <!-- Subscribed state -->
+    <div id="notif-subscribed" hidden>
+      <p class="notif-subscribed-msg">
+        Notifications are on for
+        <strong id="notif-type-label"></strong>.
+      </p>
+      <div class="notif-subscribed-actions">
+        <button id="notif-change-btn" type="button" class="notif-btn-secondary">Change type</button>
+        <button id="notif-unsubscribe-btn" type="button" class="notif-btn-danger">Turn off</button>
+      </div>
+    </div>
+
+    <p id="notif-status" class="notif-status" hidden></p>
+  </div>
+</div>
+
+<style>
+  .notif-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--text-4);
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: color 0.12s;
+  }
+  .notif-btn:hover { color: var(--text); }
+  .notif-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notif-icon { width: 18px; height: 18px; fill: currentColor; }
+
+  #notif-btn-wrap[hidden] { display: none; }
+
+  /* Panel */
+  .notif-panel {
+    position: fixed;
+    top: 52px;
+    right: 16px;
+    z-index: 500;
+    width: min(320px, calc(100vw - 32px));
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    box-shadow: var(--shadow-md);
+  }
+  .notif-panel[hidden] { display: none; }
+  .notif-panel-inner { padding: 16px; }
+
+  .notif-panel-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .notif-panel-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    flex: 1;
+  }
+  .notif-panel-close {
+    background: transparent;
+    border: none;
+    color: var(--text-4);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+    transition: color 0.12s;
+  }
+  .notif-panel-close:hover { color: var(--text); }
+  .notif-panel-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .notif-text, .notif-desc {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .notif-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 14px;
+  }
+  .notif-legend {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-4);
+    margin-bottom: 8px;
+  }
+  .notif-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .notif-radio {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    align-self: center;
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+  }
+  .notif-option-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .notif-option-sub {
+    font-size: 11px;
+    color: var(--text-4);
+  }
+
+  .notif-cta {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 0;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.12s;
+  }
+  .notif-cta:hover { opacity: 0.88; }
+  .notif-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notif-cta:disabled { opacity: 0.5; cursor: default; }
+
+  .notif-subscribed-msg {
+    font-size: 13px;
+    color: var(--text-2);
+    margin-bottom: 12px;
+  }
+  .notif-subscribed-msg strong { color: var(--text); }
+
+  .notif-subscribed-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .notif-btn-secondary, .notif-btn-danger {
+    flex: 1;
+    border-radius: 5px;
+    padding: 7px 0;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .notif-btn-secondary { color: var(--text-3); }
+  .notif-btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
+  .notif-btn-danger    { color: var(--text-4); }
+  .notif-btn-danger:hover  { color: #c00; border-color: #c00; }
+
+  .notif-status {
+    font-size: 12px;
+    color: var(--text-4);
+    margin-top: 10px;
+    text-align: center;
+  }
+  .notif-status[hidden] { display: none; }
+</style>
+
+<script>
+  (() => {
+    const VISIT_KEY  = 'bf-visit-count';
+    const SUB_KEY    = 'bf-push-sub';
+    const SUB2_VISIT = 2; // show prompt after this many visits
+
+    // Increment visit count
+    let visitCount = 1;
+    try {
+      visitCount = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10) + 1;
+      localStorage.setItem(VISIT_KEY, String(visitCount));
+    } catch {}
+
+    const btnWrap       = document.getElementById('notif-btn-wrap');
+    const btn           = document.getElementById('notif-btn');
+    const panel         = document.getElementById('notif-panel');
+    const panelClose    = document.getElementById('notif-panel-close');
+    const iconOff       = document.getElementById('notif-icon-off');
+    const iconOn        = document.getElementById('notif-icon-on');
+    const unsupported   = document.getElementById('notif-unsupported');
+    const denied        = document.getElementById('notif-denied');
+    const form          = document.getElementById('notif-form');
+    const subscribedDiv = document.getElementById('notif-subscribed');
+    const typeLabel     = document.getElementById('notif-type-label');
+    const subscribeBtn  = document.getElementById('notif-subscribe-btn');
+    const changeBtn     = document.getElementById('notif-change-btn');
+    const unsubBtn      = document.getElementById('notif-unsubscribe-btn');
+    const statusEl      = document.getElementById('notif-status');
+    if (!btnWrap || !btn || !panel) return;
+
+    const supportsNotif = 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+
+    // Read stored subscription
+    let storedSub = null;
+    try {
+      const raw = localStorage.getItem(SUB_KEY);
+      if (raw) storedSub = JSON.parse(raw);
+    } catch {}
+
+    // Show bell icon (always show if support exists, after 2nd visit or if subscribed)
+    if (supportsNotif && (visitCount >= SUB2_VISIT || storedSub)) {
+      btnWrap.hidden = false;
+    }
+
+    function setStatus(msg, isError = false) {
+      if (!statusEl) return;
+      statusEl.textContent = msg;
+      statusEl.style.color = isError ? '#c00' : 'var(--text-4)';
+      statusEl.hidden = !msg;
+    }
+
+    function showPanel() {
+      // Determine what to show inside panel
+      if (!supportsNotif) {
+        showSection(unsupported);
+      } else if (Notification.permission === 'denied') {
+        showSection(denied);
+      } else if (storedSub) {
+        showSubscribed();
+      } else {
+        showSection(form);
+      }
+      panel.hidden = false;
+      panelClose?.focus();
+    }
+
+    function hidePanel() {
+      panel.hidden = true;
+      btn.focus();
+    }
+
+    function showSection(el) {
+      [unsupported, denied, form, subscribedDiv].forEach(s => { if (s) s.hidden = s !== el; });
+      setStatus('');
+    }
+
+    function showSubscribed() {
+      showSection(subscribedDiv);
+      if (typeLabel && storedSub) {
+        typeLabel.textContent = storedSub.type === 'breaking' ? 'breaking news only' : 'morning & evening digest';
+      }
+      if (iconOff) iconOff.hidden = true;
+      if (iconOn)  iconOn.hidden  = false;
+    }
+
+    function updateBellIcon() {
+      if (iconOff) iconOff.hidden = !!storedSub;
+      if (iconOn)  iconOn.hidden  = !storedSub;
+    }
+    updateBellIcon();
+
+    btn.addEventListener('click', () => {
+      if (!panel.hidden) { hidePanel(); } else { showPanel(); }
+    });
+    panelClose?.addEventListener('click', hidePanel);
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !panel.hidden) hidePanel();
+    });
+
+    // Close panel on outside click
+    document.addEventListener('mousedown', e => {
+      if (panel.hidden) return;
+      if (!panel.contains(e.target) && !btn.contains(e.target)) hidePanel();
+    });
+
+    async function getVapidKey() {
+      const res  = await fetch('/api/push-subscribe', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'publicKey' }),
+      });
+      const data = await res.json();
+      return data.publicKey || null;
+    }
+
+    function urlBase64ToUint8Array(b64url) {
+      const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
+      return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+    }
+
+    subscribeBtn?.addEventListener('click', async () => {
+      subscribeBtn.disabled = true;
+      setStatus('Subscribing…');
+      try {
+        const type     = document.querySelector('input[name="notif-type"]:checked')?.value || 'breaking';
+        const vapidKey = await getVapidKey();
+        if (!vapidKey) throw new Error('Notifications not configured');
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          setStatus(permission === 'denied' ? 'Permission denied' : 'Notifications not allowed', true);
+          if (permission === 'denied') showSection(denied);
+          subscribeBtn.disabled = false;
+          return;
+        }
+
+        const sw  = await navigator.serviceWorker.ready;
+        const sub = await sw.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        });
+
+        const subJson = sub.toJSON();
+        await fetch('/api/push-subscribe', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: 'subscribe', subscription: subJson, type }),
+        });
+
+        storedSub = { subscription: subJson, type };
+        try { localStorage.setItem(SUB_KEY, JSON.stringify(storedSub)); } catch {}
+        updateBellIcon();
+        showSubscribed();
+        setStatus('Notifications enabled');
+      } catch (err) {
+        setStatus('Could not subscribe: ' + (err.message || err), true);
+        subscribeBtn.disabled = false;
+      }
+    });
+
+    changeBtn?.addEventListener('click', () => { showSection(form); setStatus(''); });
+
+    unsubBtn?.addEventListener('click', async () => {
+      unsubBtn.disabled = true;
+      setStatus('Unsubscribing…');
+      try {
+        const sw  = await navigator.serviceWorker.ready;
+        const sub = await sw.pushManager.getSubscription();
+        if (sub) {
+          await fetch('/api/push-subscribe', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ action: 'unsubscribe', endpoint: sub.endpoint }),
+          });
+          await sub.unsubscribe();
+        }
+        storedSub = null;
+        try { localStorage.removeItem(SUB_KEY); } catch {}
+        updateBellIcon();
+        showSection(form);
+        setStatus('Notifications turned off');
+      } catch (err) {
+        setStatus('Could not unsubscribe: ' + (err.message || err), true);
+        unsubBtn.disabled = false;
+      }
+    });
+  })();
+</script>

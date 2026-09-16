@@ -1,5 +1,6 @@
 ---
 import type { IngestRun } from '../lib/types';
+import NotificationSettings from './NotificationSettings.astro';
 interface Props { lastRun: IngestRun | null; }
 const { lastRun } = Astro.props;
 const lastUpdated = lastRun?.completedAt ?? null;
@@ -16,6 +17,7 @@ const runStatus   = lastRun?.status ?? null;
     </div>
 
     <div class="mast-right">
+      <NotificationSettings />
       <div class="mast-sync">
         <span class="sync-dot" id="syncDot"></span>
         <span class="sync-label" id="syncLabel"

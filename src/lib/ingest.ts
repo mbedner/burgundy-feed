@@ -1,5 +1,5 @@
 // ─── Main Ingestion Orchestrator ──────────────────────────────────────────────
-import type { Article, IngestRun, IngestStatus, SourceConfig } from './types';
+import type { Article, IngestRun, IngestStatus, SourceConfig, ClusterMeta } from './types';
 import type { RawItem } from './sources/rss';
 import { fetchRssFeed } from './sources/rss';
 import {
@@ -238,8 +238,9 @@ function deduplicate(articles: Article[]): Article[] {
 // ─── Full ingest run ──────────────────────────────────────────────────────────
 
 export async function runIngest(rewriteMode: typeof SITE.rewriteMode): Promise<{
-  articles: Article[];
-  run:      IngestRun;
+  articles:  Article[];
+  clusters:  ClusterMeta[];
+  run:       IngestRun;
 }> {
   const startedAt = new Date().toISOString();
   const runId     = generateRunId();
