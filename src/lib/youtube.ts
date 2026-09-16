@@ -5,7 +5,7 @@ import type { VideoItem } from './types';
 // Add a new entry here (with manual approval) to support another official source.
 const YOUTUBE_CHANNELS = [
   {
-    id:   'UCnnOPZOOxOcbctFOQFrFaiA',
+    id:   'UC2a0ENbCZqIO5C1fWXGXZXA',
     name: 'Washington Commanders',
   },
 ] as const;
