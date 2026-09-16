@@ -544,6 +544,45 @@ const hasBreaking = freshBreaking.length > 0;
     }
     a { color: inherit; text-decoration: none; }
 
+    /* ── Skip link ───────────────────────────────────────────────────────────── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 8px;
+      z-index: 9999;
+      padding: 8px 14px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 0 0 6px 6px;
+      text-decoration: none;
+      transition: top 0s;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Global keyboard focus ring ──────────────────────────────────────────── */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
+    /* Remove browser default when :focus-visible is used */
+    :focus:not(:focus-visible) { outline: none; }
+
+    /* ── Minimum interactive touch target ───────────────────────────────────── */
+    button { touch-action: manipulation; }
+
+    /* ── Respect reduced motion ──────────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
     /* ── Layout ──────────────────────────────────────────────────────────────── */
     .page-wrap {
       max-width: 1280px;
@@ -918,6 +957,7 @@ const hasBreaking = freshBreaking.length > 0;
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5S6F8HD2"
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -1128,7 +1168,7 @@ const hasBreaking = freshBreaking.length > 0;
   {hasBreaking && <BreakingTicker items={freshBreaking} />}
   <ScoresStrip />
 
-  <main class="page-wrap">
+  <main class="page-wrap" id="main-content">
     <nav class="anchor-nav" aria-label="Page sections">
       {gameDay
         ? <a href="#gameday">Game Day</a>
