@@ -29,7 +29,12 @@ const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May requi
 
 <article class={`story ${item.isBreaking ? 'story--breaking' : ''}`}
          data-tags={item.tags.join(',')}
-         data-paywall={pw}>
+         data-paywall={pw}
+         data-source-id={item.sourceId}
+         data-tier={item.tier ?? 2}
+         data-content-type={item.contentType ?? 'news'}
+         data-is-breaking={item.isBreaking ? '1' : '0'}
+         data-article-id={item.id}>
   <div class="story-inner">
     <span class="story-rank">{rank}</span>
     <div class="story-body">

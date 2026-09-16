@@ -1519,5 +1519,50 @@ const hasBreaking = freshBreaking.length > 0;
   gdClientDetect();
   railClientInit();
 </script>
+
+<script>
+  // ── Analytics event tracking via GTM dataLayer ────────────────────────────
+  (() => {
+    const dl = (window as any).dataLayer = (window as any).dataLayer || [];
+    const push = (event: Record<string, unknown>) => dl.push(event);
+
+    // ── Article link clicks (event delegation on document)
+    document.addEventListener('click', e => {
+      const link = (e.target as Element).closest('a.story-link, a.lead-link');
+      if (!link) return;
+      const art = link.closest('article[data-article-id]');
+      push({
+        event:         'article_open',
+        articleId:     art?.getAttribute('data-article-id') ?? '',
+        sourceId:      art?.getAttribute('data-source-id')  ?? '',
+        paywallStatus: art?.getAttribute('data-paywall')     ?? '',
+        contentType:   art?.getAttribute('data-content-type') ?? '',
+        tier:          Number(art?.getAttribute('data-tier') ?? 2),
+        isBreaking:    art?.getAttribute('data-is-breaking') === '1',
+      });
+    });
+
+    // ── Free filter toggle
+    document.addEventListener('click', e => {
+      const btn = (e.target as Element).closest('#free-filter-btn');
+      if (!btn) return;
+      push({ event: 'paywall_filter_toggle', enabled: btn.getAttribute('aria-pressed') !== 'true' });
+    });
+
+    // ── Topic tag filter clicks
+    document.addEventListener('click', e => {
+      const btn = (e.target as Element).closest('[data-filter-tag]');
+      if (!btn) return;
+      push({ event: 'topic_filter_select', tag: btn.getAttribute('data-filter-tag') });
+    });
+
+    // ── New Since panel dismiss
+    document.addEventListener('click', e => {
+      if ((e.target as Element).closest('#new-since-dismiss')) {
+        push({ event: 'new_since_dismiss' });
+      }
+    });
+  })();
+</script>
 </body>
 </html>

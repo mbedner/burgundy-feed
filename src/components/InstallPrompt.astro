@@ -319,10 +319,14 @@
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       deferredPrompt = null;
+      try { (window as any).dataLayer?.push({ event: 'pwa_install', outcome }); } catch {}
       if (outcome === 'accepted') banner.hidden = true;
     });
 
-    window.addEventListener('appinstalled', () => { banner.hidden = true; });
+    window.addEventListener('appinstalled', () => {
+      banner.hidden = true;
+      try { (window as any).dataLayer?.push({ event: 'pwa_installed' }); } catch {}
+    });
 
     // ── iOS Safari — show banner ─────────────────────────────────────────────
     const isIos    = /iphone|ipad|ipod/i.test(navigator.userAgent);

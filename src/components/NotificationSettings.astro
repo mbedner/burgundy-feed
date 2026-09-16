@@ -389,6 +389,7 @@
         updateBellIcon();
         showSubscribed();
         setStatus('Notifications enabled');
+        try { (window as any).dataLayer?.push({ event: 'notification_subscribe', notifType: type }); } catch {}
       } catch (err) {
         setStatus('Could not subscribe: ' + (err.message || err), true);
         subscribeBtn.disabled = false;
@@ -416,6 +417,7 @@
         updateBellIcon();
         showSection(form);
         setStatus('Notifications turned off');
+        try { (window as any).dataLayer?.push({ event: 'notification_unsubscribe' }); } catch {}
       } catch (err) {
         setStatus('Could not unsubscribe: ' + (err.message || err), true);
         unsubBtn.disabled = false;

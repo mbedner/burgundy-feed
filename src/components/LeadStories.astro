@@ -21,7 +21,10 @@ function rel(iso: string): string {
 
   {/* ── Primary lead ── */}
   {primary && (
-    <a href={primary.sourceUrl} target="_blank" rel="noopener noreferrer" class="primary">
+    <a href={primary.sourceUrl} target="_blank" rel="noopener noreferrer" class="primary lead-link"
+       data-article-id={primary.id} data-source-id={primary.sourceId}
+       data-paywall={primary.paywallStatus ?? 'unknown'} data-content-type={primary.contentType ?? 'news'}
+       data-tier={primary.tier ?? 2} data-is-breaking={primary.isBreaking ? '1' : '0'}>
       {primary.imageUrl && (
         <div class="primary-img-wrap">
           <img
@@ -67,7 +70,10 @@ function rel(iso: string): string {
     <div class="secondaries">
       {secondaries.map((item, i) => (
         <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer"
-           class={`secondary ${i < secondaries.length - 1 ? 'secondary--border' : ''}`}>
+           class={`secondary lead-link ${i < secondaries.length - 1 ? 'secondary--border' : ''}`}
+           data-article-id={item.id} data-source-id={item.sourceId}
+           data-paywall={item.paywallStatus ?? 'unknown'} data-content-type={item.contentType ?? 'news'}
+           data-tier={item.tier ?? 2} data-is-breaking={item.isBreaking ? '1' : '0'}>
           <div class="secondary-img-wrap">
             {item.imageUrl
               ? <img
