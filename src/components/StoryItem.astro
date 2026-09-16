@@ -194,4 +194,8 @@ const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May requi
     color: var(--text-4);
     border: 1px solid var(--border);
   }
+
+  /* ── Compact mode overrides ── */
+  :global(html[data-display="compact"]) .story-inner { padding-top: 8px; padding-bottom: 8px; }
+  :global(html[data-display="compact"]) .story-hed   { font-size: 16px; margin-bottom: 3px; }
 </style>

@@ -468,6 +468,13 @@ const hasBreaking = freshBreaking.length > 0;
       var hour = now.getHours() + now.getMinutes() / 60;
       var isDay = hour >= sunriseHour && hour < sunsetHour;
       document.documentElement.setAttribute('data-theme', isDay ? 'light' : 'dark');
+      // Display mode — set before paint to avoid flash
+      try {
+        var dm = localStorage.getItem('bf-display-mode') || 'visual';
+        document.documentElement.setAttribute('data-display', dm);
+      } catch(e) {
+        document.documentElement.setAttribute('data-display', 'visual');
+      }
     })();
   </script>
 

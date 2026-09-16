@@ -380,4 +380,13 @@ function rel(iso: string): string {
     color: var(--text-4);
     border: 1px solid var(--border);
   }
+
+  /* ── Compact mode overrides ── */
+  :global(html[data-display="compact"]) .primary-img-wrap { display: none; }
+  :global(html[data-display="compact"]) .primary-summary   { display: none; }
+  :global(html[data-display="compact"]) .primary-hed       { font-size: 26px; }
+  :global(html[data-display="compact"]) .secondary-img-wrap { display: none; }
+  :global(html[data-display="compact"]) .secondary-hed     { font-size: 18px; }
+  :global(html[data-display="compact"]) .primary           { padding-bottom: 16px; margin-bottom: 16px; }
+  :global(html[data-display="compact"]) .secondary         { padding-bottom: 14px; }
 </style>
