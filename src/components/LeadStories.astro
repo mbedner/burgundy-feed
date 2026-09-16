@@ -16,7 +16,7 @@ function rel(iso: string): string {
 
 <div class="leads">
   <div class="leads-header">
-    <span class="section-label">Top Stories</span>
+    <h2 class="section-label">Top Stories</h2>
   </div>
 
   {/* ── Primary lead ── */}
@@ -55,7 +55,7 @@ function rel(iso: string): string {
           </span>
         )}
       </div>
-      <h2 class="primary-hed">{primary.displayHeadline}</h2>
+      <h3 class="primary-hed">{primary.displayHeadline}</h3>
       {primary.summary && (
         <p class="primary-summary">{primary.summary.slice(0, 200)}…</p>
       )}

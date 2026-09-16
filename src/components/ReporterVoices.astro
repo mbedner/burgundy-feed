@@ -8,7 +8,7 @@ const hasFeed = !!config.feedProvider;
 
 <div class="voices">
   <div class="voices-header">
-    <p class="section-label">Reporter Voices</p>
+    <h2 class="section-label">Reporter Voices</h2>
     {!hasFeed && (
       <span class="voices-mode-badge" title="No live feed connected — these are links to reporter profiles">Directory</span>
     )}
@@ -26,7 +26,7 @@ const hasFeed = !!config.feedProvider;
          class="handle-card"
          aria-label={`${r.name} — ${r.outlet} (opens ${r.platform === 'x' ? 'X / Twitter' : 'Bluesky'} profile)`}>
         <span class="handle-platform" aria-hidden="true">
-          {r.platform === 'x' ? 'X' : 'Bluesky'}
+          {r.platform === 'x' ? 'View on X' : 'View on Bluesky'}
         </span>
         <span class="handle-at">@{r.handle}</span>
         <span class="handle-name">{r.name}</span>
@@ -102,18 +102,17 @@ const hasFeed = !!config.feedProvider;
   .handle-platform {
     position: absolute;
     top: 8px;
-    right: 10px;
+    right: 8px;
     font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.06em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     color: var(--text-4);
-    text-transform: uppercase;
   }
   .handle-at {
     font-size: 13px;
     font-weight: 700;
     color: var(--text);
-    padding-right: 28px; /* avoid platform badge overlap */
+    padding-right: 60px; /* avoid platform badge overlap */
   }
   .handle-card:hover .handle-at { color: var(--accent); }
   .handle-name {

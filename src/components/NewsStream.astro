@@ -10,13 +10,17 @@ let rank = 1;
 ---
 
 <div id="filter-banner" class="filter-banner" hidden>
-  <span class="filter-banner-label">Showing: <strong id="filter-banner-tag"></strong></span>
-  <button class="filter-banner-clear" id="filter-banner-clear" type="button" aria-label="Clear filter">✕ clear</button>
+  <span class="filter-banner-label">Filtered by: <strong id="filter-banner-tag"></strong></span>
+  <button class="filter-banner-clear" id="filter-banner-clear" type="button" aria-label="Clear filter">Clear filter</button>
 </div>
 
 <div class="stream stream-capped" id="news-stream">
   {items.map(item => <StoryItem item={item} rank={rank++} />)}
 </div>
+
+<p id="stream-empty" class="stream-empty" hidden>
+  No stories match this filter. <button class="stream-empty-clear" id="stream-empty-clear" type="button">Clear filter</button>
+</p>
 
 {hiddenCount > 0 && (
   <button class="see-more-btn" id="see-more-btn" type="button">
@@ -31,10 +35,10 @@ let rank = 1;
     align-items: center;
     gap: 10px;
     padding: 7px 12px;
-    margin-bottom: 2px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    margin-bottom: 6px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+    border-radius: 5px;
     font-size: 13px;
   }
   .filter-banner[hidden] { display: none; }
@@ -44,27 +48,26 @@ let rank = 1;
   }
   .filter-banner-label strong {
     color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    text-transform: capitalize;
   }
   .filter-banner-clear {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--text-4);
+    color: var(--accent);
     background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 3px;
     padding: 3px 8px;
     cursor: pointer;
     font-family: inherit;
-    transition: color 0.12s, border-color 0.12s;
+    transition: background 0.12s;
     white-space: nowrap;
   }
   .filter-banner-clear:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
   }
 
   /* ── Stream ──────────────────────────────────────────────────────────────── */
@@ -72,6 +75,29 @@ let rank = 1;
 
   /* Cap: hide articles past the 20th */
   .stream-capped > :global(article:nth-child(n+21)) { display: none; }
+
+  /* Hide rank numbers while a filter is active */
+  .stream--filtered :global(.story-rank) { visibility: hidden; }
+
+  /* ── Empty state ─────────────────────────────────────────────────────────── */
+  .stream-empty {
+    padding: 28px 0;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-3);
+  }
+  .stream-empty[hidden] { display: none; }
+  .stream-empty-clear {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: underline;
+    padding: 0;
+  }
 
   /* ── See More button ─────────────────────────────────────────────────────── */
   .see-more-btn {
@@ -104,6 +130,8 @@ let rank = 1;
     const banner      = document.getElementById('filter-banner');
     const bannerTag   = document.getElementById('filter-banner-tag');
     const bannerClear = document.getElementById('filter-banner-clear');
+    const emptyState  = document.getElementById('stream-empty');
+    const emptyClear  = document.getElementById('stream-empty-clear');
     const seeMoreBtn  = document.getElementById('see-more-btn');
     if (!stream || !banner || !bannerTag || !bannerClear) return;
 
@@ -119,35 +147,52 @@ let rank = 1;
     function applyFilters() {
       const tag = activeTag;
 
+      // Update banner
       if (tag) {
         bannerTag.textContent = tag;
         banner.hidden = false;
         stream.classList.remove('stream-capped');
+        stream.classList.add('stream--filtered');
         if (seeMoreBtn) seeMoreBtn.hidden = true;
       } else {
         banner.hidden = true;
+        stream.classList.remove('stream--filtered');
         if (isCapped) {
           stream.classList.add('stream-capped');
           if (seeMoreBtn) seeMoreBtn.hidden = false;
         }
       }
 
+      // Show/hide articles
+      let visibleCount = 0;
       stream.querySelectorAll('article[data-tags]').forEach((art: Element) => {
-        const tags = (art as HTMLElement).dataset.tags ? (art as HTMLElement).dataset.tags!.split(',') : [];
-        (art as HTMLElement).hidden = !!tag && !tags.includes(tag);
+        const el   = art as HTMLElement;
+        const tags = el.dataset.tags ? el.dataset.tags.split(',') : [];
+        const hide = !!tag && !tags.includes(tag);
+        el.hidden = hide;
+        if (!hide) visibleCount++;
       });
 
+      // Empty state
+      if (emptyState) emptyState.hidden = visibleCount > 0 || !tag;
+
+      // Scroll into view when filtering
       if (tag) {
         const section = document.getElementById('stream');
         if (section) {
-          const navH = document.querySelector('nav, header, .nav, .masthead')?.clientHeight ?? 56;
+          const navH = (document.querySelector('.mast') as HTMLElement)?.offsetHeight ?? 56;
           const top  = section.getBoundingClientRect().top + window.scrollY - navH - 8;
           window.scrollTo({ top, behavior: 'smooth' });
         }
       }
     }
 
-    // Tag pill clicks
+    function clearFilter() {
+      activeTag = null;
+      applyFilters();
+    }
+
+    // Tag pill clicks (toggle: clicking same tag again clears it)
     stream.addEventListener('click', e => {
       const btn = (e.target as Element).closest('[data-filter-tag]') as HTMLElement | null;
       if (!btn) return;
@@ -156,13 +201,8 @@ let rank = 1;
       applyFilters();
     });
 
-    // Clear tag filter
-    bannerClear.addEventListener('click', () => {
-      activeTag = null;
-      applyFilters();
-    });
-
-    // See More
+    bannerClear.addEventListener('click', clearFilter);
+    emptyClear?.addEventListener('click', clearFilter);
     seeMoreBtn?.addEventListener('click', uncap);
   })();
 </script>

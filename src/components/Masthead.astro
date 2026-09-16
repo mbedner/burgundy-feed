@@ -9,9 +9,11 @@ const runStatus   = lastRun?.status ?? null;
 <header class="mast">
   <div class="mast-inner">
     <div class="mast-left">
-      <a href="/" class="mast-wordmark">
-        <span class="mast-w1">BURGUNDY</span><span class="mast-w2">FEED</span>
-      </a>
+      <h1 class="mast-h1">
+        <a href="/" class="mast-wordmark">
+          <span class="mast-w1">BURGUNDY</span><span class="mast-w2">FEED</span>
+        </a>
+      </h1>
       <span class="mast-tagline">Washington's hourly newswire</span>
     </div>
 
@@ -113,6 +115,9 @@ const runStatus   = lastRun?.status ?? null;
     justify-content: space-between;
     gap: 12px;
   }
+
+  /* h1 resets — display:contents passes layout through to the child <a> */
+  .mast-h1 { display: contents; }
 
   /* ── Wordmark ── */
   .mast-left {
