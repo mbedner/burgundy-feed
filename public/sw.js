@@ -4,19 +4,30 @@
 //   Main HTML (/):  network-first, stale fallback
 //   Everything else: network only
 
-const CACHE   = 'bf-v1';
-const OFFLINE = '/';   // serve cached index on offline
+const CACHE   = 'bf-v2';
+const OFFLINE = '/';
 
 // ── Install ───────────────────────────────────────────────────────────────────
 self.addEventListener('install', () => self.skipWaiting());
 
-// ── Activate ──────────────────────────────────────────────────────────────────
+// ── Activate: evict stale caches, claim clients ───────────────────────────────
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
+      .then(() => {
+        // Notify all open tabs that a new version is active
+        return self.clients.matchAll({ type: 'window' }).then(clients => {
+          clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' }));
+        });
+      }),
   );
+});
+
+// ── Message: page can send SKIP_WAITING to force activate ────────────────────
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────

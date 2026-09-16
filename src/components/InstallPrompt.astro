@@ -9,7 +9,10 @@
 
 <!-- ── Banner ──────────────────────────────────────────────────────────────── -->
 <div id="install-prompt" class="ip" aria-live="polite" hidden>
-  <span class="ip-label">Get the app</span>
+  <div class="ip-text">
+    <span class="ip-label">Add to home screen</span>
+    <span class="ip-benefit">Faster access · breaking alerts · no browser chrome</span>
+  </div>
   <div class="ip-actions">
     <button class="ip-btn ip-btn--ios" id="ip-ios-btn" type="button">
       <!-- ri-apple-fill -->
@@ -60,19 +63,32 @@
     flex-shrink: 0;
   }
 
+  .ip-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
   .ip-label {
     font-size: 13px;
     font-weight: 700;
     color: #e8e8e8;
     white-space: nowrap;
-    flex-shrink: 0;
+  }
+  .ip-benefit {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ip-actions {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex: 1;
+    flex-shrink: 0;
   }
 
   .ip-btn {
