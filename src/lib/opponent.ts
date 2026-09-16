@@ -48,7 +48,9 @@ export async function fetchOpponentPreview(schedule: SeasonGame[]): Promise<Oppo
   const teamId = OPPONENT_ESPN_ID[next.opponent];
   if (!teamId) return null;
 
-  const daysUntil = Math.ceil((new Date(next.date + 'T12:00:00').getTime() - now) / 86_400_000);
+  const todayMidnight = new Date(new Date(now).setHours(0, 0, 0, 0));
+  const gameMidnight  = new Date(next.date + 'T00:00:00');
+  const daysUntil = Math.round((gameMidnight.getTime() - todayMidnight.getTime()) / 86_400_000);
 
   try {
     const res = await fetch(

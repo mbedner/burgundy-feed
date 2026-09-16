@@ -5,7 +5,8 @@ const { dates } = Astro.props;
 
 const now = new Date();
 function daysUntil(d: string): number {
-  return Math.ceil((new Date(d + 'T12:00:00').getTime() - now.getTime()) / 86400000);
+  const todayMidnight = new Date(now); todayMidnight.setHours(0, 0, 0, 0);
+  return Math.round((new Date(d + 'T00:00:00').getTime() - todayMidnight.getTime()) / 86400000);
 }
 function fmt(d: string): string {
   return new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
