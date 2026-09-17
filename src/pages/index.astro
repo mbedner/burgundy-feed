@@ -318,7 +318,7 @@ try {
 // Fetch standings independently (outside KV block — it's a direct ESPN API call)
 divisionStandings = await fetchNfcEastStandings();
 const stats = liveStats ?? { ...TEAM_STATS, source: 'fallback' as const };
-let { articles, breaking, lastRun } = data;
+let { articles, breaking, lastRun, clusters = [] } = data;
 
 // Fall back to mock data if KV is empty
 if (articles.length === 0) {
@@ -360,12 +360,28 @@ try {
   console.warn('[cw] rail data fetch error:', (e as Error).message);
 }
 
-// ── Top Stories: 30hr cap + max 1 source in top 3 ────────────────────────────
-const LEADS_MAX_AGE_HRS = 6;
-const leadsAgeCutoff = new Date(Date.now() - LEADS_MAX_AGE_HRS * 60 * 60 * 1000);
-const freshForLeads = articles.filter(a => new Date(a.publishedAt) >= leadsAgeCutoff);
+// ── Top Stories: score-based ranking with source diversity ───────────────────
+// Breaking news: eligible up to 24h; other stories: 6h freshness cap
+const LEADS_MAX_AGE_HRS    = 6;
+const BREAKING_MAX_AGE_HRS = 24;
+
+function leadPriority(a: typeof articles[0]): number {
+  let p = a.score;
+  if (a.isBreaking)  p += 30;
+  if (a.tier === 1)  p += 10;
+  if (a.contentType === 'official' || a.contentType === 'news') p += 5;
+  return p;
+}
+
+const now = Date.now();
+const freshForLeads = articles.filter(a => {
+  const ageHrs = (now - new Date(a.publishedAt).getTime()) / 3_600_000;
+  return a.isBreaking ? ageHrs < BREAKING_MAX_AGE_HRS : ageHrs < LEADS_MAX_AGE_HRS;
+});
 // Only apply freshness filter when we have enough articles; otherwise fall back
-const leadsPool = freshForLeads.length >= 3 ? freshForLeads : articles;
+const leadsPool = freshForLeads.length >= 3
+  ? [...freshForLeads].sort((a, b) => leadPriority(b) - leadPriority(a))
+  : articles;
 
 // Fill positions 0–2 with one story per source, then let the rest through
 const leadsTop3: typeof articles = [];
@@ -1272,7 +1288,7 @@ const hasBreaking = freshBreaking.length > 0;
 
         <section id="leads">
           {leads.length > 0
-            ? <LeadStories items={leads} />
+            ? <LeadStories items={leads} clusters={clusters} />
             : <div>
                 <h2 class="section-label">Top Stories</h2>
                 <p class="empty-msg">No stories yet — trigger the ingest worker to populate.</p>
@@ -1283,7 +1299,7 @@ const hasBreaking = freshBreaking.length > 0;
         <section id="stream" style="margin-top: 36px;">
           <h2 class="section-label">Latest News</h2>
           {streamItems.length > 0
-            ? <NewsStream items={streamItems} />
+            ? <NewsStream items={streamItems} clusters={clusters} />
             : <p class="empty-msg">Waiting for first ingest run…</p>
           }
         </section>

@@ -1,11 +1,26 @@
 ---
-import type { Article } from '../lib/types';
+import type { Article, ClusterMeta } from '../lib/types';
 import StoryItem from './StoryItem.astro';
-interface Props { items: Article[]; }
-const { items } = Astro.props;
+interface Props { items: Article[]; clusters?: ClusterMeta[]; }
+const { items, clusters = [] } = Astro.props;
+
+// Build cluster lookup: primaryId → size, and set of non-primary IDs to suppress
+const clusterSizeByPrimary = new Map<string, number>();
+const nonPrimaryIds = new Set<string>();
+for (const c of clusters) {
+  if (c.size > 1) {
+    clusterSizeByPrimary.set(c.primaryId, c.size);
+    for (const id of c.articleIds) {
+      if (id !== c.primaryId) nonPrimaryIds.add(id);
+    }
+  }
+}
+
+// Filter out non-primary cluster members (they're represented by the primary)
+const visibleItems = items.filter(a => !nonPrimaryIds.has(a.id));
 
 const INITIAL_COUNT = 20;
-const hiddenCount   = Math.max(0, items.length - INITIAL_COUNT);
+const hiddenCount   = Math.max(0, visibleItems.length - INITIAL_COUNT);
 let rank = 1;
 ---
 
@@ -15,7 +30,9 @@ let rank = 1;
 </div>
 
 <div class="stream stream-capped" id="news-stream">
-  {items.map(item => <StoryItem item={item} rank={rank++} />)}
+  {visibleItems.map(item => (
+    <StoryItem item={item} rank={rank++} clusterSize={clusterSizeByPrimary.get(item.id)} />
+  ))}
 </div>
 
 <p id="stream-empty" class="stream-empty" hidden>

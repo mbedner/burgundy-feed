@@ -1,7 +1,12 @@
 ---
-import type { Article } from '../lib/types';
-interface Props { items: Article[]; }
-const { items } = Astro.props;
+import type { Article, ClusterMeta } from '../lib/types';
+interface Props { items: Article[]; clusters?: ClusterMeta[]; }
+const { items, clusters = [] } = Astro.props;
+
+const clusterSizeByPrimary = new Map<string, number>();
+for (const c of clusters) {
+  if (c.size > 1) clusterSizeByPrimary.set(c.primaryId, c.size);
+}
 
 const [primary, ...secondaries] = items;
 
@@ -53,6 +58,9 @@ function rel(iso: string): string {
                 aria-label={primary.paywallStatus === 'subscription' ? 'Subscription required' : 'May require subscription'}>
             {primary.paywallStatus === 'subscription' ? 'Sub' : 'Sub?'}
           </span>
+        )}
+        {clusterSizeByPrimary.has(primary.id) && (
+          <span class="cluster-badge">{clusterSizeByPrimary.get(primary.id)} sources</span>
         )}
       </div>
       <h3 class="primary-hed">{primary.displayHeadline}</h3>
@@ -106,6 +114,9 @@ function rel(iso: string): string {
                     aria-label={item.paywallStatus === 'subscription' ? 'Subscription required' : 'May require subscription'}>
                 {item.paywallStatus === 'subscription' ? 'Sub' : 'Sub?'}
               </span>
+            )}
+            {clusterSizeByPrimary.has(item.id) && (
+              <span class="cluster-badge">{clusterSizeByPrimary.get(item.id)} sources</span>
             )}
           </div>
           <h3 class="secondary-hed">{item.displayHeadline}</h3>
@@ -379,6 +390,19 @@ function rel(iso: string): string {
     background: transparent;
     color: var(--text-4);
     border: 1px solid var(--border);
+  }
+
+  .cluster-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    flex-shrink: 0;
   }
 
   /* ── Compact mode overrides ── */

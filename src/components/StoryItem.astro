@@ -1,7 +1,7 @@
 ---
 import type { Article } from '../lib/types';
-interface Props { item: Article; rank: number; }
-const { item, rank } = Astro.props;
+interface Props { item: Article; rank: number; clusterSize?: number; }
+const { item, rank, clusterSize } = Astro.props;
 
 function rel(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -52,6 +52,9 @@ const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May requi
         ))}
         {showPaywall && (
           <span class={`paywall-badge paywall-badge--${pw}`} title={pwTitle} aria-label={pwTitle}>{pwLabel}</span>
+        )}
+        {clusterSize && clusterSize > 1 && (
+          <span class="cluster-badge" title={`${clusterSize} sources covering this story`}>{clusterSize} sources</span>
         )}
         <span class={`story-time story-time--${hotness}`}>{rel(item.publishedAt)}</span>
       </div>
@@ -193,6 +196,19 @@ const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May requi
     background: transparent;
     color: var(--text-4);
     border: 1px solid var(--border);
+  }
+
+  .cluster-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    flex-shrink: 0;
   }
 
   /* ── Compact mode overrides ── */
