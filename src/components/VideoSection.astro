@@ -57,7 +57,7 @@ const featured = display[0];
 
 </section>
 
-{/* Mini-player — injected by JS when sentinel exits viewport */}
+{/* Mini-player — shown by JS when user scrolls back up past the video section */}
 <div id="video-miniplayer" hidden aria-label="Video mini-player" role="complementary">
   <div class="mini-header">
     <span class="mini-title" id="mini-title"></span>
@@ -89,13 +89,12 @@ const featured = display[0];
 
 <script>
   (() => {
-    const sentinel   = document.getElementById('video-sentinel');
     const miniplayer = document.getElementById('video-miniplayer') as HTMLElement | null;
     const miniIframe = document.getElementById('mini-iframe')      as HTMLIFrameElement | null;
     const miniTitle  = document.getElementById('mini-title');
     const miniClose  = document.getElementById('mini-close');
     const miniOpen   = document.getElementById('mini-open')        as HTMLAnchorElement | null;
-    if (!sentinel || !miniplayer || !miniIframe) return;
+    if (!miniplayer || !miniIframe) return;
 
     // Grab video ID + title from the first card
     const firstCard = document.querySelector('[data-video-id]') as HTMLElement | null;
