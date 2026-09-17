@@ -1212,8 +1212,8 @@ const hasBreaking = freshBreaking.length > 0;
       {draftDay && <a href="#draft"><span class="subnav-short">Draft</span><span class="subnav-full">Draft</span></a>}
       <a href="#leads"><span class="subnav-short">Top</span><span class="subnav-full">Top Stories</span></a>
       <a href="#stream"><span class="subnav-short">Feed</span><span class="subnav-full">News Feed</span></a>
-      <a href="#voices" class="subnav-hide-mobile"><span class="subnav-full">Reporter Voices</span></a>
       {videoItems.length > 0 && <a href="#videos"><span class="subnav-short">Videos</span><span class="subnav-full">Latest Videos</span></a>}
+      <a href="#voices" class="subnav-hide-mobile"><span class="subnav-full">Reporter Voices</span></a>
       <a href="#rail-schedule"><span class="subnav-short">Schedule</span><span class="subnav-full">Schedule &amp; Stats</span></a>
     </div>
   </nav>
@@ -1230,10 +1230,10 @@ const hasBreaking = freshBreaking.length > 0;
       {draftDay && <a href="#draft">Draft</a>}
       <a href="#leads">Top Stories</a>
       <a href="#stream">News Feed</a>
+      {videoItems.length > 0 && <a href="#videos"><span class="anchor-short">Videos</span><span class="anchor-full">Latest Videos</span></a>}
       <a href="#voices">Reporter Voices</a>
       {showTxTracker && <a href="#transactions">Transactions</a>}
       <a href="#rail-schedule">Schedule &amp; Stats</a>
-      {videoItems.length > 0 && <a href="#videos"><span class="anchor-short">Videos</span><span class="anchor-full">Latest Videos</span></a>}
       <div class="display-toggle" role="group" aria-label="Display mode">
         <button id="dt-visual"  class="dt-btn" type="button" aria-pressed="true"  aria-label="Visual view" title="Visual">
           <svg viewBox="0 0 14 14" width="14" height="14" fill="currentColor" aria-hidden="true">
