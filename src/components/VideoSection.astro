@@ -14,42 +14,119 @@ function rel(iso: string): string {
   return d === 1 ? '1 day ago' : `${d} days ago`;
 }
 
-const display = items.slice(0, 3);
+const [featured, ...rest] = items.slice(0, 4);
 ---
 
 <section class="video-section">
   <h2 class="section-label">Latest Videos</h2>
-  <div class="video-grid">
-    {display.map(v => (
-      <a
-        href={v.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="video-card"
-        aria-label={v.title}
-      >
-        <div class="video-thumb-wrap">
-          <img
-            src={v.thumbnailUrl}
-            alt=""
-            class="video-thumb"
-            loading="lazy"
-            decoding="async"
-            onerror="this.closest('.video-thumb-wrap').classList.add('thumb-error')"
-          />
-          <div class="play-icon" aria-hidden="true">
-            <svg viewBox="0 0 36 36" width="36" height="36" fill="none">
-              <circle cx="18" cy="18" r="18" fill="rgba(0,0,0,0.55)"/>
-              <polygon points="14,11 28,18 14,25" fill="#fff"/>
-            </svg>
-          </div>
-        </div>
-        <p class="video-title">{v.title}</p>
-        <span class="video-meta">{rel(v.publishedAt)}</span>
-      </a>
-    ))}
+
+  {/* ── Featured video — autoplays muted on scroll ── */}
+  <div class="video-featured" id="video-featured">
+    <div class="video-player-wrap" data-video-id={featured.videoId}>
+      {/* Thumbnail shown until video enters viewport */}
+      <div class="video-thumb-layer">
+        <img
+          src={featured.thumbnailUrl}
+          alt=""
+          class="video-featured-thumb"
+          loading="lazy"
+          decoding="async"
+        />
+        <button class="video-play-btn" aria-label="Play video" type="button">
+          <svg viewBox="0 0 64 64" width="48" height="48" fill="none" aria-hidden="true">
+            <circle cx="32" cy="32" r="32" fill="rgba(0,0,0,0.6)"/>
+            <polygon points="25,18 50,32 25,46" fill="#fff"/>
+          </svg>
+        </button>
+      </div>
+      {/* iframe injected here by JS when visible */}
+    </div>
+    <p class="video-featured-title">{featured.title}</p>
+    <span class="video-meta">{rel(featured.publishedAt)}</span>
   </div>
+
+  {/* ── Additional videos as compact thumbnails ── */}
+  {rest.length > 0 && (
+    <div class="video-more">
+      {rest.map(v => (
+        <a href={v.url} target="_blank" rel="noopener noreferrer" class="video-more-item">
+          <div class="video-more-thumb-wrap">
+            <img
+              src={v.thumbnailUrl}
+              alt=""
+              class="video-more-thumb"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="video-more-play" aria-hidden="true">▶</span>
+          </div>
+          <div class="video-more-body">
+            <p class="video-more-title">{v.title}</p>
+            <span class="video-meta">{rel(v.publishedAt)}</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  )}
 </section>
+
+<script>
+  (() => {
+    const wrap = document.querySelector('.video-player-wrap') as HTMLElement | null;
+    if (!wrap) return;
+
+    const videoId = wrap.dataset.videoId;
+    if (!videoId) return;
+
+    let loaded = false;
+
+    function loadIframe(autoplay: boolean) {
+      if (loaded) return;
+      loaded = true;
+
+      const params = new URLSearchParams({
+        autoplay:    autoplay ? '1' : '0',
+        mute:        '1',
+        playsinline: '1',
+        rel:         '0',
+        modestbranding: '1',
+      });
+
+      const iframe = document.createElement('iframe');
+      iframe.src    = `https://www.youtube-nocookie.com/embed/${videoId}?${params}`;
+      iframe.allow  = 'autoplay; encrypted-media; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.title  = 'Commanders video';
+      iframe.className = 'video-iframe';
+
+      wrap.appendChild(iframe);
+
+      // Fade out thumbnail layer
+      const thumbLayer = wrap.querySelector('.video-thumb-layer') as HTMLElement | null;
+      if (thumbLayer) {
+        thumbLayer.style.opacity = '0';
+        thumbLayer.style.pointerEvents = 'none';
+      }
+    }
+
+    // Autoplay muted when scrolled into view
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          loadIframe(true);
+          obs.disconnect();
+        }
+      }, { threshold: 0.35 });
+      obs.observe(wrap);
+    }
+
+    // Manual play button — load without waiting for intersection
+    const playBtn = wrap.querySelector('.video-play-btn');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => loadIframe(false));
+    }
+  })();
+</script>
 
 <style>
   .video-section {
@@ -69,58 +146,124 @@ const display = items.slice(0, 3);
     display: block;
   }
 
-  .video-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  @media (min-width: 480px) {
-    .video-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  }
+  /* ── Featured player ── */
+  .video-featured { margin-bottom: 16px; }
 
-  .video-card {
-    display: block;
-    text-decoration: none;
-  }
-  .video-card:hover .video-title { color: var(--accent); }
-
-  .video-thumb-wrap {
+  .video-player-wrap {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    border-radius: 5px;
+    background: #000;
+    border-radius: 6px;
     overflow: hidden;
-    background: var(--surface-2);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
-  .video-thumb {
+
+  .video-thumb-layer {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .video-featured-thumb {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    display: block;
-    transition: transform 0.25s ease;
-  }
-  .video-card:hover .video-thumb { transform: scale(1.03); }
-
-  /* YouTube thumbnails have black bars — crop them out */
-  .video-thumb {
+    /* crop YouTube black bars */
     object-position: center 12.5%;
+    display: block;
   }
 
-  .thumb-error .video-thumb { display: none; }
-
-  .play-icon {
+  .video-play-btn {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .video-play-btn:hover { transform: scale(1.08); }
+
+  :global(.video-iframe) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 6px;
+  }
+
+  .video-featured-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+    margin: 0 0 4px;
+  }
+
+  .video-meta {
+    font-size: 11px;
+    color: var(--text-4);
+    display: block;
+  }
+
+  /* ── More videos ── */
+  .video-more {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .video-more-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    text-decoration: none;
+  }
+  .video-more-item:hover .video-more-title { color: var(--accent); }
+
+  .video-more-thumb-wrap {
+    position: relative;
+    width: 100px;
+    flex-shrink: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .video-more-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 12.5%;
+    display: block;
+    transition: transform 0.2s ease;
+  }
+  .video-more-item:hover .video-more-thumb { transform: scale(1.04); }
+
+  .video-more-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.85);
+    background: rgba(0,0,0,0.35);
     opacity: 0;
     transition: opacity 0.15s;
   }
-  .video-card:hover .play-icon { opacity: 1; }
+  .video-more-item:hover .video-more-play { opacity: 1; }
 
-  .video-title {
+  .video-more-body { flex: 1; min-width: 0; }
+
+  .video-more-title {
     font-family: var(--font-display);
     font-size: 14px;
     font-weight: 700;
@@ -134,34 +277,8 @@ const display = items.slice(0, 3);
     overflow: hidden;
   }
 
-  .video-meta {
-    font-size: 11px;
-    color: var(--text-4);
-  }
-
-  /* Compact mode: hide thumbnails, show as tight list */
-  :global(html[data-display="compact"]) .video-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-  :global(html[data-display="compact"]) .video-card {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  :global(html[data-display="compact"]) .video-card:last-child { border-bottom: none; }
-  :global(html[data-display="compact"]) .video-thumb-wrap {
-    width: 80px;
-    flex-shrink: 0;
-    aspect-ratio: 16 / 9;
-    margin-bottom: 0;
-    border-radius: 3px;
-  }
-  :global(html[data-display="compact"]) .video-title {
-    font-size: 13px;
-    -webkit-line-clamp: 2;
-  }
+  /* ── Compact mode ── */
+  :global(html[data-display="compact"]) .video-player-wrap { aspect-ratio: unset; height: 0; overflow: hidden; pointer-events: none; }
+  :global(html[data-display="compact"]) .video-featured-title { font-size: 14px; }
+  :global(html[data-display="compact"]) .video-more-thumb-wrap { width: 72px; }
 </style>
