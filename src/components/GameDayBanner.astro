@@ -92,35 +92,63 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     const fdx = Math.round(60 + (fdp / 100) * 480);
     return (
       <div class="gd-field" id="gdSituation">
-        <svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
-          {/* Alternating stripes */}
-          {[0,1,2,3,4,5,6,7,8,9].map(i => (
-            <rect x={60 + i*48} y="0" width="48" height="72" fill={i%2===0 ? '#2e7a14' : '#1a4e08'}/>
-          ))}
-          {/* End zones */}
-          <rect x="0"   y="0" width="60" height="72" fill="var(--was-color,#5a1414)"/>
-          <rect x="540" y="0" width="60" height="72" fill="var(--opp-color,#333)"/>
-          {/* End zone labels */}
-          <text id="gdFieldHome" x="30"  y="36" class="gd-ez-label">WAS</text>
-          <text id="gdFieldOpp" x="570" y="36" class="gd-ez-label">{opponent.abbreviation}</text>
-          {/* Goal lines */}
-          <line x1="60"  y1="0" x2="60"  y2="72" stroke="white" stroke-width="2"/>
-          <line x1="540" y1="0" x2="540" y2="72" stroke="white" stroke-width="2"/>
-          {/* 10-yard lines */}
-          {[108,156,204,252,348,396,444,492].map(x => (
-            <line x1={x} y1="0" x2={x} y2="72" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-          ))}
-          {/* Midfield brighter */}
-          <line x1="300" y1="0" x2="300" y2="72" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
-          {/* Yard numbers */}
-          {([10,20,30,40,50,40,30,20,10] as number[]).map((n,i) => (
-            <text x={108 + i*48} y="13" class="gd-yd-num" opacity={n===50?'0.7':'0.5'}>{n}</text>
-          ))}
-          {/* First-down line */}
-          <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="72" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
-          {/* Football emoji */}
-          <text id="gdBall" x={bx} y="45" font-size="14" text-anchor="middle" dominant-baseline="middle" style="user-select:none">🏈</text>
-        </svg>
+        <div class="gd-field-perspective">
+          <svg class="gd-field-svg" viewBox="0 0 600 72" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Field position">
+            <defs>
+              <linearGradient id="gdDepth" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stop-color="rgba(0,0,0,0.38)"/>
+                <stop offset="45%"  stop-color="rgba(0,0,0,0.12)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+              </linearGradient>
+            </defs>
+            {/* Alternating stripes */}
+            {[0,1,2,3,4,5,6,7,8,9].map(i => (
+              <rect x={60 + i*48} y="0" width="48" height="72" fill={i%2===0 ? '#2e7a14' : '#1a4e08'}/>
+            ))}
+            {/* End zones */}
+            <rect x="0"   y="0" width="60" height="72" fill="var(--was-color,#5a1414)"/>
+            <rect x="540" y="0" width="60" height="72" fill="var(--opp-color,#333)"/>
+            {/* End zone labels */}
+            <text id="gdFieldHome" x="30"  y="36" class="gd-ez-label">WAS</text>
+            <text id="gdFieldOpp" x="570" y="36" class="gd-ez-label">{opponent.abbreviation}</text>
+            {/* Goal lines */}
+            <line x1="60"  y1="0" x2="60"  y2="72" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+            <line x1="540" y1="0" x2="540" y2="72" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+            {/* Midfield */}
+            <line x1="300" y1="0" x2="300" y2="72" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+            {/* 10-yard lines */}
+            {[108,156,204,252,348,396,444,492].map(x => (
+              <line x1={x} y1="0" x2={x} y2="72" stroke="rgba(255,255,255,0.22)" stroke-width="1"/>
+            ))}
+            {/* 5-yard hash marks at both sidelines */}
+            {Array.from({length: 21}, (_,i) => 60 + i*24).map(x => (
+              <>
+                <line x1={x} y1="0"  x2={x} y2="9"  stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+                <line x1={x} y1="63" x2={x} y2="72" stroke="rgba(255,255,255,0.45)" stroke-width="1"/>
+              </>
+            ))}
+            {/* Interior hash marks (NFL-style) */}
+            {Array.from({length: 21}, (_,i) => 60 + i*24).map(x => (
+              <>
+                <line x1={x} y1="29" x2={x} y2="34" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+                <line x1={x} y1="38" x2={x} y2="43" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+              </>
+            ))}
+            {/* Yard numbers */}
+            {([10,20,30,40,50,40,30,20,10] as number[]).map((n,i) => (
+              <>
+                <text x={108 + i*48} y="15" class="gd-yd-num" opacity={n===50?'0.75':'0.55'}>{n}</text>
+                <text x={108 + i*48} y="64" class="gd-yd-num" opacity={n===50?'0.75':'0.55'}>{n}</text>
+              </>
+            ))}
+            {/* Depth gradient overlay */}
+            <rect x="0" y="0" width="600" height="72" fill="url(#gdDepth)" pointer-events="none"/>
+            {/* First-down line */}
+            <line id="gdFDLine" x1={fdx} y1="0" x2={fdx} y2="72" stroke="#facc15" stroke-width="2" stroke-dasharray="4,3" opacity="0.9"/>
+          </svg>
+          <div id="gdBall" class="gd-ball-float" style={`left:${((bx/600)*100).toFixed(2)}%`}>🏈</div>
+        </div>
+        <div class="gd-field-slab"></div>
         {/* Info row */}
         <div class="gd-field-info">
           <span class="gd-possession" id="gdPossession">
@@ -612,16 +640,39 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
   }
 
   /* ── Field visualization ── */
-  .gd-field {
-    border-top: 1px solid var(--gd-border);
+  .gd-field { border-top: 1px solid var(--gd-border); overflow: hidden; }
+  .gd-field-perspective {
+    perspective: 150px;
+    perspective-origin: 50% 100%;
+    overflow: hidden;
+    position: relative;
   }
   .gd-field-svg {
     display: block;
     width: 100%;
     height: auto;
+    transform: rotateX(38deg);
+    transform-origin: bottom center;
+  }
+  .gd-field-slab { height: 4px; background: linear-gradient(to bottom, #1a5c0a 0%, #091e04 100%); }
+  .gd-ball-float {
+    position: absolute;
+    top: 55%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+  }
+  @media (min-width: 768px) {
+    .gd-field-perspective { perspective: 280px; }
+    .gd-field-svg { transform: rotateX(24deg); }
+    .gd-ball-float { top: 58%; font-size: 15px; }
   }
   .gd-ez-label {
-    fill: rgba(255,255,255,0.75);
+    fill: rgba(255,255,255,0.85);
     font-size: 10px;
     font-weight: 800;
     font-family: system-ui, sans-serif;
@@ -635,21 +686,18 @@ const hasPlays    = phase === 'live' || phase === 'halftime' || phase === 'postg
     font-weight: 700;
     font-family: system-ui, sans-serif;
     text-anchor: middle;
-    dominant-baseline: hanging;
   }
   .gd-field-info {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 5px 20px;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 16px;
     border-top: 1px solid var(--gd-border);
     font-size: 12px;
-    font-weight: 600;
-    color: var(--gd-text2);
   }
-  .gd-possession { color: #e8a820; }
-  .gd-down-dist  { color: var(--gd-text); }
+  .gd-possession { color: #e8a820; font-weight: 700; white-space: nowrap; }
+  .gd-down-dist  { color: var(--gd-text); font-weight: 700; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
   /* ── Countdown ── */
   .gd-countdown {

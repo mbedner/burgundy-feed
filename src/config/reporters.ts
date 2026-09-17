@@ -32,8 +32,7 @@ export const REPORTER_CONFIG = {
     { handle: 'Mitch_Tischler', name: 'Mitch Tischler',  outlet: 'Monumental Sports Network',   platform: 'x', profileUrl: 'https://x.com/Mitch_Tischler' },
     { handle: 'ZachSelbyWC',    name: 'Zach Selby',      outlet: 'Commanders.com',              platform: 'x', profileUrl: 'https://x.com/ZachSelbyWC'    },
     { handle: 'DHarrison82',    name: 'David Harrison',  outlet: 'Locked On Commanders',        platform: 'x', profileUrl: 'https://x.com/DHarrison82'    },
-    { handle: 'granthpaulsen',  name: 'Grant Paulsen',   outlet: '106.7 The Fan',               platform: 'x', profileUrl: 'https://x.com/granthpaulsen'  },
-    { handle: 'ScottBradleigh', name: 'Scott Bradleigh', outlet: 'Washington Football Talk',    platform: 'x', profileUrl: 'https://x.com/ScottBradleigh' },
+    { handle: 'GrantPaulsen',    name: 'Grant Paulsen',   outlet: '106.7 The Fan',               platform: 'x', profileUrl: 'https://x.com/GrantPaulsen'   },
     { handle: 'jasonlacanfora', name: 'Jason La Canfora', outlet: 'CBS Sports',                 platform: 'x', profileUrl: 'https://x.com/jasonlacanfora'  },
   ] satisfies Reporter[],
 };
