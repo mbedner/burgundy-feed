@@ -137,15 +137,20 @@ const featured = display[0];
       hideMini();
     });
 
-    // Show when the video section scrolls OUT of the viewport (top edge goes above fold)
-    // Hide when the section comes back into view
+    // Pattern: user scrolls DOWN to the video section (hasSeen=true),
+    // then scrolls back UP — section leaves the bottom of the viewport,
+    // mini-player pops up so video follows them while they read.
     const section = document.getElementById('video-section');
     if ('IntersectionObserver' in window && section) {
+      let hasSeen = false;
       const obs = new IntersectionObserver(([entry]) => {
-        if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+        if (entry.isIntersecting) {
+          hasSeen = true;
+          // Back in view — hide mini
+          if (miniLoaded && !miniDismissed) hideMini();
+        } else if (!entry.isIntersecting && hasSeen && entry.boundingClientRect.top > 0) {
+          // Section is below the fold (user scrolled back up past it) — show mini
           showMini();
-        } else if (entry.isIntersecting && miniLoaded && !miniDismissed) {
-          hideMini();
         }
       }, { threshold: 0 });
       obs.observe(section);
