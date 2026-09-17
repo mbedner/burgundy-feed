@@ -383,19 +383,29 @@ const LEAD_STOP = new Set([
   'first','season','week','time','play','player','league','deal','news','nfl',
   'report','commanders','washington',
 ]);
+// Tags too generic to use as a same-story signal on their own
+const LEAD_GENERIC_TAGS = new Set(['good','bad','weird','national','offense','defense','roster']);
 function leadSigWords(a: typeof articles[0]): Set<string> {
   const text = `${a.originalHeadline} ${a.summary ?? ''}`.toLowerCase().replace(/[^a-z0-9 ]/g, '');
   return new Set(text.split(/\s+/).filter(w => w.length > 4 && !LEAD_STOP.has(w)));
 }
 function tooSimilar(a: typeof articles[0], selected: typeof articles): boolean {
-  const wa = leadSigWords(a);
-  if (wa.size === 0) return false;
+  const wa   = leadSigWords(a);
+  const aTags = new Set(a.tags.filter(t => !LEAD_GENERIC_TAGS.has(t)));
   for (const s of selected) {
+    // Shared specific tag → almost certainly the same story arc
+    if (aTags.size > 0) {
+      for (const tag of s.tags) {
+        if (!LEAD_GENERIC_TAGS.has(tag) && aTags.has(tag)) return true;
+      }
+    }
+    // Vocabulary overlap on combined title+summary
+    if (wa.size === 0) continue;
     const ws = leadSigWords(s);
     if (ws.size === 0) continue;
     let shared = 0;
     for (const w of wa) { if (ws.has(w)) shared++; }
-    if (shared / Math.min(wa.size, ws.size) >= 0.30) return true;
+    if (shared / Math.min(wa.size, ws.size) >= 0.22) return true;
   }
   return false;
 }
@@ -913,6 +923,7 @@ const hasBreaking = freshBreaking.length > 0;
       top: 0; left: 0; right: 0; bottom: 0;
       z-index: 195;   /* below masthead (200) — masthead floats on top naturally */
       background: var(--surface);
+      overflow-x: hidden; /* must be explicit — overflow-y:auto computes overflow-x to auto, which clips negative-margin children */
       overflow-y: auto;
       padding: 16px;
       padding-top: 68px; /* masthead inner height (52px) + base padding (16px) */
@@ -997,6 +1008,22 @@ const hasBreaking = freshBreaking.length > 0;
 
     /* Mode body visibility */
     .sk-body[hidden] { display: none; }
+
+    /* Scores strip skeleton */
+    .sk-scores-strip {
+      display: flex;
+      overflow: hidden;
+      margin: 0 -16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sk-sc-card {
+      flex-shrink: 0;
+      width: 88px;
+      height: 57px;
+      border-right: 1px solid var(--border);
+      border-radius: 0;
+    }
+    .sk-sc-card:last-child { border-right: none; }
 
     /* Dark shimmer — for always-dark banner areas (game day, draft banners) */
     .sk-pulse-dark {
@@ -1094,6 +1121,15 @@ const hasBreaking = freshBreaking.length > 0;
 
   <!-- Skeleton overlay — shown during PTR ingest wait -->
   <div id="ptr-skeleton" aria-hidden="true" hidden>
+
+    <!-- ── Scores strip ─────────────────────────────────────────────── -->
+    <div class="sk-scores-strip">
+      <div class="sk-sc-card sk-pulse"></div>
+      <div class="sk-sc-card sk-pulse"></div>
+      <div class="sk-sc-card sk-pulse"></div>
+      <div class="sk-sc-card sk-pulse"></div>
+      <div class="sk-sc-card sk-pulse"></div>
+    </div>
 
     <!-- ── Everyday mode ─────────────────────────────────────────────── -->
     <div class="sk-body" data-sk-mode="everyday">
