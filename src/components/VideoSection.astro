@@ -103,7 +103,7 @@ const featured = display[0];
     const videoTitle= firstCard?.dataset.videoTitle ?? '';
     if (!videoId) return;
 
-    let miniLoaded   = false;
+    let iframeLoaded = false;
     let miniDismissed= false;
 
     try {
@@ -111,18 +111,17 @@ const featured = display[0];
     } catch {}
 
     function showMini() {
-      if (miniDismissed || miniLoaded) return;
-      miniLoaded = true;
-
-      const params = new URLSearchParams({
-        autoplay: '1', mute: '1', playsinline: '1', rel: '0', modestbranding: '1',
-      });
-      miniIframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?${params}`;
-      if (miniTitle)  miniTitle.textContent = videoTitle;
-      if (miniOpen)   miniOpen.href = `https://www.youtube.com/watch?v=${videoId}`;
-
+      if (miniDismissed) return;
+      if (!iframeLoaded) {
+        iframeLoaded = true;
+        const params = new URLSearchParams({
+          autoplay: '1', mute: '1', playsinline: '1', rel: '0', modestbranding: '1',
+        });
+        miniIframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?${params}`;
+        if (miniTitle) miniTitle.textContent = videoTitle;
+        if (miniOpen)  miniOpen.href = `https://www.youtube.com/watch?v=${videoId}`;
+      }
       miniplayer.hidden = false;
-      // Slight delay so the hidden→visible transition fires
       requestAnimationFrame(() => miniplayer.classList.add('mini--visible'));
     }
 
@@ -147,7 +146,7 @@ const featured = display[0];
         if (entry.isIntersecting) {
           hasSeen = true;
           // Back in view — hide mini
-          if (miniLoaded && !miniDismissed) hideMini();
+          if (iframeLoaded && !miniDismissed) hideMini();
         } else if (!entry.isIntersecting && hasSeen && entry.boundingClientRect.top > 0) {
           // Section is below the fold (user scrolled back up past it) — show mini
           showMini();

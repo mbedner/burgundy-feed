@@ -1276,6 +1276,12 @@ const hasBreaking = freshBreaking.length > 0;
           }
         </section>
 
+        {videoItems.length > 0 && (
+          <section id="videos">
+            <VideoSection items={videoItems} />
+          </section>
+        )}
+
         <section id="voices" style="padding-bottom: 48px; margin-top: 36px;">
           <ReporterVoices config={REPORTER_CONFIG} />
         </section>
@@ -1283,12 +1289,6 @@ const hasBreaking = freshBreaking.length > 0;
         <section id="nfc-east">
           <NfcEastSection items={nfcEastItems} />
         </section>
-
-        {videoItems.length > 0 && (
-          <section id="videos">
-            <VideoSection items={videoItems} />
-          </section>
-        )}
       </div>
 
       <aside class="rail-col" id="rail">
