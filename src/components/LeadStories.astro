@@ -1,12 +1,7 @@
 ---
-import type { Article, ClusterMeta } from '../lib/types';
-interface Props { items: Article[]; clusters?: ClusterMeta[]; }
-const { items, clusters = [] } = Astro.props;
-
-const clusterSizeByPrimary = new Map<string, number>();
-for (const c of clusters) {
-  if (c.size > 1) clusterSizeByPrimary.set(c.primaryId, c.size);
-}
+import type { Article } from '../lib/types';
+interface Props { items: Article[]; clusterMembers?: Record<string, Article[]>; }
+const { items, clusterMembers = {} } = Astro.props;
 
 const [primary, ...secondaries] = items;
 
@@ -59,10 +54,22 @@ function rel(iso: string): string {
             {primary.paywallStatus === 'subscription' ? 'Sub' : 'Sub?'}
           </span>
         )}
-        {clusterSizeByPrimary.has(primary.id) && (
-          <span class="cluster-badge">{clusterSizeByPrimary.get(primary.id)} sources</span>
-        )}
       </div>
+      {clusterMembers[primary.id] && (
+        <details class="cluster-details">
+          <summary class="cluster-summary">
+            {clusterMembers[primary.id].length + 1} outlets <span class="cluster-arrow" aria-hidden="true">▾</span>
+          </summary>
+          <div class="cluster-panel">
+            {clusterMembers[primary.id].map(m => (
+              <a href={m.sourceUrl} target="_blank" rel="noopener noreferrer" class="cluster-row">
+                <span class="cluster-row-src">{m.sourceName}</span>
+                <span class="cluster-row-time">{rel(m.publishedAt)}</span>
+              </a>
+            ))}
+          </div>
+        </details>
+      )}
       <h3 class="primary-hed">{primary.displayHeadline}</h3>
       {primary.summary && (
         <p class="primary-summary">{primary.summary.slice(0, 200)}…</p>
@@ -115,10 +122,22 @@ function rel(iso: string): string {
                 {item.paywallStatus === 'subscription' ? 'Sub' : 'Sub?'}
               </span>
             )}
-            {clusterSizeByPrimary.has(item.id) && (
-              <span class="cluster-badge">{clusterSizeByPrimary.get(item.id)} sources</span>
-            )}
           </div>
+          {clusterMembers[item.id] && (
+            <details class="cluster-details">
+              <summary class="cluster-summary">
+                {clusterMembers[item.id].length + 1} outlets <span class="cluster-arrow" aria-hidden="true">▾</span>
+              </summary>
+              <div class="cluster-panel">
+                {clusterMembers[item.id].map(m => (
+                  <a href={m.sourceUrl} target="_blank" rel="noopener noreferrer" class="cluster-row">
+                    <span class="cluster-row-src">{m.sourceName}</span>
+                    <span class="cluster-row-time">{rel(m.publishedAt)}</span>
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
           <h3 class="secondary-hed">{item.displayHeadline}</h3>
           {item.originalHeadline !== item.displayHeadline && (
             <p class="secondary-orig">orig: {item.originalHeadline}</p>
@@ -392,17 +411,51 @@ function rel(iso: string): string {
     border: 1px solid var(--border);
   }
 
-  .cluster-badge {
-    font-size: 9px;
+  .cluster-details { margin: 6px 0 10px; }
+  .cluster-summary {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    padding: 2px 5px;
-    border-radius: 2px;
-    background: transparent;
     color: var(--accent);
     border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-    flex-shrink: 0;
+    border-radius: 3px;
+    padding: 2px 8px;
+    user-select: none;
+  }
+  .cluster-summary::-webkit-details-marker { display: none; }
+  .cluster-arrow { font-size: 8px; display: inline-block; transition: transform 0.15s; }
+  .cluster-details[open] .cluster-arrow { transform: rotate(180deg); }
+
+  .cluster-panel { margin-top: 6px; padding: 4px 0; border-top: 1px solid var(--border); }
+  .cluster-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    text-decoration: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .cluster-row:last-child { border-bottom: none; }
+  .cluster-row-src {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    transition: color 0.12s;
+  }
+  .cluster-row:hover .cluster-row-src { color: var(--accent); }
+  .cluster-row-time {
+    font-size: 11px;
+    color: var(--text-4);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ── Compact mode overrides ── */

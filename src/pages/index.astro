@@ -373,14 +373,49 @@ function leadPriority(a: typeof articles[0]): number {
   return p;
 }
 
-// Build a map of articleId → clusterId (primary ID) so we can suppress
-// cluster members from leads once the primary is already selected
-const articleClusterPrimary = new Map<string, string>();
+// Secondary similarity check for lead de-dup — catches stories the ingest-time
+// clusterer misses when different outlets use entirely different vocabulary
+const LEAD_STOP = new Set([
+  'that','this','with','from','have','will','been','they','their','would','could',
+  'should','about','after','before','into','over','then','than','when','what',
+  'which','were','also','more','just','said','says','make','made','take','back',
+  'down','each','much','some','does','come','team','game','year','next','last',
+  'first','season','week','time','play','player','league','deal','news','nfl',
+  'report','commanders','washington',
+]);
+function leadSigWords(a: typeof articles[0]): Set<string> {
+  const text = `${a.originalHeadline} ${a.summary ?? ''}`.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+  return new Set(text.split(/\s+/).filter(w => w.length > 4 && !LEAD_STOP.has(w)));
+}
+function tooSimilar(a: typeof articles[0], selected: typeof articles): boolean {
+  const wa = leadSigWords(a);
+  if (wa.size === 0) return false;
+  for (const s of selected) {
+    const ws = leadSigWords(s);
+    if (ws.size === 0) continue;
+    let shared = 0;
+    for (const w of wa) { if (ws.has(w)) shared++; }
+    if (shared / Math.min(wa.size, ws.size) >= 0.30) return true;
+  }
+  return false;
+}
+
+// Build cluster lookup structures
+const articleById = new Map<string, Article>(articles.map(a => [a.id, a]));
+const articleClusterPrimary = new Map<string, string>(); // articleId → primaryId
+const clusterMembersMap: Record<string, Article[]> = {};  // primaryId → non-primary members
+
 for (const c of clusters) {
   if (c.size > 1) {
+    const members: Article[] = [];
     for (const id of c.articleIds) {
       articleClusterPrimary.set(id, c.primaryId);
+      if (id !== c.primaryId) {
+        const art = articleById.get(id);
+        if (art) members.push(art);
+      }
     }
+    if (members.length > 0) clusterMembersMap[c.primaryId] = members;
   }
 }
 
@@ -403,7 +438,7 @@ for (const a of leadsPool) {
   const clusterPrimary = articleClusterPrimary.get(a.id);
   // Skip if this article is a non-primary cluster member whose primary is already in leads
   const isDupCluster = clusterPrimary && clusterPrimary !== a.id && usedClusters.has(clusterPrimary);
-  if (leadsTop3.length < 3 && !usedSources.has(a.sourceId) && !isDupCluster) {
+  if (leadsTop3.length < 3 && !usedSources.has(a.sourceId) && !isDupCluster && !tooSimilar(a, leadsTop3)) {
     usedSources.add(a.sourceId);
     if (clusterPrimary) usedClusters.add(clusterPrimary);
     leadsTop3.push(a);
@@ -1304,7 +1339,7 @@ const hasBreaking = freshBreaking.length > 0;
 
         <section id="leads">
           {leads.length > 0
-            ? <LeadStories items={leads} clusters={clusters} />
+            ? <LeadStories items={leads} clusterMembers={clusterMembersMap} />
             : <div>
                 <h2 class="section-label">Top Stories</h2>
                 <p class="empty-msg">No stories yet — trigger the ingest worker to populate.</p>
@@ -1315,7 +1350,7 @@ const hasBreaking = freshBreaking.length > 0;
         <section id="stream" style="margin-top: 36px;">
           <h2 class="section-label">Latest News</h2>
           {streamItems.length > 0
-            ? <NewsStream items={streamItems} clusters={clusters} />
+            ? <NewsStream items={streamItems} clusterMembers={clusterMembersMap} />
             : <p class="empty-msg">Waiting for first ingest run…</p>
           }
         </section>

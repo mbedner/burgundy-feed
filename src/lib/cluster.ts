@@ -22,20 +22,28 @@ const CLUSTER_STOP = new Set([
   'nfl', 'report', 'commanders', 'washington',
 ]);
 
-function sigWords(title: string): Set<string> {
+function sigWords(text: string): Set<string> {
   return new Set(
-    title.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/)
+    text.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/)
       .filter(w => w.length > 3 && !CLUSTER_STOP.has(w))
   );
 }
 
-function titleSimilarity(a: string, b: string): number {
-  const wa = sigWords(a);
-  const wb = sigWords(b);
+function similarity(wa: Set<string>, wb: Set<string>): number {
   if (wa.size === 0 || wb.size === 0) return 0;
   let shared = 0;
   for (const w of wa) { if (wb.has(w)) shared++; }
   return shared / Math.min(wa.size, wb.size);
+}
+
+function articleSimilarity(a: Article, b: Article): number {
+  // Title-only check first (fast path, higher threshold)
+  const titleSim = similarity(sigWords(a.originalHeadline), sigWords(b.originalHeadline));
+  if (titleSim >= SIMILARITY_THRESHOLD) return titleSim;
+  // Fall back to combined title+summary (catches different-vocabulary same-story)
+  const wa = sigWords(`${a.originalHeadline} ${a.summary ?? ''}`);
+  const wb = sigWords(`${b.originalHeadline} ${b.summary ?? ''}`);
+  return similarity(wa, wb);
 }
 
 function withinTimeWindow(a: Article, b: Article, maxHrs = 24): boolean {
@@ -45,7 +53,7 @@ function withinTimeWindow(a: Article, b: Article, maxHrs = 24): boolean {
   return diff < maxHrs * 3_600_000;
 }
 
-const SIMILARITY_THRESHOLD = 0.50; // 50% significant-word overlap → same story
+const SIMILARITY_THRESHOLD = 0.35; // 35% significant-word overlap → same story (lower to catch summary-level matches)
 
 export function clusterArticles(articles: Article[]): {
   articles: Article[];
@@ -65,7 +73,7 @@ export function clusterArticles(articles: Article[]): {
       if (assigned[j] !== -1) continue;
       // Same source = same story only if exact URL match (handled by dedup); skip same-source pairs
       if (articles[i].sourceId === articles[j].sourceId) continue;
-      const sim = titleSimilarity(articles[i].originalHeadline, articles[j].originalHeadline);
+      const sim = articleSimilarity(articles[i], articles[j]);
       if (sim >= SIMILARITY_THRESHOLD && withinTimeWindow(articles[i], articles[j])) {
         newCluster.push(j);
         assigned[j] = clusterGroups.length;
