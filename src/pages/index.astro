@@ -373,6 +373,17 @@ function leadPriority(a: typeof articles[0]): number {
   return p;
 }
 
+// Build a map of articleId → clusterId (primary ID) so we can suppress
+// cluster members from leads once the primary is already selected
+const articleClusterPrimary = new Map<string, string>();
+for (const c of clusters) {
+  if (c.size > 1) {
+    for (const id of c.articleIds) {
+      articleClusterPrimary.set(id, c.primaryId);
+    }
+  }
+}
+
 const now = Date.now();
 const freshForLeads = articles.filter(a => {
   const ageHrs = (now - new Date(a.publishedAt).getTime()) / 3_600_000;
@@ -383,13 +394,18 @@ const leadsPool = freshForLeads.length >= 3
   ? [...freshForLeads].sort((a, b) => leadPriority(b) - leadPriority(a))
   : articles;
 
-// Fill positions 0–2 with one story per source, then let the rest through
+// Fill top 3 with source-diverse, cluster-diverse stories, then overflow
 const leadsTop3: typeof articles = [];
-const usedSources = new Set<string>();
+const usedSources  = new Set<string>();
+const usedClusters = new Set<string>(); // tracks which cluster primaries are already shown
 const leadsOverflow: typeof articles = [];
 for (const a of leadsPool) {
-  if (leadsTop3.length < 3 && !usedSources.has(a.sourceId)) {
+  const clusterPrimary = articleClusterPrimary.get(a.id);
+  // Skip if this article is a non-primary cluster member whose primary is already in leads
+  const isDupCluster = clusterPrimary && clusterPrimary !== a.id && usedClusters.has(clusterPrimary);
+  if (leadsTop3.length < 3 && !usedSources.has(a.sourceId) && !isDupCluster) {
     usedSources.add(a.sourceId);
+    if (clusterPrimary) usedClusters.add(clusterPrimary);
     leadsTop3.push(a);
   } else {
     leadsOverflow.push(a);
