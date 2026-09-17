@@ -168,17 +168,7 @@ const featured = display[0];
     closeBtn?.addEventListener('click', dismiss);
     closeBtnDesktop?.addEventListener('click', dismiss);
 
-    // Show the moment any pixel of the video section enters the viewport
-    const section = document.getElementById('video-section');
-    if ('IntersectionObserver' in window && section) {
-      const obs = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) {
-          showMini();
-          obs.disconnect();
-        }
-      }, { threshold: 0 });
-      obs.observe(section);
-    }
+    showMini();
   })();
 </script>
 
