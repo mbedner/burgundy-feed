@@ -12,17 +12,19 @@ const YOUTUBE_CHANNELS = [
 
 const RSS_BASE = 'https://www.youtube.com/feeds/videos.xml?channel_id=';
 const MAX_VIDEOS = 6;
-const TIMEOUT_MS = 6000;
+const TIMEOUT_MS = 8000;
 
 export async function fetchYouTubeVideos(): Promise<VideoItem[]> {
   const all: VideoItem[] = [];
 
   for (const channel of YOUTUBE_CHANNELS) {
     try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
       const res = await fetch(`${RSS_BASE}${channel.id}`, {
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: ctrl.signal,
         headers: { 'Accept': 'application/atom+xml, application/xml, text/xml' },
-      });
+      }).finally(() => clearTimeout(timer));
       if (!res.ok) {
         console.warn(`[youtube] feed ${channel.id} returned ${res.status}`);
         continue;
