@@ -635,8 +635,12 @@ const hasBreaking = freshBreaking.length > 0;
       text-transform: uppercase;
       color: var(--accent);
       display: block;
-      margin-bottom: 16px;
+      border-top: 1px solid var(--border);
+      padding: 14px 0 12px;
+      margin: 0;
     }
+    /* Top Stories sits at the top — no divider above it */
+    #leads .section-label { border-top: none; padding-top: 0; }
 
     /* ── Divider ─────────────────────────────────────────────────────────────── */
     .divider {
@@ -1290,11 +1294,11 @@ const hasBreaking = freshBreaking.length > 0;
           </section>
         )}
 
-        <section id="voices" style="padding-bottom: 48px; margin-top: 36px;">
+        <section id="voices" style="margin-top: 36px;">
           <ReporterVoices config={REPORTER_CONFIG} />
         </section>
 
-        <section id="nfc-east">
+        <section id="nfc-east" style="margin-top: 36px;">
           <NfcEastSection items={nfcEastItems} />
         </section>
       </div>
