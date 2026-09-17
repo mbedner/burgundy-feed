@@ -80,7 +80,7 @@ const runStatus   = lastRun?.status ?? null;
         if (dot) dot.classList.add('sync-dot--warn');
       }
     } else if (status === 'partially_successful') {
-      label.textContent = `Updated ${rel} (some sources unavailable)`;
+      label.textContent = `Updated ${rel}`;
     } else {
       label.textContent = `Updated ${rel}`;
     }
