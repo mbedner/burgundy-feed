@@ -1339,7 +1339,7 @@ const hasBreaking = freshBreaking.length > 0;
 
         <section id="leads">
           {leads.length > 0
-            ? <LeadStories items={leads} clusterMembers={clusterMembersMap} />
+            ? <LeadStories items={leads} />
             : <div>
                 <h2 class="section-label">Top Stories</h2>
                 <p class="empty-msg">No stories yet — trigger the ingest worker to populate.</p>
@@ -1350,7 +1350,7 @@ const hasBreaking = freshBreaking.length > 0;
         <section id="stream" style="margin-top: 36px;">
           <h2 class="section-label">Latest News</h2>
           {streamItems.length > 0
-            ? <NewsStream items={streamItems} clusterMembers={clusterMembersMap} />
+            ? <NewsStream items={streamItems} />
             : <p class="empty-msg">Waiting for first ingest run…</p>
           }
         </section>

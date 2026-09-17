@@ -1,7 +1,7 @@
 ---
 import type { Article } from '../lib/types';
-interface Props { item: Article; rank: number; clusterMembers?: Article[]; }
-const { item, rank, clusterMembers } = Astro.props;
+interface Props { item: Article; rank: number; }
+const { item, rank } = Astro.props;
 
 function rel(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -55,21 +55,6 @@ const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May requi
         )}
         <span class={`story-time story-time--${hotness}`}>{rel(item.publishedAt)}</span>
       </div>
-      {clusterMembers && clusterMembers.length > 0 && (
-        <details class="cluster-details">
-          <summary class="cluster-summary">
-            {clusterMembers.length + 1} outlets <span class="cluster-arrow" aria-hidden="true">▾</span>
-          </summary>
-          <div class="cluster-panel">
-            {clusterMembers.map(m => (
-              <a href={m.sourceUrl} target="_blank" rel="noopener noreferrer" class="cluster-row">
-                <span class="cluster-row-src">{m.sourceName}</span>
-                <span class="cluster-row-time">{rel(m.publishedAt)}</span>
-              </a>
-            ))}
-          </div>
-        </details>
-      )}
     </div>
   </div>
 </article>
@@ -210,50 +195,6 @@ const pwTitle     = pw === 'subscription' ? 'Subscription required' : 'May requi
     border: 1px solid var(--border);
   }
 
-  .cluster-details { margin-top: 5px; }
-  .cluster-summary {
-    list-style: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-    border-radius: 3px;
-    padding: 2px 7px;
-    user-select: none;
-  }
-  .cluster-summary::-webkit-details-marker { display: none; }
-  .cluster-arrow { font-size: 8px; display: inline-block; transition: transform 0.15s; }
-  .cluster-details[open] .cluster-arrow { transform: rotate(180deg); }
-
-  .cluster-panel { margin-top: 5px; padding: 3px 0; border-top: 1px solid var(--border); }
-  .cluster-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 0;
-    text-decoration: none;
-  }
-  .cluster-row-src {
-    font-size: 11px;
-    font-weight: 800;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    transition: color 0.12s;
-  }
-  .cluster-row:hover .cluster-row-src { color: var(--accent); }
-  .cluster-row-time {
-    font-size: 11px;
-    color: var(--text-4);
-    margin-left: auto;
-    font-variant-numeric: tabular-nums;
-  }
 
   /* ── Compact mode overrides ── */
   :global(html[data-display="compact"]) .story-inner { padding-top: 8px; padding-bottom: 8px; }

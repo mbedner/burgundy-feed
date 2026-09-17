@@ -25,7 +25,7 @@ let rank = 1;
 
 <div class="stream stream-capped" id="news-stream">
   {visibleItems.map(item => (
-    <StoryItem item={item} rank={rank++} clusterMembers={clusterMembers[item.id]} />
+    <StoryItem item={item} rank={rank++} />
   ))}
 </div>
 
