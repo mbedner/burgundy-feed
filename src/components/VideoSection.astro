@@ -162,6 +162,8 @@ const featured = display[0];
       miniDismissed = true;
       try { sessionStorage.setItem('bf-mini-dismissed', videoId); } catch {}
       miniplayer.classList.remove('mini--visible');
+      iframeMobile.src  = '';
+      iframeDesktop.src = '';
       setTimeout(() => { miniplayer.hidden = true; }, 280);
     }
 
